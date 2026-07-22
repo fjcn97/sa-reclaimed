@@ -260,7 +260,7 @@ static void sub_807B8FC(Sprite_Propeller *propeller)
 
 static void Render(Sprite_Propeller *propeller)
 {
-    Sprite *sprite = &sub_807BA54()->propellor;
+    Sprite *sprite = &sub_807BA54()->propeller;
     sprite->x = propeller->x - gCamera.x;
     sprite->y = propeller->y - gCamera.y;
     DisplaySprite(sprite);

@@ -731,7 +731,7 @@ const MapEntityInit gSpriteInits_Interactables[] = {
     CreateEntity_Propeller,
     CreateEntity_SlidyIce,
     CreateEntity_SmallWindmill,
-    CreateEntity_PropellerSpring,
+    CreateEntity_FlyingSpring,
     CreateEntity_Whirlwind_A,
     CreateEntity_Fan_Left,
     CreateEntity_Fan_Right,

@@ -224,7 +224,7 @@ static void UpdateSharedFlyingSpringAnimation(void)
     level->visibleFlyingSprings++;
 }
 
-void CreateEntity_PropellerSpring(MapEntity *me, u16 spriteRegionX, u16 spriteRegionY, u8 spriteY)
+void CreateEntity_FlyingSpring(MapEntity *me, u16 spriteRegionX, u16 spriteRegionY, u8 spriteY)
 {
     Task *t = TaskCreate(Task_Interactable085, sizeof(Sprite_FlyingSpring), 0x2010, 0, TaskDestructor_Interactable085);
     Sprite_FlyingSpring *flyingSpring = TASK_DATA(t);

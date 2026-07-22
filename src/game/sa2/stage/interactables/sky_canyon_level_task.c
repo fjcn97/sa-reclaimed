@@ -12,7 +12,7 @@ Task *CreateLevelTask_SkyCanyon(void)
 {
     Task *t = TaskCreate(Task_UpdateAnimations, sizeof(SkyCanyonLevelTask), 0x2001, 0, NULL);
     SkyCanyonLevelTask *init = TASK_DATA(t);
-    Sprite *spring, *propellor;
+    Sprite *spring, *propeller;
 
     init->visibleFlyingSprings = 0;
     init->visiblePropellers = 0;
@@ -24,12 +24,12 @@ Task *CreateLevelTask_SkyCanyon(void)
     spring->variant = 0;
     UpdateSpriteAnimation(&init->spring);
 
-    propellor = &init->propellor;
-    SPRITE_INIT_WITHOUT_ANIM_OR_VRAM(propellor, 18, 2, 0);
-    propellor->graphics.dest = (void *)(OBJ_VRAM0 + 0x2980);
-    propellor->graphics.anim = SA2_ANIM_PROPELLER;
-    propellor->variant = 0;
-    UpdateSpriteAnimation(&init->propellor);
+    propeller = &init->propeller;
+    SPRITE_INIT_WITHOUT_ANIM_OR_VRAM(propeller, 18, 2, 0);
+    propeller->graphics.dest = (void *)(OBJ_VRAM0 + 0x2980);
+    propeller->graphics.anim = SA2_ANIM_PROPELLER;
+    propeller->variant = 0;
+    UpdateSpriteAnimation(&init->propeller);
 
     return t;
 }
@@ -44,7 +44,7 @@ static void Task_UpdateAnimations(void)
     init->visibleFlyingSprings = 0;
 
     if (init->visiblePropellers != 0) {
-        UpdateSpriteAnimation(&init->propellor);
+        UpdateSpriteAnimation(&init->propeller);
     }
     init->visiblePropellers = 0;
 }

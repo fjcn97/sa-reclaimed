@@ -1,0 +1,43 @@
+; Sonic Advance 2 - Godot Remake
+; Configuration for Godot 4.3+
+
+[application]
+config/name="Sonic Advance Reclaimed"
+config/description="A Godot 4 remake of Sonic Advance 2 based on the SAT-R decompilation"
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.3")
+config/icon="res://icon.svg"
+
+[autoload]
+CoreBridge="*res://scripts/CoreBridge.gd"
+
+[rendering]
+renderer/rendering_method="forward_plus"
+renderer/texture_filter/force_nearest_without_mipmaps=false
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/mode=0
+window/size/always_on_top=false
+window/dpi/allow_hidpi=true
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[input]
+ui_accept={ "deadzone": 0.5, "events": [] }
+ui_cancel={ "deadzone": 0.5, "events": [] }
+move_left={ "deadzone": 0.5, "events": [{"keycode": 65}, {"keycode": 16777231}] }
+move_right={ "deadzone": 0.5, "events": [{"keycode": 68}, {"keycode": 16777233}] }
+move_up={ "deadzone": 0.5, "events": [{"keycode": 87}, {"keycode": 16777232}] }
+move_down={ "deadzone": 0.5, "events": [{"keycode": 83}, {"keycode": 16777234}] }
+jump={ "deadzone": 0.5, "events": [{"keycode": 90}] }
+attack={ "deadzone": 0.5, "events": [{"keycode": 88}, {"keycode": 32}] }
+boost={ "deadzone": 0.5, "events": [{"keycode": 16777239}] }
+pause={ "deadzone": 0.5, "events": [{"keycode": 16777221}, {"keycode": 16777244}] }
+
+[input_devices]
+pointing/emulate_mouse_from_touch=false
+
+[sa_reclaimed]
+debug/show_touch_controls_on_desktop=false

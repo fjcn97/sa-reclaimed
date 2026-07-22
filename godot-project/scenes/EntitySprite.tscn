@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3 uid="uid://g6w6q3w3k2k9j"]
+
+[ext_resource type="Script" path="res://scripts/EntitySprite.gd" id="1"]
+
+[node name="EntitySprite" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Body" type="Sprite2D" parent="."]
+position = Vector2(0, 0)
+
+[node name="Overlay" type="Sprite2D" parent="."]
+position = Vector2(0, 0)
