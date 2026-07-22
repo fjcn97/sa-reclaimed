@@ -95,3 +95,10 @@ sa2_debug.log
 
 # third party deps
 /ext
+
+# Godot-generated caches and local application data
+.godot/
+.godot-appdata/
+.godot-local/
+.tmp_appdata/
+.tmp_localappdata/
