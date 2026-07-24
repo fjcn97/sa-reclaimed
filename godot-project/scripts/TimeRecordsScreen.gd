@@ -150,7 +150,7 @@ func _ensure_rows() -> void:
 		_time_labels.append(time)
 	if _badge_label == null:
 		_badge_label = _ensure_label("BadgeLabel", Vector2(888.0, 160.0), Vector2(106.0, 40.0), 18)
-		_badge_label.text = "RECORD"
+		_badge_label.text = CoreBridge.get_menu_badge_text("RECORD")
 		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
 
 func _update_summary() -> void:
@@ -171,7 +171,7 @@ func _update_summary() -> void:
 		_character_caption.text = CoreBridge.get_time_records_character_text()
 		_character_caption.modulate = Color(1.0, 0.97, 0.84, 0.98) if time_attack_context else Color(0.80, 0.90, 1.0, 0.0)
 	if _badge_label:
-		_badge_label.text = "TA" if time_attack_context else "RECORD"
+		_badge_label.text = CoreBridge.get_menu_badge_text("TA" if time_attack_context else "RECORD")
 		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
 
 func _update_chrome() -> void:
@@ -245,7 +245,7 @@ func _update_rows() -> void:
 		_row_cards[i].size.y = 34.0 if time_attack_context and not mode_choice_view else 24.0
 		var is_selected := bool(row.get("selected", false))
 		var is_record_row := bool(row.get("recorded", false))
-		_row_labels[i].text = ("BEST %d" % [i + 1]) if time_attack_context and not mode_choice_view else str(row.get("name", ""))
+		_row_labels[i].text = CoreBridge.get_time_records_best_label_text(i) if time_attack_context and not mode_choice_view else str(row.get("name", ""))
 		_time_labels[i].text = str(row.get("time", ""))
 		_row_labels[i].size.x = 188.0 if time_attack_context and not mode_choice_view else 176.0
 		_time_labels[i].size.x = 216.0 if time_attack_context and not mode_choice_view else 248.0

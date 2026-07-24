@@ -100,6 +100,8 @@ func _handle_key_event(event: InputEventKey) -> void:
 	if event.echo:
 		return
 	var bit := _keycode_to_bit(event.keycode)
+	if bit == 0 and event.physical_keycode != event.keycode:
+		bit = _keycode_to_bit(event.physical_keycode)
 	if bit == 0:
 		return
 	if event.pressed:
@@ -120,25 +122,28 @@ func _handle_joypad_event(event: InputEventJoypadButton) -> void:
 
 func _keycode_to_bit(keycode: int) -> int:
 	match keycode:
-		81:
+		KEY_Q:
 			return CoreBridge.L_BUTTON
-		69:
+		KEY_E:
 			return CoreBridge.R_BUTTON
-		65, 16777231:
+		KEY_A, KEY_LEFT:
 			return CoreBridge.DPAD_LEFT
-		68, 16777233:
+		KEY_D, KEY_RIGHT:
 			return CoreBridge.DPAD_RIGHT
-		87, 16777232:
+		KEY_W, KEY_UP:
 			return CoreBridge.DPAD_UP
-		83, 16777234:
+		KEY_S, KEY_DOWN:
 			return CoreBridge.DPAD_DOWN
-		90:
+		KEY_Z, KEY_ENTER, KEY_KP_ENTER:
+			# The modern menu labels Enter as confirm; keep Z as the
+			# original face-button binding as well.
 			return CoreBridge.A_BUTTON
-		88, 32:
+		KEY_X, KEY_SPACE, KEY_ESCAPE:
+			# Escape is a desktop-friendly alias for the source B/back action.
 			return CoreBridge.B_BUTTON
-		16777221:
+		KEY_PAUSE:
 			return CoreBridge.START_BUTTON
-		16777222:
+		KEY_INSERT:
 			return CoreBridge.SELECT_BUTTON
 		_:
 			return 0
@@ -214,10 +219,10 @@ func _handle_menu_input(frame_input: int) -> void:
 			elif frame_input & CoreBridge.A_BUTTON:
 				CoreBridge.start_title_selection()
 			return
-		# title_screen.c's press-start task accepts START only; A and B are
-		# ignored until the Play Mode menu has opened.
+		# title_screen.c's press-start task uses START; the modern Godot prompt
+		# also exposes Z/touch confirm, so A follows the same start path.
 		if CoreBridge.is_press_start_screen():
-			if frame_input & CoreBridge.START_BUTTON:
+			if frame_input & (CoreBridge.START_BUTTON | CoreBridge.A_BUTTON):
 				CoreBridge.start_title_selection()
 			return
 		# Link communication is not a cursor menu in the original. Only START
@@ -312,6 +317,15 @@ func _handle_menu_input(frame_input: int) -> void:
 			CoreBridge.adjust_title_selection(-1)
 		elif frame_input & CoreBridge.DPAD_RIGHT:
 			CoreBridge.adjust_title_selection(1)
+		# title_screen.c checks B before A in the Single Player menu. Keep
+		# simultaneous input on the return path instead of opening the item.
+		if CoreBridge.is_single_player_menu_screen():
+			if frame_input & CoreBridge.B_BUTTON:
+				CoreBridge.open_save_options_from_title()
+				return
+			if frame_input & CoreBridge.A_BUTTON:
+				CoreBridge.start_title_selection()
+				return
 		# Course Select reserves a Left/Right frame for map travel; the original
 		# ignores confirmation when directional travel is pressed simultaneously.
 		var title_direction_busy := CoreBridge.is_course_select_screen() and bool(frame_input & (CoreBridge.DPAD_LEFT | CoreBridge.DPAD_RIGHT))
@@ -364,36 +378,46 @@ func _handle_menu_input(frame_input: int) -> void:
 			elif frame_input & CoreBridge.DPAD_UP:
 				CoreBridge.move_save_selection(-1)
 				return
-		# sound_test.c rejects A and B together for both play and exit.
-		if CoreBridge.is_sound_test_screen() and frame_input & CoreBridge.A_BUTTON and frame_input & CoreBridge.B_BUTTON:
+		# Task_OptionsScreenMain checks A/B before its D-pad branches. Keep
+		# simultaneous confirm-and-direction input on the current item.
+		if CoreBridge.is_options_main_screen():
+			if frame_input & CoreBridge.A_BUTTON:
+				CoreBridge.accept_save_selection()
+				return
+			if frame_input & CoreBridge.B_BUTTON:
+				CoreBridge.cancel_save_selection()
+				return
+		# sound_test.c evaluates all four directions independently, then A and
+		# B independently. Preserve that order for simultaneous input frames.
+		if CoreBridge.is_sound_test_screen():
+			if frame_input & CoreBridge.DPAD_LEFT:
+				CoreBridge.adjust_save_selection(-1)
+			if frame_input & CoreBridge.DPAD_RIGHT:
+				CoreBridge.adjust_save_selection(1)
+			if frame_input & CoreBridge.DPAD_UP:
+				CoreBridge.move_save_selection(-1)
+			if frame_input & CoreBridge.DPAD_DOWN:
+				CoreBridge.move_save_selection(1)
+			if frame_input & CoreBridge.A_BUTTON:
+				CoreBridge.accept_save_selection()
+			if frame_input & CoreBridge.B_BUTTON:
+				CoreBridge.cancel_save_selection()
 			return
 		# options_screen.c uses Down-first on its main menu and language
 		# screen, but Up-first on Player Data and profile name entry.
 		var save_vertical_up_first := CoreBridge.is_player_data_screen() or CoreBridge.is_name_entry_screen() or CoreBridge.is_multiplayer_records_screen() or CoreBridge.is_time_records_courses_view()
 		if save_vertical_up_first and frame_input & CoreBridge.DPAD_UP:
-			var save_selection_before := CoreBridge.get_save_menu_index()
 			CoreBridge.move_save_selection(-1)
-			var save_selection_moved := CoreBridge.get_save_menu_index() != save_selection_before
-			if save_selection_moved:
-				return
+			return
 		if not save_vertical_up_first and frame_input & CoreBridge.DPAD_DOWN:
-			var save_selection_before := CoreBridge.get_save_menu_index()
 			CoreBridge.move_save_selection(1)
-			var save_selection_moved := CoreBridge.get_save_menu_index() != save_selection_before
-			if save_selection_moved:
-				return
+			return
 		if save_vertical_up_first and frame_input & CoreBridge.DPAD_DOWN:
-			var save_selection_before := CoreBridge.get_save_menu_index()
 			CoreBridge.move_save_selection(1)
-			var save_selection_moved := CoreBridge.get_save_menu_index() != save_selection_before
-			if save_selection_moved:
-				return
+			return
 		if not save_vertical_up_first and frame_input & CoreBridge.DPAD_UP:
-			var save_selection_before := CoreBridge.get_save_menu_index()
 			CoreBridge.move_save_selection(-1)
-			var save_selection_moved := CoreBridge.get_save_menu_index() != save_selection_before
-			if save_selection_moved:
-				return
+			return
 		if frame_input & CoreBridge.DPAD_LEFT:
 			CoreBridge.adjust_save_selection(-1)
 		elif frame_input & CoreBridge.DPAD_RIGHT:
@@ -418,10 +442,6 @@ func _handle_menu_input(frame_input: int) -> void:
 			if CoreBridge.is_button_config_screen():
 				CoreBridge.trigger_save_special_action()
 		if frame_input & CoreBridge.B_BUTTON:
-			# edit_language_screen.c only handles B for a new profile;
-			# existing-profile language edits ignore it.
-			if CoreBridge.is_language_screen() and not CoreBridge.is_creating_new_profile():
-				return
 			if not CoreBridge.trigger_save_secondary_action():
 				CoreBridge.cancel_save_selection()
 		return
@@ -487,6 +507,7 @@ func _handle_menu_input(frame_input: int) -> void:
 		return
 
 	if CoreBridge.is_credits_screen():
+		# credits.c only accepts START for the replay skip path; slides advance automatically.
 		if CoreBridge.can_skip_credits() and frame_input & CoreBridge.START_BUTTON:
 			CoreBridge.skip_credits()
 		return

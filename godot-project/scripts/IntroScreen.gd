@@ -59,18 +59,19 @@ func _process(delta: float) -> void:
 		title_label.scale = Vector2.ONE * (1.0 + sin(_time * 2.0) * 0.01)
 	if prompt_label:
 		prompt_label.text = CoreBridge.get_intro_prompt_text()
-		prompt_label.modulate = Color(1.0, 0.96, 0.74, 1.0 if CoreBridge.get_intro_prompt_text() == "GO!" else 0.92)
+		prompt_label.modulate = Color(1.0, 0.96, 0.74, 1.0 if CoreBridge.is_intro_go_phase() else 0.92)
 		prompt_label.position = Vector2(186.0, 548.0)
 		prompt_label.size = Vector2(908.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if detail_label:
 		detail_label.text = CoreBridge.get_intro_detail_text()
-		detail_label.modulate = Color(0.88, 0.94, 1.0, 1.0 if CoreBridge.get_intro_prompt_text() == "GO!" else 0.84)
+		detail_label.modulate = Color(0.88, 0.94, 1.0, 1.0 if CoreBridge.is_intro_go_phase() else 0.84)
 		detail_label.position = Vector2(164.0, 664.0)
 		detail_label.size = Vector2(952.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_update_header_labels()
 	_update_countdown_label()
+	_update_stage_intro_timing(CoreBridge.get_intro_stage_frame())
 	_update_chrome()
 
 func _ensure_chrome() -> void:
@@ -177,7 +178,26 @@ func _update_countdown_label() -> void:
 	var countdown_text := CoreBridge.get_intro_countdown_text()
 	_countdown_label.text = countdown_text
 	_countdown_label.visible = not countdown_text.is_empty()
-	_countdown_label.modulate = Color(1.0, 0.96, 0.78, 1.0) if countdown_text == "GO!" else Color(0.94, 0.97, 1.0, 1.0)
+	_countdown_label.modulate = Color(1.0, 0.96, 0.78, 1.0) if CoreBridge.is_intro_go_phase() else Color(0.94, 0.97, 1.0, 1.0)
+
+func _update_stage_intro_timing(frame: float) -> void:
+	# stage_intro.c reveals the banner at frame 7, holds it through frame 120,
+	# then clears the masks by frame 150 before the countdown takes over.
+	var reveal := clampf((frame - 7.0) / 3.0, 0.0, 1.0)
+	var clear := 1.0
+	if frame >= 120.0 and frame < 136.0:
+		clear = lerpf(1.0, 0.24, (frame - 120.0) / 16.0)
+	elif frame >= 136.0:
+		clear = 0.24
+	var alpha := reveal * clear
+	if frame < 1.0:
+		alpha = 0.0
+	for label in [_zone_label, _act_label, _wheel_icon_label, _character_label]:
+		if label:
+			label.modulate.a = alpha
+	for i in range(_badge_cards.size()):
+		_badge_cards[i].modulate.a = alpha
+		_badge_labels[i].modulate.a = alpha
 
 func _update_badge_strip() -> void:
 	var badges: Array = CoreBridge.get_intro_stage_badges()
@@ -195,7 +215,7 @@ func _update_badge_strip() -> void:
 		_badge_labels[i].modulate = Color(1.0, 1.0, 1.0, 1.0) if unlocked else Color(0.42, 0.46, 0.54, 0.90)
 
 func _update_chrome() -> void:
-	var go_mode := CoreBridge.get_intro_prompt_text() == "GO!"
+	var go_mode := CoreBridge.is_intro_go_phase()
 	var character_accent := CoreBridge.get_intro_character_accent_color()
 	var pulse := absf(sin(_time * 0.9))
 	if _hero_glow:

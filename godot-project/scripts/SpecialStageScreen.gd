@@ -68,7 +68,7 @@ func _ensure_chrome() -> void:
 	_pause_card = _ensure_rect("PauseCard", Rect2(390.0, 300.0, 500.0, 160.0), Color(0.04, 0.06, 0.12, 0.98))
 	_pause_label = _ensure_label("PauseLabel", Vector2(410.0, 338.0), Vector2(460.0, 84.0), 24)
 	_pause_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_pause_label.text = "PAUSE\nA / B RESUME"
+	_pause_label.text = CoreBridge.get_special_stage_pause_text()
 	_backdrop.z_index = -5
 	_glow.z_index = -4
 	_panel.z_index = -3
@@ -110,7 +110,7 @@ func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: in
 
 func _update_results() -> void:
 	var results := CoreBridge.is_special_stage_results_screen()
-	var running := CoreBridge.is_special_stage_screen() and not results and CoreBridge.get_special_stage_title_text() == "SPECIAL STAGE RUN"
+	var running := CoreBridge.is_special_stage_running_screen() and not results
 	var paused := CoreBridge.is_special_stage_paused()
 	_ring_card.visible = results
 	_ring_label.visible = results
@@ -122,7 +122,7 @@ func _update_results() -> void:
 		_pause_label.text = CoreBridge.get_special_stage_pause_text()
 	if running:
 		var robo_state: Dictionary = CoreBridge.get_special_stage_guard_state()
-		_run_label.text = "TIME %03d     RINGS %03d / %03d     CHAIN x%d     PROGRESS %02d%%     ROBO %02d%%" % [ceili(CoreBridge.get_special_stage_timer()), CoreBridge.get_special_stage_ring_count(), CoreBridge.get_special_stage_run_target(), CoreBridge.get_special_stage_multiplier(), int(CoreBridge.get_special_stage_progress() * 100.0), int(float(robo_state.get("progress", 0.0)) * 100.0)]
+		_run_label.text = CoreBridge.get_special_stage_run_display_text(CoreBridge.get_special_stage_motion_text(), int(float(robo_state.get("progress", 0.0)) * 100.0))
 	var lane_index := CoreBridge.get_special_stage_lane()
 	var robo_state: Dictionary = CoreBridge.get_special_stage_guard_state()
 	var robo_near := running and bool(robo_state.get("near_player", false))
@@ -130,11 +130,11 @@ func _update_results() -> void:
 		_lane_cards[i].visible = running
 		_lane_cards[i].color = Color(0.92, 0.30, 0.24, 0.98) if robo_near and i == int(robo_state.get("lane", 1)) else (Color(0.28, 0.72, 0.94, 0.98) if i == lane_index else Color(0.12, 0.24, 0.38, 0.98))
 	if results:
-		_ring_label.text = "RINGS %03d    SCORE %05d" % [CoreBridge.get_special_stage_ring_count(), CoreBridge.get_special_stage_score()]
+		_ring_label.text = CoreBridge.get_special_stage_result_display_text()
 	for i in range(_emerald_slots.size()):
 		var target := results and CoreBridge.is_special_stage_target_reached() and i == CoreBridge.get_special_stage_emerald_index()
 		_emerald_slots[i].color = Color(0.26, 0.78, 0.50, 0.98) if target else Color(0.12, 0.20, 0.32, 0.98)
-		_emerald_labels[i].text = "NEW" if target else ""
+		_emerald_labels[i].text = CoreBridge.get_special_stage_new_label() if target else ""
 		_emerald_labels[i].modulate = Color(0.76, 1.0, 0.82, 1.0) if target else Color(0.48, 0.58, 0.70, 0.92)
 
 func _set_screen_visible(screen_visible: bool) -> void:

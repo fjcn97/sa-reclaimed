@@ -59,7 +59,7 @@ func _ready() -> void:
 	_ensure_titles()
 	_race_start_label = _ensure_label("RaceStartLabel", Vector2(430.0, 174.0), Vector2(420.0, 92.0), 64)
 	_race_start_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_race_start_label.text = "GO!"
+	_race_start_label.text = CoreBridge.get_hud_race_start_text()
 	_ensure_boss_panel()
 	_ensure_multiplayer_panel()
 
@@ -91,9 +91,15 @@ func _process(_delta: float) -> void:
 	if _race_start_label:
 		var race_start_visible := CoreBridge.is_race_start_message_visible()
 		var race_start_progress := CoreBridge.get_race_start_message_progress()
+		var remaining_frames := race_start_progress * 60.0
+		var race_start_scale := Vector2.ONE
+		if remaining_frames < 16.0:
+			# countdown.c expands the horizontal halves while collapsing their
+			# vertical scale during the final 16 frames of the source animation.
+			race_start_scale = Vector2(2.0 - (remaining_frames / 16.0), (remaining_frames + 1.0) / 16.0)
 		_race_start_label.visible = race_start_visible
 		_race_start_label.modulate = Color(1.0, 0.94, 0.42, race_start_progress)
-		_race_start_label.scale = Vector2.ONE * (1.0 + (1.0 - race_start_progress) * 0.18)
+		_race_start_label.scale = race_start_scale
 
 	var chrome := CoreBridge.get_hud_chrome_colors()
 	if score_label:
@@ -111,14 +117,14 @@ func _process(_delta: float) -> void:
 		rings_label.modulate = rings_color
 	if special_ring_label:
 		special_ring_label.visible = CoreBridge.is_special_ring_hud_visible()
-		special_ring_label.text = "SP RINGS  %d/7" % CoreBridge.get_hud_special_ring_count()
+		special_ring_label.text = CoreBridge.get_hud_special_ring_text()
 		special_ring_label.position = Vector2(34.0, 126.0)
 		special_ring_label.size = Vector2(164.0, 22.0)
 		special_ring_label.modulate = chrome.get("rings_value", Color(0.72, 0.96, 1.0, 1.0))
 	if powerup_label:
 		powerup_label.text = CoreBridge.get_hud_powerup_text()
 		powerup_label.visible = powerup_label.text != ""
-		powerup_label.modulate = Color(0.52, 0.92, 1.0, 1.0) if powerup_label.text == "SHIELD" else Color(1.0, 0.84, 0.28, 1.0)
+		powerup_label.modulate = Color(0.52, 0.92, 1.0, 1.0) if CoreBridge.is_hud_shield_active() else Color(1.0, 0.84, 0.28, 1.0)
 	if lives_label:
 		lives_label.text = "x %d" % max(0, state.lives - 1)
 		lives_label.position = Vector2(104.0, 646.0)
@@ -228,11 +234,11 @@ func _update_boss_panel(chrome: Dictionary) -> void:
 		_boss_panel.color = chrome.get("status_card", Color(0.18, 0.06, 0.10, 0.94))
 	if _boss_title:
 		_boss_title.visible = boss_visible
-		_boss_title.text = "BOSS  %02d/%02d" % [health, max_health]
+		_boss_title.text = CoreBridge.get_hud_boss_title_text(health, max_health)
 		_boss_title.modulate = Color(1.0, 0.82, 0.62, 1.0)
 	if _boss_phase:
 		_boss_phase.visible = boss_visible
-		_boss_phase.text = "PHASE  %s" % str(boss_state.get("phase", ""))
+		_boss_phase.text = CoreBridge.get_hud_boss_phase_text(str(boss_state.get("phase", "")))
 		_boss_phase.modulate = chrome.get("text", Color(0.96, 0.98, 1.0, 1.0))
 	if _boss_health_back:
 		_boss_health_back.visible = boss_visible
@@ -328,11 +334,11 @@ func _update_multiplayer_panel(chrome: Dictionary) -> void:
 		_mp_track.color = chrome.get("rings_title", Color(0.88, 0.62, 0.18, 0.88))
 	if _mp_start_flag:
 		_mp_start_flag.visible = multiplayer_visible
-		_mp_start_flag.text = "ST"
+		_mp_start_flag.text = CoreBridge.get_hud_multiplayer_start_flag_text()
 		_mp_start_flag.modulate = chrome.get("score_title", Color(1.0, 0.82, 0.52, 0.94))
 	if _mp_finish_flag:
 		_mp_finish_flag.visible = multiplayer_visible
-		_mp_finish_flag.text = "GOAL"
+		_mp_finish_flag.text = CoreBridge.get_hud_multiplayer_finish_flag_text()
 		_mp_finish_flag.modulate = chrome.get("score_title", Color(1.0, 0.82, 0.52, 0.94))
 
 	var rows: Array = CoreBridge.get_multiplayer_hud_rows()

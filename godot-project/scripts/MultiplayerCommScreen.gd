@@ -175,13 +175,13 @@ func _update_option_labels() -> void:
 		_meta_labels[i].position.y = 284.0 + float(i) * 66.0 + lift
 		_status_labels[i].position.y = 270.0 + float(i) * 66.0 + lift
 		var status_text := str(row.get("status", ""))
-		_option_cards[i].color = _get_option_card_color(is_selected, status_text)
+		_option_cards[i].color = _get_option_card_color(is_selected, bool(row.get("waiting", false)), bool(row.get("locked", false)))
 		_option_labels[i].text = str(row.get("label", ""))
 		_option_labels[i].modulate = _get_option_color(is_selected)
 		_meta_labels[i].text = str(row.get("value", ""))
 		_meta_labels[i].modulate = Color(1.0, 0.94, 0.86, 0.96) if is_selected else Color(0.24, 0.38, 0.60, 0.96)
 		_status_labels[i].text = status_text
-		_status_labels[i].modulate = _get_status_color(status_text)
+		_status_labels[i].modulate = _get_status_color(bool(row.get("ready", false)), bool(row.get("waiting", false)), bool(row.get("locked", false)))
 
 func _update_player_labels() -> void:
 	var rows: Array = CoreBridge.get_multiplayer_comm_player_rows()
@@ -202,10 +202,10 @@ func _update_summary() -> void:
 		_summary_label.text = CoreBridge.get_multiplayer_comm_summary_text()
 		_summary_label.modulate = Color(0.34, 0.22, 0.12, 0.96)
 	if _signal_label:
-		_signal_label.text = "LINK" if CoreBridge.get_title_phase() == CoreBridge.TITLE_PHASE_MULTI_CONNECT else "SYNC"
+		_signal_label.text = CoreBridge.get_multiplayer_comm_signal_text()
 		_signal_label.modulate = Color(1.0, 1.0, 1.0, 0.98)
 	if _section_label:
-		_section_label.text = "PLAYER STATUS"
+		_section_label.text = CoreBridge.get_multiplayer_comm_section_text()
 		_section_label.modulate = Color(0.34, 0.22, 0.12, 0.96)
 
 func _get_option_color(selected: bool) -> Color:
@@ -213,25 +213,23 @@ func _get_option_color(selected: bool) -> Color:
 		return Color(1.0, 1.0, 1.0, 1.0) if selected else Color(0.10, 0.21, 0.43, 0.98)
 	return Color(1.0, 1.0, 1.0, 1.0) if selected else Color(0.10, 0.21, 0.43, 0.98)
 
-func _get_option_card_color(selected: bool, status: String) -> Color:
+func _get_option_card_color(selected: bool, waiting: bool, locked: bool) -> Color:
 	if selected:
-		if status == "WAIT":
+		if waiting:
 			return Color(0.96, 0.56, 0.22, 0.98)
 		return Color(0.16, 0.32, 0.60, 0.98)
-	if status == "LOCKED":
+	if locked:
 		return Color(0.86, 0.86, 0.88, 0.94)
 	return Color(0.88, 0.92, 1.0, 1.0)
 
-func _get_status_color(status: String) -> Color:
-	match status:
-		"READY":
-			return Color(0.14, 0.56, 0.22, 1.0)
-		"WAIT":
-			return Color(0.86, 0.42, 0.14, 1.0)
-		"LOCKED":
-			return Color(0.48, 0.50, 0.56, 1.0)
-		_:
-			return Color(0.34, 0.40, 0.52, 0.92)
+func _get_status_color(ready: bool, waiting: bool, locked: bool) -> Color:
+	if ready:
+		return Color(0.14, 0.56, 0.22, 1.0)
+	if waiting:
+		return Color(0.86, 0.42, 0.14, 1.0)
+	if locked:
+		return Color(0.48, 0.50, 0.56, 1.0)
+	return Color(0.34, 0.40, 0.52, 0.92)
 
 func _update_chrome() -> void:
 	var chrome := CoreBridge.get_multiplayer_comm_chrome_colors()

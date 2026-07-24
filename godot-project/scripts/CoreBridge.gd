@@ -80,6 +80,10 @@ const ENTITY_FUNNEL_SPHERE = 63
 const ENTITY_MUSIC_ENTRY = 64
 const ENTITY_DAMAGE_REGION = 65
 const ENTITY_DECORATION = 66
+const ENTITY_NOTE_BLOCK = 67
+const ENTITY_NOTE_SPHERE = 68
+const ENTITY_FLYING_HANDLE = 69
+const ENTITY_NOTE_PARTICLE = 70
 const SOURCE_MAP_LOADER := preload("res://scripts/SourceMapLoader.gd")
 const GRAVITY_KIND_DOWN = 0
 const GRAVITY_KIND_UP = 1
@@ -131,10 +135,11 @@ const ENDING_VARIANT_EXTRA = 2
 const GAME_STATE_CREDITS_END = 16
 const GAME_STATE_CHARACTER_UNLOCK = 17
 const GAME_STATE_FINAL_INTRO = 18
-const CLEAR_COUNT_STEP_INTERVAL := 4.0 / 60.0
-# SA2's course-start countdown runs for five seconds plus ten frames unless
-# the single-player intro is skipped, in which case it starts at three.
-const INTRO_TOTAL_TIME = 5.1666667
+# stage_intro.c holds the course card for 200 GBA frames before handing off to
+# countdown.c. The normal countdown then runs for five seconds plus ten frames.
+const STAGE_INTRO_DURATION = 200.0 / 60.0
+const COURSE_COUNTDOWN_DURATION = 310.0 / 60.0
+const INTRO_TOTAL_TIME = STAGE_INTRO_DURATION + COURSE_COUNTDOWN_DURATION
 const INTRO_COUNTDOWN_START = 3.0
 const INTRO_GO_TIME = 0.35
 const INTRO_BOOST_WINDOW = 5.0 / 60.0
@@ -145,6 +150,21 @@ const JUMP_BUFFER_DURATION = 0.12
 const CREAM_FLIGHT_DURATION = 4.0
 const TAILS_FLIGHT_DURATION = 8.0
 const MAX_COURSE_TIME_SECONDS = 600.0
+# game_over.c starts the normal card at G_START_X (140 frames), then runs a
+# 120-frame background fade and a 140-frame music wait before returning to the
+# title. TIME OVER uses the shorter 140-frame stage restart path.
+const GAME_OVER_DURATION_SECONDS = 400.0 / 60.0
+const TIME_OVER_DURATION_SECONDS = 140.0 / 60.0
+# stage_results.c holds the completed score card for 310 frames after the
+# bonus counters finish; fast-forwarding with A starts the shorter 160-frame
+# tail used by the source counter state.
+const CLEAR_RESULT_TAIL_SECONDS = 310.0 / 60.0
+const CLEAR_RESULT_FAST_TAIL_SECONDS = 160.0 / 60.0
+# multiplayer_lobby.c waves Cheese for 120 frames before closing the room.
+const MULTIPLAYER_LOBBY_EXIT_DURATION = 120.0 / 60.0
+# time_attack_results.c fades for 16 frames before opening the lobby after
+# A/START confirms the result.
+const TIME_ATTACK_RESULTS_EXIT_FADE_SECONDS = 16.0 / 60.0
 const TITLE_PHASE_PRESS_START = 0
 const TITLE_PHASE_PLAY_MODE = 1
 const TITLE_PHASE_SINGLE_PLAYER = 2
@@ -240,11 +260,13 @@ class EntityState:
 	var origin_x: float = 0.0
 	var origin_y: float = 0.0
 	var previous_world_y: float = 0.0
+	var trail_positions: Array = []
 	var target_x: float = 0.0
 	var target_y: float = 0.0
 	var effect_offset: float = 0.0
 	var state_timer: float = 0.0
 	var enemy_profile: int = 0
+	var boss_profile: int = 0
 	var health: int = 0
 	var max_health: int = 0
 	var hit_timer: float = 0.0
@@ -262,6 +284,20 @@ class EntityState:
 	var floating_spring_amplitude_x: float = 0.0
 	var floating_spring_amplitude_y: float = 0.0
 	var floating_spring_phase: float = 0.0
+	var note_block: bool = false
+	var note_sphere: bool = false
+	var note_kind: int = 0
+	var note_health: int = 3
+	var note_timer: float = 0.0
+	var note_angle: float = 0.0
+	var note_offset_x: float = 0.0
+	var note_offset_y: float = 0.0
+	var note_particle: bool = false
+	var note_particle_delay: float = 0.0
+	var bouncy_landing_speed: int = 0
+	var bouncy_launch_frame: int = 0
+	var bouncy_spring_stiffness: float = 9.0
+	var bouncy_landing_position: float = 0.0
 	var light_bridge: bool = false
 	var light_bridge_type: int = 0
 	var light_bridge_phase: float = 0.0
@@ -271,6 +307,10 @@ class EntityState:
 	var turnaround_bar: bool = false
 	var turnaround_direction: float = 1.0
 	var turnaround_timer: float = 0.0
+	var turnaround_entry_speed: float = 0.0
+	var ramp_incline: bool = false
+	var pipe_exit_back_layer: bool = false
+	var pipe_exit_uncurl: bool = false
 	var keyboard: bool = false
 	var keyboard_type: int = 0
 	var keyboard_timer: float = 0.0
@@ -284,12 +324,16 @@ class EntityState:
 	var german_flute: bool = false
 	var german_flute_kind: int = 0
 	var german_flute_timer: float = 0.0
+	var german_flute_phase: int = 0
 	var small_windmill: bool = false
 	var small_windmill_type: int = 0
 	var small_windmill_timer: float = 0.0
 	var small_windmill_angle: float = 0.0
+	var small_windmill_touch_angle: int = 0
 	var chord: bool = false
 	var chord_timer: float = 0.0
+	var chord_phase: int = 0
+	var chord_bounce_speed: float = 240.0
 	var half_pipe: bool = false
 	var half_pipe_direction: float = 1.0
 	var half_pipe_active: bool = false
@@ -303,9 +347,11 @@ class EntityState:
 	var crane_phase: float = 0.0
 	var crane_hook_x: float = 0.0
 	var crane_hook_y: float = 0.0
+	var crane_launch_speed: float = 450.0
 	var ceiling_slope: bool = false
 	var ceiling_slope_variant: int = 0
 	var ceiling_slope_timer: float = 0.0
+	var ceiling_slope_latched: bool = false
 	var gapped_loop: bool = false
 	var gapped_loop_direction: float = 1.0
 	var gapped_loop_active: bool = false
@@ -319,6 +365,7 @@ class EntityState:
 	var music_entry_pipe: bool = false
 	var music_entry_kind: int = 0
 	var music_entry_timer: float = 0.0
+	var music_entry_duration: float = 1.1
 	var damage_region: bool = false
 	var decoration: bool = false
 	var decoration_id: int = 0
@@ -326,6 +373,14 @@ class EntityState:
 	var cannon_angle: float = 0.0
 	var cannon_active: bool = false
 	var cannon_timer: float = 0.0
+	var rotating_handle_angle: float = 0.0
+	var rotating_handle_speed: float = 0.0
+	var flying_handle: bool = false
+	var flying_handle_top_y: float = 0.0
+	var flying_handle_bottom_y: float = 0.0
+	var flying_handle_speed_y: float = 0.0
+	var flying_handle_phase: float = 0.0
+	var flying_handle_cooldown: float = 0.0
 	var launcher_direction: float = 1.0
 	var launcher_gravity_up: bool = false
 	var launcher_active: bool = false
@@ -346,6 +401,8 @@ class PlatformState:
 	var active: bool = true
 	var crumble_delay: float = -1.0
 	var crumble_timer: float = -1.0
+	var crumble_phase: int = 0 # 0 stable, 1 warning, 2 breaking, 3 gone
+	var crumble_break_timer: float = -1.0
 	var moving: bool = false
 	var motion_axis: int = 0
 	var motion_amplitude: float = 0.0
@@ -435,10 +492,12 @@ var _player_layer: int = 0
 var _corkscrew_timer: float = 0.0
 var _corkscrew_origin: Vector2 = Vector2.ZERO
 var _corkscrew_direction: float = 1.0
+var _corkscrew_active_entity: EntityState = null
 var _pipe_active: bool = false
 var _pipe_origin: Vector2 = Vector2.ZERO
 var _pipe_target: Vector2 = Vector2.ZERO
 var _pipe_timer: float = 0.0
+var _pipe_target_entity: EntityState = null
 var _hook_active: bool = false
 var _hook_origin: Vector2 = Vector2.ZERO
 var _hook_target: Vector2 = Vector2.ZERO
@@ -479,6 +538,7 @@ var _clear_previous_best_time: float = -1.0
 var _clear_new_best_time: bool = false
 var _clear_time_attack_record_rank: int = 0
 var _time_attack_result_timer: float = 0.0
+var _time_attack_exit_timer: float = 0.0
 var _clear_time_bonus_remaining: int = 0
 var _clear_ring_bonus_remaining: int = 0
 var _clear_special_ring_bonus_remaining: int = 0
@@ -492,11 +552,11 @@ var _game_over_timer: float = 0.0
 var _game_over_input_lock_timer: float = 0.0
 var _game_over_time_over: bool = false
 var _chaos_emeralds_timer: float = 0.0
-## missing_emeralds.c holds its notification card for 0xF0 frames.
-var _chaos_emeralds_duration: float = 4.0
+## missing_emeralds.c holds the card for 0xF0 frames, fades, then waits 0xB4.
+var _chaos_emeralds_duration: float = 7.0
 var _chaos_emeralds_message_seen: bool = false
 var _missing_emeralds_timer: float = 0.0
-var _missing_emeralds_duration: float = 4.0
+var _missing_emeralds_duration: float = 7.0
 var _to_be_continued_timer: float = 0.0
 # endings.c holds the transition for 0xB4 frames before the ending cutscene.
 var _to_be_continued_duration: float = 3.0
@@ -505,7 +565,8 @@ var _sega_logo_timer: float = 0.0
 var _sega_logo_duration: float = 2.0
 var _sonic_team_timer: float = 0.0
 var _sonic_team_duration: float = 2.0
-var _chaos_emerald_mask: int = 0
+var _chaos_emerald_mask: int = 0 # Legacy single-character save field.
+var _chaos_emerald_masks: Array = [0, 0, 0, 0, 0]
 var _credits_timer: float = 0.0
 var _credits_page: int = 0
 var _credits_page_duration: float = 2.5
@@ -517,8 +578,23 @@ var _copyright_timer: float = 0.0
 var _copyright_duration: float = 4.5
 var _credits_end_timer: float = 0.0
 var _credits_end_duration: float = 4.5
+var _credits_end_show_missing_emeralds: bool = false
+const CREDITS_SLIDE_GROUPS := [6, 6, 8, 5]
+const CREDITS_SOURCE_TILES := [
+	"credits_0", "credits_1", "credits_2", "credits_3", "credits_4",
+	"credits_5", "credits_6", "credits_7", "credits_8", "credits_9",
+	"credits_10", "credits_11", "credits_12", "credits_13", "credits_14",
+	"credits_15", "credits_16", "credits_17", "credits_18", "credits_19",
+	"credits_20", "credits_21", "credits_22", "credits_23", "credits_24",
+]
+const CREDITS_INTRO_DURATION: float = 180.0 / 60.0
+const CREDITS_SLIDE_DURATION: float = 150.0 / 60.0
+const CHARACTER_UNLOCK_SEGMENT_COUNT = 4
+const CHARACTER_UNLOCK_SEGMENT_FRAMES = 340
+const CHARACTER_UNLOCK_FINAL_FRAMES = 300
 var _character_unlock_timer: float = 0.0
-var _character_unlock_duration: float = 5.0
+var _character_unlock_segment: int = 0
+var _character_unlock_scene_frame: float = 0.0
 var _character_unlock_pending: int = -1
 var _character_select_intro_timer: float = 0.0
 var _play_mode_intro_timer: float = 0.0
@@ -526,7 +602,6 @@ var _time_attack_mode_intro_timer: float = 0.0
 var _multiplayer_mode_intro_timer: float = 0.0
 var _special_stage_timer: float = 0.0
 var _special_stage_entry_duration: float = 2.6
-var _special_stage_results_duration: float = 9.0
 var _special_stage_run_duration: float = 120.0
 var _special_stage_phase: int = 0
 var _special_stage_pending: bool = false
@@ -534,6 +609,7 @@ var _special_stage_ring_count: int = 0
 var _special_stage_score: int = 0
 var _special_stage_points_remaining: int = 0
 var _special_stage_bonus_remaining: int = 0
+var _special_stage_result_hold_started: bool = false
 var _special_stage_emerald_index: int = 0
 var _special_stage_lane: int = 1
 var _special_stage_progress: float = 0.0
@@ -551,6 +627,8 @@ var _special_stage_robo_zone_speeds: Array = [0.18, 0.21, 0.24, 0.27, 0.30, 0.33
 var _special_stage_robo_lane_timer: float = 0.0
 var _special_stage_robo_cooldown: float = 0.0
 var _special_stage_run_target: int = 300
+var _special_stage_speed: float = 1.0
+var _special_stage_jump_timer: float = 0.0
 # The source marks special-ring objects with unk7. These compact checkpoints
 # preserve that distinction while the full spatial object field is migrated.
 var _special_stage_ring_targets: Array = [0, 2, 1, 0, 2, 1, 1, 0, 2, 1, 0, 2, 1, 0, 2, 1, 1, 0, 2, 1]
@@ -580,10 +658,12 @@ var _save_reset_pending: bool = false
 var _unlocked_level_index: int = 0
 var _character_unlocked_level_indices: Array = [0, 0, 0, 0, 0]
 var _best_scores: Array = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+var _profile_score: int = 0
 var _level_cleared_flags: Array = [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
 var _time_attack_best_times: Dictionary = {}
 var _time_attack_record_tables: Dictionary = {}
 var _save_path: String = "user://save_data.json"
+var _save_id: int = 0
 const TOUCH_CONTROLS_OVERRIDE_SETTING := "sa_reclaimed/debug/show_touch_controls_on_desktop"
 var _title_phase: int = TITLE_PHASE_PRESS_START
 var _title_menu_index: int = 0
@@ -595,7 +675,9 @@ var _options_mode: int = OPTIONS_MODE_MAIN
 var _options_menu_index: int = 0
 var _player_data_menu_index: int = 0
 var _difficulty_index: int = 0
+var _difficulty_before_edit: int = 0
 var _time_limit_enabled: bool = true
+var _time_limit_before_edit: bool = true
 var _language_index: int = 1
 var _language_index_before_edit: int = 1
 var _button_config_index: int = 0
@@ -741,9 +823,12 @@ var _multiplayer_lobby_cursor: int = 0
 var _multiplayer_lobby_waiting: bool = false
 var _multiplayer_lobby_wait_timer: float = 0.0
 var _multiplayer_lobby_wait_duration: float = 0.8
+var _multiplayer_lobby_exit_timer: float = 0.0
 var _multiplayer_outcome_type: int = 0
 var _multiplayer_outcome_timer: float = 0.0
-var _multiplayer_outcome_duration: float = 1.8
+# communication_outcome.c holds the result for 0x78 frames, then raises the
+# blend for 16 more frames before entering character select/title.
+var _multiplayer_outcome_duration: float = (120.0 + 16.0) / 60.0
 var _multiplayer_outcome_return_phase: int = TITLE_PHASE_MULTI_CONNECT
 var _multiplayer_course_results_committed: bool = false
 var _time_attack_lobby_cursor: int = 0
@@ -754,10 +839,20 @@ var _course_select_travel_duration: float = 0.18
 var _course_select_settle_timer: float = 0.0
 var _course_select_settle_duration: float = 0.10
 var _course_select_confirm_pending: bool = false
+const COURSE_UNLOCK_PHASE_PATH := 0
+const COURSE_UNLOCK_PHASE_SCROLL_BACK := 1
+const COURSE_UNLOCK_PHASE_SCROLL_NEXT := 2
+const COURSE_UNLOCK_PHASE_PAUSE := 3
+const COURSE_UNLOCK_PATH_FRAMES := 18
+const COURSE_UNLOCK_PAUSE_FRAMES := 61
 var _course_select_unlock_timer: float = 0.0
-var _course_select_unlock_duration: float = 2.0
+var _course_select_unlock_phase: int = COURSE_UNLOCK_PHASE_PATH
+var _course_select_unlock_phase_timer: float = 0.0
+var _course_select_unlock_phase_duration: float = 0.0
 var _course_select_start_timer: float = 0.0
 var _course_select_start_duration: float = 0.24
+var _course_select_intro_timer: float = 0.0
+var _course_select_intro_duration: float = 0.34
 var _course_select_from_index: int = 0
 var _course_select_to_index: int = 0
 var _run_from_time_attack: bool = false
@@ -775,6 +870,7 @@ var _tiny_chao_action_text: String = "WELCOME TO THE GARDEN"
 var _tiny_chao_selected_index: int = 0
 var _tiny_chao_roster: Array = _get_default_tiny_chao_roster()
 var _true_area_unlocked: bool = false
+var _extra_zone_status: int = 0
 var _character_names: Array = ["SONIC", "CREAM", "TAILS", "KNUCKLES", "AMY"]
 var _character_descriptions: Array = [
 	"BALANCED SPEED TYPE",
@@ -793,7 +889,7 @@ const PROFILE_NAME_CHARS := [
 
 func _ready() -> void:
 	_load_save_data()
-	if not FileAccess.file_exists(_save_path) or not has_profile_name():
+	if _save_id == 0 or not has_profile_name():
 		open_profile_name_from_game_start()
 	else:
 		_open_boot_intro()
@@ -825,6 +921,7 @@ func reset_to_title() -> void:
 	_clear_new_best_time = false
 	_clear_time_attack_record_rank = 0
 	_time_attack_result_timer = 0.0
+	_time_attack_exit_timer = 0.0
 	_clear_time_bonus_remaining = 0
 	_clear_ring_bonus_remaining = 0
 	_clear_special_ring_bonus_remaining = 0
@@ -845,7 +942,10 @@ func reset_to_title() -> void:
 	_sonic_team_timer = 0.0
 	_copyright_timer = 0.0
 	_credits_end_timer = 0.0
+	_credits_end_show_missing_emeralds = false
 	_character_unlock_timer = 0.0
+	_character_unlock_segment = 0
+	_character_unlock_scene_frame = 0.0
 	_character_unlock_pending = -1
 	_character_select_intro_timer = 0.0
 	_play_mode_intro_timer = 0.0
@@ -868,8 +968,11 @@ func reset_to_title() -> void:
 	_special_stage_robo_speed = 0.18
 	_special_stage_robo_lane_timer = 0.35
 	_special_stage_robo_cooldown = 0.0
+	_special_stage_speed = 1.0
+	_special_stage_jump_timer = 0.0
 	_special_stage_points_remaining = 0
 	_special_stage_bonus_remaining = 0
+	_special_stage_result_hold_started = false
 	_save_reset_pending = false
 	_status_text = get_title_prompt_text()
 	_title_text = "SONIC ADVANCE RECLAIMED"
@@ -923,6 +1026,7 @@ func reset_to_title() -> void:
 	_multiplayer_lobby_cursor = 0
 	_multiplayer_lobby_waiting = false
 	_multiplayer_lobby_wait_timer = 0.0
+	_multiplayer_lobby_exit_timer = 0.0
 	_multiplayer_outcome_type = 0
 	_multiplayer_outcome_timer = 0.0
 	_multiplayer_outcome_return_phase = TITLE_PHASE_MULTI_CONNECT
@@ -940,7 +1044,6 @@ func reset_to_title() -> void:
 	_run_from_time_attack = false
 	_run_from_multiplayer = false
 	_tiny_chao_session_id = "TCG-0000"
-	_tiny_chao_unlocked = false
 	_tiny_chao_play_x = 0.0
 	_tiny_chao_play_y = 0.0
 	_tiny_chao_hunger = 50
@@ -950,7 +1053,6 @@ func reset_to_title() -> void:
 	_tiny_chao_action_timer = 0.0
 	_tiny_chao_action_text = "WELCOME TO THE GARDEN"
 	_tiny_chao_selected_index = 0
-	_tiny_chao_roster = _get_default_tiny_chao_roster()
 	_level_state = LevelState.new()
 	_level_state.level_id = 0
 	_level_state.name = "Title Screen"
@@ -1013,6 +1115,11 @@ func skip_multiplayer_mode_intro() -> void:
 		return
 	_multiplayer_mode_intro_timer = minf(_multiplayer_mode_intro_timer, 32.0 / 60.0)
 
+func get_multiplayer_mode_intro_progress() -> float:
+	if not is_multiplayer_mode_screen():
+		return 1.0
+	return clampf(1.0 - (_multiplayer_mode_intro_timer / (47.0 / 60.0)), 0.0, 1.0)
+
 func open_title_screen_at_time_attack_menu(selected_index: int = 0, notice_text: String = "") -> void:
 	reset_to_title()
 	_title_phase = TITLE_PHASE_TIME_ATTACK
@@ -1023,6 +1130,11 @@ func open_title_screen_at_time_attack_menu(selected_index: int = 0, notice_text:
 
 func is_time_attack_mode_input_ready() -> bool:
 	return _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_TIME_ATTACK and _time_attack_mode_intro_timer <= 0.0
+
+func get_time_attack_mode_intro_progress() -> float:
+	if not is_time_attack_mode_screen():
+		return 1.0
+	return clampf(1.0 - (_time_attack_mode_intro_timer / (47.0 / 60.0)), 0.0, 1.0)
 
 func skip_time_attack_mode_intro() -> void:
 	if not (_game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_TIME_ATTACK):
@@ -1070,6 +1182,7 @@ func open_multiplayer_lobby_screen(cursor: int = 0, notice_text: String = "") ->
 	_multiplayer_lobby_cursor = clampi(cursor, 0, max(get_multiplayer_lobby_items().size() - 1, 0))
 	_multiplayer_lobby_waiting = false
 	_multiplayer_lobby_wait_timer = 0.0
+	_multiplayer_lobby_exit_timer = 0.0
 	_title_notice_text = notice_text
 	_status_text = get_title_prompt_text()
 
@@ -1118,7 +1231,13 @@ func open_course_select_screen(return_phase: int = TITLE_PHASE_TIME_ATTACK_LOBBY
 	_course_select_travel_timer = 0.0
 	_course_select_settle_timer = 0.0
 	_course_select_confirm_pending = false
-	_course_select_unlock_timer = _course_select_unlock_duration if unlock_cutscene else 0.0
+	_course_select_unlock_phase = COURSE_UNLOCK_PHASE_PATH
+	_course_select_unlock_phase_timer = 0.0
+	_course_select_unlock_phase_duration = 0.0
+	_course_select_unlock_timer = 0.0
+	_course_select_intro_timer = _course_select_intro_duration
+	if unlock_cutscene:
+		_start_course_select_unlock_cutscene()
 	_course_select_start_timer = 0.0
 	_course_select_from_index = _selected_level_index
 	_course_select_to_index = _selected_level_index
@@ -1191,7 +1310,9 @@ func init_level(level_id: int, from_time_attack: bool = false, from_multiplayer:
 	_elapsed_time = 0.0
 	_velocity_y = 0.0
 	_level_complete = false
-	_intro_timer = INTRO_TOTAL_TIME
+	# Keep the stage-intro presentation and the course countdown as separate
+	# phases while retaining one timer for the compact Godot screen.
+	_intro_timer = STAGE_INTRO_DURATION if _is_boss_intro() else INTRO_TOTAL_TIME
 	_final_intro_timer = 0.0
 	_final_intro_pending = false
 	_intro_primed = false
@@ -1326,18 +1447,18 @@ func physics_tick(held_input: int, frame_input: int, delta: float) -> void:
 			_status_text = "GO!"
 		elif _intro_timer <= INTRO_COUNTDOWN_START:
 			_intro_primed = true
-			_status_text = get_intro_countdown_text()
+			_status_text = "BOSS READY" if _is_boss_intro() else get_intro_countdown_text()
 		else:
 			_status_text = "READY!"
 		if _intro_timer <= 0.0:
 			_game_state = GAME_STATE_PLAYING
-			# The original creates a separate one-second race-start message after
-			# releasing the countdown lock.
-			_race_start_message_timer = 1.0
+			# countdown.c displays the race-start message for normal courses;
+			# boss intros hand control straight to the encounter.
+			_race_start_message_timer = 0.0 if _is_boss_intro() else 1.0
 			_start_boost_timer = INTRO_BOOST_DURATION if _intro_speed_boost and not _intro_boost_disabled else 0.0
 			_player_state.speed_x = INTRO_BOOST_SPEED if _start_boost_timer > 0.0 else 0.0
 			_player_state.ground_speed = _player_state.speed_x
-			_status_text = "OUTRUN RIVALS" if _run_from_multiplayer else "REACH THE GOAL"
+			_status_text = "DEFEAT THE BOSS" if _is_boss_intro() else ("OUTRUN RIVALS" if _run_from_multiplayer else "REACH THE GOAL")
 		_update_camera()
 		return
 
@@ -1350,7 +1471,7 @@ func physics_tick(held_input: int, frame_input: int, delta: float) -> void:
 			# stage_results.c begins accepting A on the frame the 150-frame
 			# opening delay expires; the timer is decremented later this tick.
 			if frame_input & A_BUTTON and _clear_count_delay_timer <= delta and not is_final_or_extra_stage:
-				_finish_clear_counting()
+				_finish_clear_counting(true)
 		else:
 			if frame_input & START_BUTTON or frame_input & A_BUTTON:
 				clear_replay()
@@ -1360,24 +1481,7 @@ func physics_tick(held_input: int, frame_input: int, delta: float) -> void:
 		return
 
 	if _game_state == GAME_STATE_PAUSED:
-		var a_held := bool(held_input & A_BUTTON)
-		if _pause_a_previous_held and not a_held:
-			if _pause_a_hold_lock:
-				# The A release that created the pause is consumed by the source.
-				_pause_a_hold_lock = false
-			else:
-				_pause_a_previous_held = false
-				confirm_pause_selection()
-				_update_camera()
-				return
-		_pause_a_previous_held = a_held
-		# pause_menu.c records whether A was already held when the menu was
-		# created; that initial release must not confirm Continue.
-		if _pause_a_hold_lock and not (held_input & A_BUTTON):
-			_pause_a_hold_lock = false
-		if frame_input & START_BUTTON:
-			resume_game()
-		_update_camera()
+		_update_pause_menu_input(held_input, frame_input)
 		return
 
 	if _demo_mode:
@@ -1405,11 +1509,18 @@ func physics_tick(held_input: int, frame_input: int, delta: float) -> void:
 	_glide_timer = maxf(0.0, _glide_timer - delta)
 	var time_limit_active := _run_from_time_attack or _time_limit_enabled
 	if time_limit_active and _elapsed_time >= MAX_COURSE_TIME_SECONDS:
+		# stage.c sends time-attack deaths straight back to its lobby; the
+		# TIME OVER card is reserved for the regular stage life-loss path.
+		if _run_from_time_attack:
+			open_time_attack_lobby(_time_attack_boss_mode)
+			_update_camera()
+			return
 		_open_game_over(true)
 		_update_camera()
 		return
 	_update_enemy_motion(delta)
 	_update_flying_spring_motion(delta)
+	_update_flying_handle_state(delta)
 	_update_slidy_ice_state()
 	_update_slowing_snow_state()
 	_update_light_bridge_state(delta)
@@ -1419,10 +1530,12 @@ func physics_tick(held_input: int, frame_input: int, delta: float) -> void:
 	_update_pole_state()
 	_update_light_globe_state(delta)
 	_update_windup_stick_state(delta)
-	_update_german_flute_state(delta)
+	_update_german_flute_state(delta, held_input)
 	_update_small_windmill_state(delta)
 	_update_chord_state(delta)
-	_update_half_pipe_state()
+	_update_note_state(delta)
+	_update_note_particle_state(delta)
+	_update_half_pipe_state(frame_input)
 	_update_iron_ball_state(delta)
 	_update_crane_state(delta)
 	_update_ceiling_slope_state(delta)
@@ -1565,7 +1678,7 @@ func physics_tick(held_input: int, frame_input: int, delta: float) -> void:
 	_player_state.anim_id = 1 if _player_state.is_grounded and move_direction != 0 else 0
 	_player_state.rotation = int(clamp(_velocity_y / 8.0, -16.0, 16.0))
 
-	_handle_entity_interactions(held_input, delta)
+	_handle_entity_interactions(held_input, frame_input, delta)
 	_sync_grind_effect()
 	_store_boost_effect_position()
 	_update_camera()
@@ -1573,11 +1686,18 @@ func physics_tick(held_input: int, frame_input: int, delta: float) -> void:
 func advance_ui_timers(delta: float, held_input: int = 0, frame_input: int = 0) -> void:
 	_update_screen_fade(delta)
 	_race_start_message_timer = maxf(0.0, _race_start_message_timer - delta)
+	# Paused gameplay does not enter physics_tick in PlayerController; its
+	# release-sensitive pause task must advance on this UI path instead.
+	if _game_state == GAME_STATE_PAUSED:
+		_update_pause_menu_input(held_input, frame_input)
+		return
 	if _game_state == GAME_STATE_FINAL_INTRO:
 		_final_intro_timer = maxf(0.0, _final_intro_timer - delta)
 		if _final_intro_timer <= 0.0:
 			skip_final_intro()
 		return
+	if _title_phase == TITLE_PHASE_COURSE_SELECT and _course_select_intro_timer > 0.0:
+		_course_select_intro_timer = maxf(0.0, _course_select_intro_timer - delta)
 	# Course Select is a menu state, so its map and launch timers must advance
 	# here rather than in the gameplay-only physics tick.
 	if _course_select_travel_timer > 0.0:
@@ -1592,7 +1712,7 @@ func advance_ui_timers(delta: float, held_input: int = 0, frame_input: int = 0) 
 			_title_notice_text = "STARTING %s" % get_selected_level_text()
 			_status_text = get_title_prompt_text()
 	if _course_select_unlock_timer > 0.0:
-		_course_select_unlock_timer = maxf(0.0, _course_select_unlock_timer - delta)
+		_advance_course_select_unlock_cutscene(delta)
 	if _course_select_start_timer > 0.0:
 		_course_select_start_timer = maxf(0.0, _course_select_start_timer - delta)
 		if _course_select_start_timer <= 0.0 and _title_phase == TITLE_PHASE_COURSE_SELECT:
@@ -1607,6 +1727,11 @@ func advance_ui_timers(delta: float, held_input: int = 0, frame_input: int = 0) 
 		if _multiplayer_outcome_timer <= 0.0 and _title_phase == TITLE_PHASE_MULTIPLAYER_OUTCOME:
 			_resolve_multiplayer_outcome()
 			return
+	if _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_MULTIPLAYER_LOBBY and _multiplayer_lobby_exit_timer > 0.0:
+		_multiplayer_lobby_exit_timer = maxf(0.0, _multiplayer_lobby_exit_timer - delta)
+		if _multiplayer_lobby_exit_timer <= 0.0:
+			open_title_screen_and_skip_intro()
+		return
 	if _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_MULTI_CONNECT and _multiplayer_pak_mode == 1 and is_singlepak_transfer_started() and not is_singlepak_transfer_complete():
 		_singlepak_download_timer += delta
 		if _singlepak_download_timer >= 0.25:
@@ -1664,15 +1789,20 @@ func advance_ui_timers(delta: float, held_input: int = 0, frame_input: int = 0) 
 			open_singlepak_results_screen(MULTIPLAYER_RESULTS_MODE_COURSE_COMPLETE, 0)
 			return
 		if _run_from_time_attack:
+			if _time_attack_exit_timer > 0.0:
+				_time_attack_exit_timer = maxf(0.0, _time_attack_exit_timer - delta)
+				if _time_attack_exit_timer <= 0.0:
+					open_time_attack_lobby(_time_attack_boss_mode)
+				return
 			_time_attack_result_timer += delta
 			if _time_attack_result_timer >= 10.0:
 				open_time_attack_lobby(_time_attack_boss_mode)
 				return
 		if not _run_from_time_attack and not _clear_counting_done and _clear_count_delay_timer <= 0.0:
-			_clear_count_step_accumulator += delta
-			while _clear_count_step_accumulator >= CLEAR_COUNT_STEP_INTERVAL and not _clear_counting_done:
-				_clear_count_step_accumulator -= CLEAR_COUNT_STEP_INTERVAL
-				_advance_clear_count_step()
+			# stage_results.c drains each bonus by 100 points on every game
+			# frame after its 150-frame opening delay. The source's 4-frame
+			# cadence only controls the counter sound effect.
+			_advance_clear_count_step()
 		elif not _run_from_time_attack and not _run_from_multiplayer and _clear_counting_done and _clear_input_lock_timer <= 0.0:
 			if _character_unlock_pending >= 0:
 				_open_character_unlock()
@@ -1713,19 +1843,29 @@ func advance_ui_timers(delta: float, held_input: int = 0, frame_input: int = 0) 
 			_resolve_credits_end()
 	if _game_state == GAME_STATE_CHARACTER_UNLOCK:
 		_character_unlock_timer = maxf(0.0, _character_unlock_timer - delta)
-		if _character_unlock_timer <= 0.0:
+		_character_unlock_scene_frame += delta * 60.0
+		# level_endings.c holds four dialogue/slide segments at 341 frames
+		# each, then a 301-frame final message before the fade out.
+		if _character_unlock_segment < CHARACTER_UNLOCK_SEGMENT_COUNT:
+			if _character_unlock_scene_frame > CHARACTER_UNLOCK_SEGMENT_FRAMES:
+				_character_unlock_segment += 1
+				_character_unlock_scene_frame = 0.0
+		elif _character_unlock_scene_frame > CHARACTER_UNLOCK_FINAL_FRAMES:
 			_resolve_character_unlock()
 	if _game_state == GAME_STATE_SPECIAL_STAGE:
 		if _special_stage_paused:
 			return
 		if _special_stage_phase == 1:
 			_update_special_stage_guard_robo(delta)
-			_update_special_stage_run(delta, held_input)
+			_update_special_stage_run(delta, held_input, frame_input)
 		elif _special_stage_phase == 2:
 			_update_special_stage_results(delta)
 		_special_stage_timer = maxf(0.0, _special_stage_timer - delta)
 		if _special_stage_timer <= 0.0:
-			_advance_special_stage()
+			# The source result task owns its counter loop; do not interpret a
+			# zero timer as A/fast-forward while points are still being counted.
+			if _special_stage_phase != 2 or (_special_stage_points_remaining == 0 and _special_stage_bonus_remaining == 0):
+				_advance_special_stage()
 	if _game_state == GAME_STATE_CHAOS_EMERALDS:
 		_chaos_emeralds_timer = maxf(0.0, _chaos_emeralds_timer - delta)
 		if _chaos_emeralds_timer <= 0.0:
@@ -1739,6 +1879,35 @@ func advance_ui_timers(delta: float, held_input: int = 0, frame_input: int = 0) 
 		_game_over_timer = maxf(0.0, _game_over_timer - delta)
 		if _game_over_timer <= 0.0:
 			_resolve_game_over_timeout()
+
+func _update_pause_menu_input(held_input: int, frame_input: int) -> void:
+	var a_held := bool(held_input & A_BUTTON)
+	# pause_menu.c checks START first, then the non-single-player B escape,
+	# before interpreting an A release. This prevents A-release+B/START from
+	# opening the wrong lobby route.
+	if frame_input & START_BUTTON:
+		resume_game()
+		_update_camera()
+		return
+	if (frame_input & B_BUTTON) and (_run_from_time_attack or _run_from_multiplayer):
+		cancel_pause_selection()
+		_update_camera()
+		return
+	if _pause_a_previous_held and not a_held:
+		if _pause_a_hold_lock:
+			# The A release that created the pause is consumed by the source.
+			_pause_a_hold_lock = false
+		else:
+			_pause_a_previous_held = false
+			confirm_pause_selection()
+			_update_camera()
+			return
+	_pause_a_previous_held = a_held
+	# pause_menu.c records whether A was already held when the menu was
+	# created; that initial release must not confirm Continue.
+	if _pause_a_hold_lock and not (held_input & A_BUTTON):
+		_pause_a_hold_lock = false
+	_update_camera()
 
 func _update_screen_fade(delta: float) -> void:
 	# The original fade updates blend brightness independently of the screen task.
@@ -1839,14 +2008,14 @@ func _advance_clear_count_step() -> void:
 	if not counted_any:
 		_finish_clear_counting()
 
-func _finish_clear_counting() -> void:
+func _finish_clear_counting(fast_forward: bool = false) -> void:
 	_clear_total_display_score += _clear_time_bonus_remaining + _clear_ring_bonus_remaining + _clear_special_ring_bonus_remaining
 	_clear_time_bonus_remaining = 0
 	_clear_ring_bonus_remaining = 0
 	_clear_special_ring_bonus_remaining = 0
 	_clear_count_step_accumulator = 0.0
 	_clear_counting_done = true
-	_clear_input_lock_timer = minf(_clear_input_lock_timer, 0.18)
+	_clear_input_lock_timer = CLEAR_RESULT_FAST_TAIL_SECONDS if fast_forward else CLEAR_RESULT_TAIL_SECONDS
 
 func _should_show_chaos_emeralds_message() -> bool:
 	if _chaos_emeralds_message_seen:
@@ -1960,7 +2129,7 @@ func _resolve_sonic_team_logo() -> void:
 func _open_credits() -> void:
 	_game_state = GAME_STATE_CREDITS
 	_credits_page = 0
-	_credits_timer = 3.0
+	_credits_timer = CREDITS_INTRO_DURATION
 	_status_text = get_ending_variant_label()
 
 func _advance_credits_page() -> void:
@@ -1970,15 +2139,25 @@ func _advance_credits_page() -> void:
 	if _credits_page >= _credits_page_count:
 		_open_credits_end()
 		return
-	_credits_timer = _credits_page_duration
+	_credits_timer = CREDITS_SLIDE_DURATION
 
 func _open_credits_end() -> void:
 	_game_state = GAME_STATE_CREDITS_END
 	_credits_end_timer = _credits_end_duration
 	_status_text = get_ending_variant_label()
+	var selected_is_amy := _selected_character_index == CHARACTER_NAMES_AMY_INDEX()
+	var selected_route_complete := bool(_completed_character_routes[clampi(_selected_character_index, 0, _completed_character_routes.size() - 1)])
+	# credits_end.c routes Final Zone completion through missing_emeralds.c
+	# unless Amy is selected or the current runner has a complete route.
+	if _ending_variant == ENDING_VARIANT_FINAL and not selected_is_amy:
+		_credits_end_show_missing_emeralds = _credits_end_show_missing_emeralds or get_chaos_emerald_count() < 7 or not selected_route_complete
 	if _ending_variant == ENDING_VARIANT_EXTRA:
 		_extra_ending_credits_played = true
-		_save_save_data()
+		_extra_zone_status = 2
+	elif _ending_variant == ENDING_VARIANT_FINAL and _extra_zone_status == 0:
+		# credits_end.c marks normal completion before True Area is opened.
+		_extra_zone_status = 1
+	_save_save_data()
 
 func _update_ending_variant() -> void:
 	if _selected_level_index >= _level_names.size() - 1:
@@ -1994,10 +2173,10 @@ func get_ending_variant() -> int:
 func get_ending_variant_label() -> String:
 	match _ending_variant:
 		ENDING_VARIANT_EXTRA:
-			return "EXTRA ENDING"
+			return _language_text("EXTRA ENDING", "EXTRA-ENDE", "FIN EXTRA", "FINAL EXTRA", "FINALE EXTRA")
 		ENDING_VARIANT_FINAL:
-			return "FINAL ENDING"
-	return "ADVENTURE ENDING"
+			return _language_text("FINAL ENDING", "FINALES ENDE", "FINALE", "FINAL", "FINALE")
+	return _language_text("ADVENTURE ENDING", "ABENTEUER-ENDE", "FIN DE L'AVENTURE", "FINAL DE AVENTURA", "FINE AVVENTURA")
 
 func _resolve_credits_end() -> void:
 	if _game_state != GAME_STATE_CREDITS_END:
@@ -2008,7 +2187,9 @@ func _open_character_unlock() -> void:
 	if _character_unlock_pending < 0 or _character_unlock_pending >= _character_names.size():
 		return
 	_game_state = GAME_STATE_CHARACTER_UNLOCK
-	_character_unlock_timer = _character_unlock_duration
+	_character_unlock_timer = (CHARACTER_UNLOCK_SEGMENT_COUNT * (CHARACTER_UNLOCK_SEGMENT_FRAMES + 2) + CHARACTER_UNLOCK_FINAL_FRAMES + 2) / 60.0
+	_character_unlock_segment = 0
+	_character_unlock_scene_frame = 0.0
 	_status_text = "%s UNLOCKED" % _character_names[_character_unlock_pending]
 
 func _resolve_character_unlock() -> void:
@@ -2036,7 +2217,11 @@ func _open_copyright() -> void:
 func _resolve_copyright() -> void:
 	if _game_state != GAME_STATE_COPYRIGHT:
 		return
-	open_title_screen_and_skip_intro()
+	if _credits_end_show_missing_emeralds:
+		_credits_end_show_missing_emeralds = false
+		_open_missing_emeralds_message()
+	else:
+		open_title_screen_and_skip_intro()
 
 func skip_credits_end() -> void:
 	# credits_end.c advances the sequence automatically; it has no input path.
@@ -2049,10 +2234,14 @@ func skip_character_unlock() -> void:
 func fast_forward_character_unlock() -> void:
 	if _game_state != GAME_STATE_CHARACTER_UNLOCK:
 		return
-	# Ignore START during the first eight frames, matching sub_808E4C8.
-	if _character_unlock_timer > _character_unlock_duration - (8.0 / 60.0):
+	# sub_808E4C8 only jumps the current segment to frame 340; it does not
+	# skip the remaining unlock slides. START is ignored during its first 8.
+	if _character_unlock_scene_frame <= 8.0:
 		return
-	_character_unlock_timer = 0.05
+	if _character_unlock_segment < CHARACTER_UNLOCK_SEGMENT_COUNT:
+		_character_unlock_scene_frame = CHARACTER_UNLOCK_SEGMENT_FRAMES
+	else:
+		_character_unlock_scene_frame = CHARACTER_UNLOCK_FINAL_FRAMES
 
 func _open_special_stage() -> void:
 	_game_state = GAME_STATE_SPECIAL_STAGE
@@ -2078,6 +2267,7 @@ func _open_special_stage() -> void:
 	_special_stage_robo_cooldown = 0.0
 	_special_stage_points_remaining = 0
 	_special_stage_bonus_remaining = 0
+	_special_stage_result_hold_started = false
 	_status_text = "SPECIAL STAGE READY"
 
 func _advance_special_stage() -> void:
@@ -2090,23 +2280,41 @@ func _advance_special_stage() -> void:
 		return
 	if _special_stage_phase == 1:
 		_special_stage_phase = 2
-		_special_stage_timer = _special_stage_results_duration
-		_special_stage_points_remaining = mini(99999, _special_stage_ring_count * 100)
+		# special_stage/main.c caps the ring points at MAX_POINTS (99,900)
+		# before the results task starts counting them.
+		_special_stage_timer = 0.0
+		_special_stage_points_remaining = mini(99900, _special_stage_ring_count * 100)
 		_special_stage_bonus_remaining = 10000 if _special_stage_target_reached else 0
+		_special_stage_result_hold_started = false
 		_special_stage_score = 0
 		_status_text = "SPECIAL STAGE RESULTS"
 		return
 	if _special_stage_points_remaining > 0 or _special_stage_bonus_remaining > 0:
+		# A skips both result counters in sub_806C25C/sub_806C338 and
+		# leaves only the 60-frame result hold before the fade.
 		_special_stage_score += _special_stage_points_remaining + _special_stage_bonus_remaining
 		_special_stage_points_remaining = 0
 		_special_stage_bonus_remaining = 0
-		_special_stage_timer = 0.8
+		_special_stage_result_hold_started = true
+		_special_stage_timer = 1.0
 		return
 	_finish_special_stage()
 
-func _update_special_stage_run(delta: float, held_input: int) -> void:
+func _update_special_stage_run(delta: float, held_input: int, frame_input: int = 0) -> void:
 	if _special_stage_phase != 1:
 		return
+	_special_stage_jump_timer = maxf(0.0, _special_stage_jump_timer - delta)
+	# physics.c accelerates on Up, brakes on Down, and coasts toward rest.
+	if held_input & DPAD_UP:
+		_special_stage_speed = minf(1.6, _special_stage_speed + delta * 1.8)
+	elif held_input & DPAD_DOWN:
+		_special_stage_speed = maxf(0.35, _special_stage_speed - delta * 2.4)
+	else:
+		_special_stage_speed = move_toward(_special_stage_speed, 1.0, delta * 0.8)
+	# HandleJumpControls uses the newly pressed jump button, not a held A.
+	if frame_input & A_BUTTON:
+		_special_stage_jump_timer = 0.72
+		_status_text = "SPECIAL STAGE JUMP"
 	_special_stage_multiplier_timer = maxf(0.0, _special_stage_multiplier_timer - delta)
 	if _special_stage_multiplier_timer <= 0.0:
 		_special_stage_multiplier = 1
@@ -2118,7 +2326,8 @@ func _update_special_stage_run(delta: float, held_input: int) -> void:
 	# The original Special Stage keeps its collectible field active for the
 	# complete 120-second countdown. The lane checkpoints are a compact bridge
 	# for the source object field, so advance them over that same duration.
-	_special_stage_progress = minf(1.0, _special_stage_progress + delta / _special_stage_run_duration)
+	var jump_speed := 1.25 if _special_stage_jump_timer > 0.0 else 1.0
+	_special_stage_progress = minf(1.0, _special_stage_progress + delta * _special_stage_speed * jump_speed / _special_stage_run_duration)
 	var segment := mini(_special_stage_ring_targets.size() - 1, int(_special_stage_progress * float(_special_stage_ring_targets.size())))
 	if segment <= _special_stage_last_segment:
 		return
@@ -2146,7 +2355,7 @@ func _update_special_stage_guard_robo(delta: float) -> void:
 			_special_stage_robo_lane -= 1
 		_special_stage_robo_lane_timer = 0.35
 	var progress_gap := absf(_special_stage_robo_progress - _special_stage_progress)
-	if progress_gap > 0.045 or _special_stage_robo_lane != _special_stage_lane or _special_stage_robo_cooldown > 0.0:
+	if _special_stage_jump_timer > 0.0 or progress_gap > 0.045 or _special_stage_robo_lane != _special_stage_lane or _special_stage_robo_cooldown > 0.0:
 		return
 	_special_stage_robo_cooldown = 1.5
 	_special_stage_multiplier = 1
@@ -2158,8 +2367,10 @@ func _update_special_stage_guard_robo(delta: float) -> void:
 	else:
 		_status_text = "GUARD ROBO HIT - NO RINGS"
 
-func _update_special_stage_results(delta: float) -> void:
-	var step := maxi(100, int(6000.0 * delta))
+func _update_special_stage_results(_delta: float) -> void:
+	# The original result tasks remove exactly 100 points per GBA frame;
+	# the four-frame cadence is only used for the counter sound effect.
+	var step := 100
 	if _special_stage_points_remaining > 0:
 		var points_step := mini(step, _special_stage_points_remaining)
 		_special_stage_points_remaining -= points_step
@@ -2168,13 +2379,21 @@ func _update_special_stage_results(delta: float) -> void:
 		var bonus_step := mini(step, _special_stage_bonus_remaining)
 		_special_stage_bonus_remaining -= bonus_step
 		_special_stage_score += bonus_step
+	else:
+		# sub_806C49C waits 60 frames before beginning the result fade.
+		if not _special_stage_result_hold_started:
+			_special_stage_result_hold_started = true
+			_special_stage_timer = 1.0
 
 func _finish_special_stage() -> void:
 	if _game_state != GAME_STATE_SPECIAL_STAGE:
 		return
+	# save.c adds Special Stage rings to the persistent profile score after
+	# the result hold, regardless of whether the emerald target was reached.
+	_profile_score = maxi(0, _profile_score + _special_stage_ring_count)
+	_save_save_data()
 	if _special_stage_target_reached:
 		_collect_chaos_emerald_for_clear()
-		_save_save_data()
 	if _should_show_to_be_continued():
 		_open_to_be_continued()
 	elif _should_show_chaos_emeralds_message():
@@ -2189,7 +2408,7 @@ func _finish_special_stage() -> void:
 func _resolve_game_over_timeout() -> void:
 	if _game_state != GAME_STATE_GAME_OVER:
 		return
-	if _run_from_time_attack:
+	if _run_from_time_attack and _game_over_time_over:
 		open_time_attack_lobby(_time_attack_boss_mode)
 		return
 	if _game_over_time_over:
@@ -2236,7 +2455,9 @@ func get_elapsed_time() -> float:
 	return _elapsed_time
 
 func get_hud_time_text() -> String:
-	var display_time := minf(_elapsed_time, MAX_COURSE_TIME_SECONDS - 0.01) if (_run_from_time_attack or _time_limit_enabled) else _elapsed_time
+	# stage_ui.c clamps the rendered digits even when the gameplay time limit
+	# has been disabled; disabling the limit affects death handling, not HUD width.
+	var display_time := minf(_elapsed_time, MAX_COURSE_TIME_SECONDS - 0.01)
 	return get_formatted_time(display_time)
 
 func is_hud_timer_warning() -> bool:
@@ -2245,16 +2466,37 @@ func is_hud_timer_warning() -> bool:
 func get_hud_special_ring_count() -> int:
 	return _player_state.special_rings
 
+func get_hud_special_ring_text() -> String:
+	return "%s  %d/7" % [_language_text("SP RINGS", "SPEZIALRINGE", "ANNEAUX SP", "ANILLOS SP", "ANELLI SP"), get_hud_special_ring_count()]
+
+func get_hud_race_start_text() -> String:
+	return _language_text("GO!", "LOS!", "GO!", "YA!", "VIA!")
+
+func get_hud_boss_title_text(health: int, max_health: int) -> String:
+	return "%s  %02d/%02d" % [_language_text("BOSS", "BOSS", "BOSS", "JEFE", "BOSS"), health, max_health]
+
+func get_hud_boss_phase_text(phase: String) -> String:
+	return "%s  %s" % [_language_text("PHASE", "PHASE", "PHASE", "FASE", "FASE"), phase]
+
+func get_hud_multiplayer_start_flag_text() -> String:
+	return _language_text("ST", "ST", "DEB", "INI", "AVV")
+
+func get_hud_multiplayer_finish_flag_text() -> String:
+	return _language_text("GOAL", "ZIEL", "BUT", "META", "TRAGUARDO")
+
 func get_hud_powerup_text() -> String:
 	if _invincibility_timer > 0.0:
-		return "INV %02d" % ceili(_invincibility_timer)
+		return "%s %02d" % [_language_text("INV", "UNV", "INV", "INV", "INV"), ceili(_invincibility_timer)]
 	if _speed_up_timer > 0.0:
-		return "SPEED %02d" % ceili(_speed_up_timer)
+		return "%s %02d" % [_language_text("SPEED", "TEMPO", "VITESSE", "VELOCIDAD", "VELOCITA"), ceili(_speed_up_timer)]
 	if _magnetic_shielded:
-		return "MAGNETIC"
+		return _language_text("MAGNETIC", "MAGNETISCH", "MAGNETIQUE", "MAGNETICO", "MAGNETICO")
 	if _player_state.shielded:
-		return "SHIELD"
+		return _language_text("SHIELD", "SCHILD", "BOUCLIER", "ESCUDO", "SCUDO")
 	return ""
+
+func is_hud_shield_active() -> bool:
+	return _player_state.shielded and not _magnetic_shielded and _invincibility_timer <= 0.0 and _speed_up_timer <= 0.0
 
 func is_special_ring_hud_visible() -> bool:
 	return not _run_from_multiplayer and not (_run_from_time_attack and _time_attack_boss_mode)
@@ -2706,6 +2948,8 @@ func _apply_source_entities(level: LevelState) -> void:
 			var iron_position := _source_runtime_position(level, float(row.get("world_x", 0)), float(row.get("world_y", 0)), source_width, source_height)
 			source_entity.world_x = iron_position.x
 			source_entity.world_y = iron_position.y
+			source_entity.origin_x = iron_position.x
+			source_entity.origin_y = iron_position.y
 			var iron_width := absf(float(_to_int_field(iron_fields[7])) * 8.0 * iron_scale) if iron_fields.size() > 7 else 32.0
 			var iron_height := absf(float(_to_int_field(iron_fields[8])) * 8.0 * iron_scale) if iron_fields.size() > 8 else 32.0
 			source_entity.iron_ball = true
@@ -2760,6 +3004,7 @@ func _apply_source_entities(level: LevelState) -> void:
 			source_entity.music_entry_pipe = kind == "PIPE_INSTRUMENT_ENTRY"
 			var entry_fields: Array = row.get("fields", [])
 			source_entity.music_entry_kind = clampi(_to_int_field(entry_fields[5]) if entry_fields.size() > 5 else 0, 0, 8)
+			source_entity.music_entry_duration = _music_entry_duration(source_entity.music_entry_pipe, source_entity.music_entry_kind)
 		elif entity_type == ENTITY_DAMAGE_REGION:
 			var damage_fields: Array = row.get("fields", [])
 			var damage_scale := _source_runtime_scale(source_width, source_height, level)
@@ -2790,14 +3035,37 @@ func _apply_source_entities(level: LevelState) -> void:
 				source_entity.height = maxf(32.0, float(_to_int_field(fields[8])) * 8.0 * _source_runtime_scale(source_width, source_height, level))
 		elif entity_type == ENTITY_RAMP:
 			if kind == "INCLINE_RAMP":
-				source_entity.variant = 1
+				source_entity.ramp_incline = true
+				var incline_fields: Array = row.get("fields", [])
+				source_entity.variant = (_to_int_field(incline_fields[5]) & 1) if incline_fields.size() > 5 else 0
 			else:
 				var ramp_fields: Array = row.get("fields", [])
 				source_entity.variant = (_to_int_field(ramp_fields[5]) & 1) if ramp_fields.size() > 5 else 0
+		elif entity_type == ENTITY_PIPE_END:
+			var pipe_end_fields: Array = row.get("fields", [])
+			source_entity.pipe_exit_back_layer = pipe_end_fields.size() > 3 and _to_int_field(pipe_end_fields[3]) != 0
+			source_entity.pipe_exit_uncurl = pipe_end_fields.size() > 4 and _to_int_field(pipe_end_fields[4]) != 0
 		elif entity_type == ENTITY_CORK_SCREW:
 			source_entity.variant = 1 if kind.find("STOP") >= 0 or kind.find("END") >= 0 else 0
+		elif entity_type == ENTITY_FLYING_HANDLE:
+			var flying_fields: Array = row.get("fields", [])
+			var flying_scale := _source_runtime_scale(source_width, source_height, level)
+			var flying_base := _source_runtime_position(level, float(row.get("world_x", 0)), float(row.get("world_y", 0)), source_width, source_height)
+			var flying_top := float(_to_int_field(flying_fields[6])) * 8.0 * flying_scale if flying_fields.size() > 6 else -72.0 * flying_scale
+			var flying_bottom := float(_to_int_field(flying_fields[8])) * 8.0 * flying_scale if flying_fields.size() > 8 else 72.0 * flying_scale
+			source_entity.world_x = flying_base.x
+			source_entity.world_y = flying_base.y + flying_bottom
+			source_entity.origin_x = flying_base.x
+			source_entity.origin_y = flying_base.y
+			source_entity.flying_handle_top_y = flying_base.y + flying_top
+			source_entity.flying_handle_bottom_y = flying_base.y + flying_bottom
+			source_entity.flying_handle = true
 		elif entity_type == ENTITY_BOUNCY_SPRING and kind == "BOUNCY_BAR":
 			source_entity.variant = 2
+		elif entity_type == ENTITY_NOTE_BLOCK or entity_type == ENTITY_NOTE_SPHERE:
+			var note_fields: Array = row.get("fields", [])
+			source_entity.note_kind = clampi(_to_int_field(note_fields[5]) if note_fields.size() > 5 else 0, 0, 7)
+			source_entity.note_health = 3
 		elif entity_type == ENTITY_SPRING:
 			source_entity.variant = _source_spring_variant(kind)
 			source_entity.flying_spring = kind == "FLYING_SPRING"
@@ -3115,11 +3383,17 @@ func _source_interactable_type(kind: String) -> int:
 		return ENTITY_LAYER_TOGGLE
 	if kind == "RAMP" or kind == "INCLINE_RAMP":
 		return ENTITY_RAMP
-	if kind == "ROTATING_HANDLE" or kind == "FLYING_HANDLE":
+	if kind == "FLYING_HANDLE":
+		return ENTITY_FLYING_HANDLE
+	if kind == "ROTATING_HANDLE":
 		return ENTITY_ROTATING_HANDLE
 	if kind.find("CORK_SCREW") >= 0 or kind.find("CORKSCREW") >= 0:
 		return ENTITY_CORK_SCREW
-	if kind == "BOUNCY_BAR" or kind.begins_with("NOTE_BLOCK"):
+	if kind.begins_with("NOTE_BLOCK") and kind.ends_with("__SPHERE"):
+		return ENTITY_NOTE_SPHERE
+	if kind.begins_with("NOTE_BLOCK"):
+		return ENTITY_NOTE_BLOCK
+	if kind == "BOUNCY_BAR":
 		return ENTITY_BOUNCY_SPRING
 	if kind.find("CHECKPOINT") >= 0:
 		return ENTITY_CHECKPOINT
@@ -3231,6 +3505,38 @@ func _configure_source_enemy(entity: EntityState, kind: String, row: Dictionary)
 			entity.state_timer = 2.0
 		"GOHLA":
 			entity.enemy_profile = 6
+			entity.state_timer = 0.0
+		"KURAKURA":
+			entity.enemy_profile = 8
+			entity.state_timer = 0.0
+		"GEJIGEJI":
+			entity.enemy_profile = 10
+			entity.velocity_x = 72.0
+			for _segment in range(4):
+				entity.trail_positions.append(Vector2(entity.world_x, entity.world_y))
+		"KUBINAGA":
+			entity.enemy_profile = 11
+			entity.target_x = entity.world_x
+			entity.target_y = entity.world_y
+			entity.state_timer = 1.8
+		"MADILLO":
+			entity.enemy_profile = 12
+			entity.state_timer = 0.0
+		"SPINNER":
+			entity.enemy_profile = 13
+			entity.state_timer = 0.0
+		"KYURA":
+			entity.enemy_profile = 14
+			entity.state_timer = 0.0
+			entity.target_x = absf(float(_to_int_field(fields[7])) * 4.0) if fields.size() > 7 else 24.0
+			entity.target_y = absf(float(_to_int_field(fields[8])) * 4.0) if fields.size() > 8 else 16.0
+		"FLICKEY":
+			entity.enemy_profile = 15
+			entity.velocity_x = -90.0
+			for _segment in range(4):
+				entity.trail_positions.append(Vector2(entity.world_x, entity.world_y))
+		"MON":
+			entity.enemy_profile = 16
 			entity.state_timer = 0.0
 		"HAMMERHEAD":
 			entity.enemy_profile = 7
@@ -3367,8 +3673,48 @@ func _add_boss(level: LevelState, x: float, y: float) -> void:
 	entity.origin_x = x
 	entity.origin_y = y
 	entity.state_timer = 1.2
+	entity.boss_profile = 8 if _selected_level_index >= 15 else (7 if _selected_level_index >= 14 else clampi(int(_selected_level_index / 2), 0, 6))
 	entity.health = 8
 	entity.max_health = 8
+	if entity.boss_profile == 0:
+		entity.target_x = 42.0
+		entity.effect_offset = -PI * 0.5
+		entity.state_timer = 1.2
+	elif entity.boss_profile == 1:
+		entity.health = 4
+		entity.max_health = 4
+		entity.velocity_x = 82.0
+		entity.state_timer = 2.5
+		entity.effect_offset = PI
+	elif entity.boss_profile == 2:
+		entity.velocity_x = 96.0
+		entity.state_timer = 2.2
+		entity.effect_offset = 0.0
+	elif entity.boss_profile == 4:
+		entity.velocity_x = 54.0
+		entity.state_timer = 2.5
+		entity.effect_offset = PI
+	elif entity.boss_profile == 5:
+		entity.velocity_x = 78.0
+		entity.state_timer = 2.0
+		entity.effect_offset = 0.0
+	elif entity.boss_profile == 6:
+		entity.velocity_x = 62.0
+		entity.state_timer = 1.8
+	elif entity.boss_profile == 7:
+		entity.health = 6
+		entity.max_health = 6
+		entity.state_timer = 1.8
+		entity.effect_offset = 0.0
+	elif entity.boss_profile == 8:
+		entity.health = 12
+		entity.max_health = 12
+		entity.state_timer = 1.5
+		entity.effect_offset = 0.0
+	elif entity.boss_profile == 3:
+		# boss_4.c starts the Aero Egg on a long approach before its bomb loop.
+		entity.velocity_x = 132.0
+		entity.state_timer = 2.0
 
 func _add_checkpoint(level: LevelState, x: float, y: float) -> void:
 	_add_entity(level, ENTITY_CHECKPOINT, x, y)
@@ -3496,6 +3842,21 @@ func _add_entity(level: LevelState, entity_type: int, x: float, y: float) -> Ent
 			entity.width = 42.0
 			entity.height = 22.0
 			entity.anim_id = 15
+		ENTITY_NOTE_BLOCK:
+			entity.width = 32.0
+			entity.height = 24.0
+			entity.anim_id = 584
+			entity.note_block = true
+		ENTITY_NOTE_SPHERE:
+			entity.width = 48.0
+			entity.height = 48.0
+			entity.anim_id = 585
+			entity.note_sphere = true
+		ENTITY_NOTE_PARTICLE:
+			entity.width = 18.0
+			entity.height = 18.0
+			entity.anim_id = 587
+			entity.note_particle = true
 		ENTITY_CONVEYOR:
 			entity.width = 160.0
 			entity.height = 24.0
@@ -3512,6 +3873,10 @@ func _add_entity(level: LevelState, entity_type: int, x: float, y: float) -> Ent
 			entity.width = 42.0
 			entity.height = 42.0
 			entity.anim_id = 546
+		ENTITY_FLYING_HANDLE:
+			entity.width = 32.0
+			entity.height = 32.0
+			entity.anim_id = 586
 		ENTITY_CORK_SCREW:
 			entity.width = 48.0
 			entity.height = 48.0
@@ -3732,7 +4097,9 @@ func _update_turnaround_bar_state(delta: float) -> void:
 		_player_state.char_state = 8
 		if entity.turnaround_timer <= 0.0:
 			_player_state.world_x = entity.world_x - entity.turnaround_direction * 6.0
-			_player_state.speed_x = -entity.turnaround_direction * 270.0
+			var speed_cap := 900.0 if is_player_boosting() else 540.0
+			var outgoing_speed := minf(absf(entity.turnaround_entry_speed) + 75.0, speed_cap)
+			_player_state.speed_x = -entity.turnaround_direction * outgoing_speed
 			_player_state.ground_speed = _player_state.speed_x
 			_player_state.char_state = 0
 			entity.activated = false
@@ -3761,7 +4128,7 @@ func _update_pole_state() -> void:
 			_player_state.speed_x = -300.0 if _frame_input & DPAD_LEFT else 300.0
 			_velocity_y = -330.0
 			_player_state.speed_y = _velocity_y
-			_player_state.char_state = 5
+	_player_state.char_state = 8
 
 func _update_light_globe_state(delta: float) -> void:
 	for entity in _level_state.entities:
@@ -3776,28 +4143,49 @@ func _update_windup_stick_state(delta: float) -> void:
 		if entity.windup_stick_timer <= 0.0:
 			entity.activated = false
 
-func _update_german_flute_state(delta: float) -> void:
+func _update_german_flute_state(delta: float, held_input: int) -> void:
 	for entity in _level_state.entities:
 		if not entity.active or not entity.german_flute or entity.german_flute_timer <= 0.0:
 			continue
 		entity.german_flute_timer += delta
-		_player_state.world_x = entity.world_x
-		_player_state.world_y = entity.world_y + 24.0
 		_player_state.is_grounded = false
-		_player_state.speed_x = 0.0
 		_player_state.ground_speed = 0.0
 		_player_state.rotation = 0
-		if entity.german_flute_timer < 0.5:
+		if entity.german_flute_phase == 0:
+			_player_state.world_x = move_toward(_player_state.world_x, entity.world_x, 30.0 * delta)
+			_player_state.world_y = move_toward(_player_state.world_y, entity.world_y + 24.0, 30.0 * delta)
+			_player_state.speed_x = 0.0
 			_velocity_y = 0.0
 			_player_state.char_state = 8
-		elif entity.german_flute_timer < 1.5:
-			_velocity_y = -(420.0 + entity.german_flute_kind * 45.0)
+			if entity.german_flute_timer >= 31.0 / 60.0:
+				entity.german_flute_phase = 1
+				entity.german_flute_timer = 0.0001
+				_velocity_y = -(420.0 + entity.german_flute_kind * 60.0)
+				_player_state.speed_y = _velocity_y
+		elif entity.german_flute_phase == 1:
+			_player_state.world_y += _velocity_y * delta
+			# qSpeedAirY gains Q(1/6) per frame, equivalent to 600 px/s^2.
+			_velocity_y += 600.0 * delta
 			_player_state.char_state = 9
 			_player_state.speed_y = _velocity_y
+			if _velocity_y >= 0.0:
+				entity.german_flute_phase = 2
+				entity.german_flute_timer = 0.0001
 		else:
-			entity.german_flute_timer = 0.0
-			entity.activated = false
-			_player_state.char_state = 0
+			if held_input & DPAD_RIGHT:
+				_player_state.world_x += 30.0 * delta
+			if held_input & DPAD_LEFT:
+				_player_state.world_x -= 30.0 * delta
+			var wave_phase: float = entity.german_flute_timer * 60.0 * 4.0 / 256.0 * TAU
+			_player_state.world_y = entity.world_y + 24.0 + sin(wave_phase) * 8.0
+			_player_state.char_state = 9
+			_velocity_y = 0.0
+			_player_state.speed_y = 0.0
+			if absf(_player_state.world_x - entity.world_x) > 16.0 or entity.german_flute_timer > 180.0 / 60.0:
+				entity.german_flute_timer = 0.0
+				entity.german_flute_phase = 0
+				entity.activated = false
+				_player_state.char_state = 1
 
 func _update_small_windmill_state(delta: float) -> void:
 	for entity in _level_state.entities:
@@ -3805,7 +4193,8 @@ func _update_small_windmill_state(delta: float) -> void:
 			continue
 		entity.small_windmill_timer += delta
 		if entity.small_windmill_timer < 0.7:
-			entity.small_windmill_angle += delta * 8.0
+			var rotation_sign := 1.0 if entity.small_windmill_touch_angle in [1, 3, 5, 7] else -1.0
+			entity.small_windmill_angle += rotation_sign * delta * 60.0 * 8.0 / 256.0 * TAU
 			_player_state.world_x = entity.world_x + cos(entity.small_windmill_angle) * 24.0
 			_player_state.world_y = entity.world_y + sin(entity.small_windmill_angle) * 24.0
 			_player_state.is_grounded = false
@@ -3815,7 +4204,16 @@ func _update_small_windmill_state(delta: float) -> void:
 			_player_state.rotation = 0
 			_player_state.char_state = 8
 		else:
-			var release_direction := Vector2(cos(entity.small_windmill_angle), sin(entity.small_windmill_angle))
+			var release_direction := Vector2.ZERO
+			match entity.small_windmill_touch_angle:
+				1, 4:
+					release_direction = Vector2(0.0, -1.0)
+				2, 5:
+					release_direction = Vector2(-1.0, 0.0)
+				3, 8:
+					release_direction = Vector2(1.0, 0.0)
+				6, 7:
+					release_direction = Vector2(0.0, 1.0)
 			entity.small_windmill_timer = 0.0
 			entity.activated = false
 			_player_state.is_grounded = false
@@ -3826,17 +4224,131 @@ func _update_small_windmill_state(delta: float) -> void:
 
 func _update_chord_state(delta: float) -> void:
 	for entity in _level_state.entities:
-		if not entity.active or not entity.chord:
+		if not entity.active or not entity.chord or entity.chord_phase == 0:
 			continue
-		entity.chord_timer = maxf(0.0, entity.chord_timer - delta)
-		if entity.chord_timer <= 0.0:
+		entity.chord_timer += delta
+		if entity.chord_phase == 1:
+			var progress := clampf(entity.chord_timer / 0.35, 0.0, 1.0)
+			_player_state.world_x = move_toward(_player_state.world_x, entity.world_x + 48.0, 30.0 * delta)
+			_player_state.world_y = entity.world_y - 16.0 - sin(progress * PI) * 20.0
+			_player_state.is_grounded = false
+			_player_state.speed_x = 0.0
+			_velocity_y = 0.0
+			_player_state.char_state = 6
+			if progress >= 1.0:
+				entity.chord_phase = 2
+				entity.chord_timer = 0.0
+				_velocity_y = -entity.chord_bounce_speed
+				_player_state.speed_y = _velocity_y
+				_player_state.char_state = 5
+		elif entity.chord_timer >= 0.35:
+			entity.chord_phase = 0
+			entity.chord_timer = 0.0
 			entity.activated = false
 
-func _update_half_pipe_state() -> void:
+func _update_note_state(delta: float) -> void:
+	for entity in _level_state.entities:
+		if not entity.active or (not entity.note_block and not entity.note_sphere):
+			continue
+		if entity.note_timer <= 0.0:
+			entity.note_offset_x = 0.0
+			entity.note_offset_y = 0.0
+			continue
+		entity.note_timer = maxf(0.0, entity.note_timer - delta)
+		var phase: float = 1.0 - entity.note_timer / (4.0 / 60.0 if entity.note_block else 6.0 / 60.0)
+		var amplitude := 4.0 if entity.note_block else 8.0
+		entity.note_offset_x = cos(entity.note_angle) * amplitude * (1.0 - phase)
+		entity.note_offset_y = sin(entity.note_angle) * amplitude * (1.0 - phase)
+		if entity.note_timer <= 0.0:
+			entity.note_offset_x = 0.0
+			entity.note_offset_y = 0.0
+			entity.activated = false
+			if entity.note_block and entity.note_health <= 0:
+				entity.active = false
+
+func _try_note_block(entity: EntityState) -> void:
+	if entity.note_timer > 0.0 or entity.note_health <= 0:
+		return
+	var dx := absf(_player_state.world_x - entity.world_x)
+	var dy := absf((_player_state.world_y + 16.0) - entity.world_y)
+	if dx > 24.0 or dy > 24.0:
+		return
+	var bounce_speeds := [270.0, 292.5, 315.0, 337.5, 360.0, 382.5, 405.0, 0.0]
+	entity.note_health -= 1
+	entity.note_timer = 4.0 / 60.0
+	entity.note_angle = -PI * 0.5
+	entity.activated = true
+	_spawn_note_particle(entity.world_x, entity.world_y, bounce_speeds[entity.note_kind] * 0.125, -bounce_speeds[entity.note_kind] * 0.75, 0)
+	_spawn_note_particle(entity.world_x, entity.world_y, -bounce_speeds[entity.note_kind] * 0.125, -bounce_speeds[entity.note_kind] * 0.75, 1)
+	_velocity_y = -bounce_speeds[entity.note_kind]
+	_player_state.speed_y = _velocity_y
+	_player_state.is_grounded = false
+	_player_state.char_state = 5
+	_player_state.anim_id = 2
+
+func _try_note_sphere(entity: EntityState) -> void:
+	if entity.note_timer > 0.0:
+		return
+	var offset := Vector2(_player_state.world_x - entity.world_x, _player_state.world_y - entity.world_y)
+	if offset.length_squared() > 24.0 * 24.0:
+		return
+	var away := offset.normalized() if offset.length_squared() > 0.01 else Vector2.UP
+	var incoming := Vector2(-_player_state.speed_x, -_velocity_y)
+	var direction := (away + (incoming.normalized() if incoming.length_squared() > 0.01 else away)).normalized()
+	var note_speeds := [270.0, 300.0, 330.0, 360.0, 390.0, 420.0, 450.0, 480.0]
+	var launch: Vector2 = direction * float(note_speeds[entity.note_kind])
+	entity.note_timer = 6.0 / 60.0
+	entity.note_angle = atan2(direction.y, direction.x)
+	entity.activated = true
+	var particle_speed := float(note_speeds[entity.note_kind])
+	_spawn_note_particle(entity.world_x, entity.world_y, particle_speed * 0.125, -particle_speed * 0.75, 0)
+	_spawn_note_particle(entity.world_x, entity.world_y, -particle_speed * 0.125, -particle_speed * 0.75, 1)
+	_player_state.speed_x = launch.x
+	_velocity_y = launch.y
+	_player_state.speed_y = _velocity_y
+	_player_state.is_grounded = false
+	_player_state.char_state = 5
+	_player_state.anim_id = 2
+
+func _spawn_note_particle(x: float, y: float, velocity_x: float, velocity_y: float, kind: int) -> void:
+	var particle := _add_entity(_level_state, ENTITY_NOTE_PARTICLE, x, y)
+	particle.origin_x = x
+	particle.origin_y = y
+	particle.velocity_x = velocity_x
+	particle.velocity_y = velocity_y
+	particle.variant = clampi(kind, 0, 1)
+	particle.state_timer = 0.5
+	particle.note_particle_delay = 5.0 / 60.0
+
+func _update_note_particle_state(delta: float) -> void:
+	for entity in _level_state.entities:
+		if not entity.active or not entity.note_particle:
+			continue
+		entity.note_particle_delay = maxf(0.0, entity.note_particle_delay - delta)
+		if entity.note_particle_delay > 0.0:
+			continue
+		entity.state_timer -= delta
+		entity.world_x += entity.velocity_x * delta
+		entity.world_y += entity.velocity_y * delta
+		entity.velocity_y += 48.0 * delta
+		if entity.state_timer <= 0.0:
+			entity.active = false
+
+func _update_half_pipe_state(frame_input: int) -> void:
 	for entity in _level_state.entities:
 		if not entity.active or not entity.half_pipe or not entity.half_pipe_active:
 			continue
-		if _frame_input & A_BUTTON:
+		# half_pipe.c keeps the player on the curve only while the signed
+		# horizontal speed is still above its entry threshold.
+		var moving_forward: bool = entity.half_pipe_direction > 0.0 and _player_state.speed_x >= 135.0
+		var moving_reverse: bool = entity.half_pipe_direction < 0.0 and _player_state.speed_x <= -135.0
+		if not moving_forward and not moving_reverse:
+			entity.half_pipe_active = false
+			entity.activated = false
+			_player_state.is_grounded = false
+			_player_state.char_state = 0
+			continue
+		if frame_input & A_BUTTON:
 			entity.half_pipe_active = false
 			entity.activated = false
 			_player_state.is_grounded = false
@@ -3846,7 +4358,9 @@ func _update_half_pipe_state() -> void:
 			continue
 		var distance: float = (_player_state.world_x - (entity.world_x - entity.width * 0.5)) if entity.half_pipe_direction > 0.0 else ((entity.world_x + entity.width * 0.5) - _player_state.world_x)
 		var normalized := clampf(distance / maxf(1.0, entity.width), 0.0, 1.0)
-		_player_state.world_y = entity.half_pipe_base_y - sin(normalized * PI) * entity.height * 0.45
+		var speed_scale := clampf(absf(_player_state.speed_x) / 600.0, 0.0, 1.0)
+		var curve_height := maxf(0.0, (entity.height - 16.0) * 0.5) * speed_scale
+		_player_state.world_y = entity.half_pipe_base_y - sin(normalized * PI) * curve_height
 		_player_state.is_grounded = true
 		_player_state.speed_y = 0.0
 		_velocity_y = 0.0
@@ -3856,12 +4370,13 @@ func _update_iron_ball_state(delta: float) -> void:
 	for entity in _level_state.entities:
 		if not entity.active or not entity.iron_ball:
 			continue
-		entity.iron_ball_phase = fmod(entity.iron_ball_phase + delta * 3.0, TAU)
+		# iron_ball.c advances SIN by four GBA angle units per frame.
+		entity.iron_ball_phase = fmod(entity.iron_ball_phase + delta * 60.0 * 4.0 / 256.0 * TAU, TAU)
 		var offset: float = sin(entity.iron_ball_phase) * entity.iron_ball_amplitude
 		if entity.iron_ball_horizontal:
-			entity.world_x += offset - sin(entity.iron_ball_phase - delta * 3.0) * entity.iron_ball_amplitude
+			entity.world_x = entity.origin_x + offset
 		else:
-			entity.world_y += offset - sin(entity.iron_ball_phase - delta * 3.0) * entity.iron_ball_amplitude
+			entity.world_y = entity.origin_y + offset
 
 func _update_crane_state(delta: float) -> void:
 	for entity in _level_state.entities:
@@ -3884,7 +4399,7 @@ func _update_crane_state(delta: float) -> void:
 			entity.activated = false
 			_player_state.is_grounded = false
 			_player_state.speed_x = signf(entity.crane_hook_x - entity.origin_x) * 360.0
-			_velocity_y = -420.0
+			_velocity_y = -entity.crane_launch_speed
 			_player_state.speed_y = _velocity_y
 			_player_state.char_state = 5
 
@@ -3893,14 +4408,19 @@ func _update_ceiling_slope_state(delta: float) -> void:
 		if not entity.active or not entity.ceiling_slope:
 			continue
 		entity.ceiling_slope_timer = maxf(0.0, entity.ceiling_slope_timer - delta)
-		if entity.ceiling_slope_timer <= 0.0:
+		var dx := absf(_player_state.world_x - entity.world_x)
+		var dy := absf((_player_state.world_y - 20.0) - entity.world_y)
+		if dx > entity.width * 0.5 or dy > entity.height * 0.5:
+			entity.ceiling_slope_latched = false
 			entity.activated = false
 
 func _update_gapped_loop_state(delta: float) -> void:
 	for entity in _level_state.entities:
 		if not entity.active or not entity.gapped_loop or not entity.gapped_loop_active:
 			continue
-		entity.gapped_loop_angle += entity.gapped_loop_direction * delta * 4.2
+		# gapped_loop.c advances the forward path by -8 and the reverse path by
+		# +8 GBA angle units per frame.
+		entity.gapped_loop_angle -= entity.gapped_loop_direction * delta * 60.0 * 8.0 / 256.0 * TAU
 		_player_state.world_x = entity.gapped_loop_center_x + cos(entity.gapped_loop_angle) * 135.0
 		_player_state.world_y = entity.gapped_loop_center_y + sin(entity.gapped_loop_angle) * 135.0
 		_player_state.is_grounded = false
@@ -3919,7 +4439,7 @@ func _update_funnel_sphere_state(delta: float) -> void:
 			continue
 		entity.funnel_sphere_timer += delta
 		if entity.funnel_sphere_timer < 0.25:
-			_player_state.world_x += 300.0 * entity.funnel_sphere_direction * delta
+			_player_state.world_x += 300.0 * delta
 			_player_state.world_y = entity.world_y
 		else:
 			var progress: float = clampf((entity.funnel_sphere_timer - 0.25) / 1.0, 0.0, 1.0)
@@ -3932,7 +4452,9 @@ func _update_funnel_sphere_state(delta: float) -> void:
 			entity.activated = false
 			_player_state.is_grounded = false
 			_player_state.speed_x = 0.0
-			_velocity_y = -520.0 if entity.funnel_sphere_direction > 0.0 else 520.0
+			# funnel_sphere.c uses +Q(6) for the slow-entry mode and -Q(10)
+			# for the fast-entry mode.
+			_velocity_y = 360.0 if entity.funnel_sphere_direction > 0.0 else -600.0
 			_player_state.speed_y = _velocity_y
 			_player_state.char_state = 5
 		else:
@@ -3946,7 +4468,7 @@ func _update_music_entry_state(delta: float) -> void:
 		if not entity.active or not entity.music_entry or entity.music_entry_timer <= 0.0:
 			continue
 		entity.music_entry_timer += delta
-		var progress: float = clampf(entity.music_entry_timer / 1.1, 0.0, 1.0)
+		var progress: float = clampf(entity.music_entry_timer / entity.music_entry_duration, 0.0, 1.0)
 		var direction := 1.0 if entity.music_entry_kind % 2 == 0 else -1.0
 		_player_state.world_x = entity.world_x + direction * progress * 128.0
 		_player_state.world_y = entity.world_y - sin(progress * PI) * (42.0 + entity.music_entry_kind * 4.0)
@@ -3955,13 +4477,26 @@ func _update_music_entry_state(delta: float) -> void:
 		_velocity_y = 0.0
 		_player_state.rotation = int(sin(progress * PI) * 24.0)
 		_player_state.char_state = 8
-		if entity.music_entry_timer >= 1.1:
+		if entity.music_entry_timer >= entity.music_entry_duration:
 			entity.music_entry_timer = 0.0
 			entity.activated = false
-			_player_state.speed_x = direction * (360.0 + entity.music_entry_kind * 18.0)
-			_velocity_y = -180.0 if entity.music_entry_pipe else -260.0
+			var exit_velocity: Vector2 = _music_entry_exit_velocity(entity.music_entry_pipe, entity.music_entry_kind)
+			_player_state.speed_x = exit_velocity.x
+			_velocity_y = exit_velocity.y
 			_player_state.speed_y = _velocity_y
 			_player_state.char_state = 5
+
+func _music_entry_duration(is_pipe: bool, kind: int) -> float:
+	var frames: Array = [69, 69, 77, 77, 63, 74, 74, 80, 80] if is_pipe else [77, 86, 74]
+	var index := clampi(kind, 0, frames.size() - 1)
+	return float(frames[index]) / 60.0
+
+func _music_entry_exit_velocity(is_pipe: bool, kind: int) -> Vector2:
+	if is_pipe:
+		var pipe_exits: Array = [Vector2(0.0, -540.0), Vector2(0.0, -720.0), Vector2(0.0, -540.0), Vector2(0.0, -720.0), Vector2(540.0, -540.0), Vector2(0.0, -540.0), Vector2(0.0, -720.0), Vector2(0.0, -540.0), Vector2(0.0, -720.0)]
+		return pipe_exits[clampi(kind, 0, pipe_exits.size() - 1)]
+	var horn_exits: Array = [Vector2(540.0, 0.0), Vector2(720.0, 0.0), Vector2(540.0, -540.0)]
+	return horn_exits[clampi(kind, 0, horn_exits.size() - 1)]
 
 func _update_slowing_snow_state() -> void:
 	_on_slowing_snow = false
@@ -4056,7 +4591,7 @@ func _update_enemy_motion(delta: float) -> void:
 			_update_balloon_motion(entity, delta)
 			continue
 		if entity.type == ENTITY_PROJECTILE:
-			if entity.enemy_profile == 4:
+			if entity.enemy_profile == 4 or entity.enemy_profile == 5 or entity.enemy_profile == 8:
 				entity.velocity_y += 280.0 * delta
 			entity.world_x += entity.velocity_x * delta
 			entity.world_y += entity.velocity_y * delta
@@ -4096,6 +4631,30 @@ func _update_enemy_motion(delta: float) -> void:
 		if entity.enemy_profile == 7:
 			_update_hammerhead_motion(entity, delta)
 			continue
+		if entity.enemy_profile == 8:
+			entity.state_timer = fmod(entity.state_timer + delta * 2.0, TAU)
+			continue
+		if entity.enemy_profile == 10:
+			_update_gejigeji_motion(entity, delta)
+			continue
+		if entity.enemy_profile == 11:
+			_update_kubinaga_motion(entity, delta)
+			continue
+		if entity.enemy_profile == 12:
+			_update_madillo_motion(entity, delta)
+			continue
+		if entity.enemy_profile == 13:
+			entity.state_timer = fmod(entity.state_timer + delta * 4.0, TAU)
+			continue
+		if entity.enemy_profile == 14:
+			_update_kyura_motion(entity, delta)
+			continue
+		if entity.enemy_profile == 15:
+			_update_flickey_motion(entity, delta)
+			continue
+		if entity.enemy_profile == 16:
+			_update_mon_motion(entity, delta)
+			continue
 		if entity.enemy_profile == 9:
 			_update_straw_motion(entity, delta)
 			continue
@@ -4106,7 +4665,26 @@ func _update_enemy_motion(delta: float) -> void:
 			_update_kiki_piece(entity, delta)
 			continue
 		if entity.type == ENTITY_BOSS:
-			_update_boss_motion(entity, delta)
+			if entity.boss_profile == 0:
+				_update_hammer_tank_motion(entity, delta)
+			elif entity.boss_profile == 1:
+				_update_bomber_tank_motion(entity, delta)
+			elif entity.boss_profile == 2:
+				_update_totem_boss_motion(entity, delta)
+			elif entity.boss_profile == 4:
+				_update_saucer_boss_motion(entity, delta)
+			elif entity.boss_profile == 5:
+				_update_go_round_boss_motion(entity, delta)
+			elif entity.boss_profile == 6:
+				_update_frog_boss_motion(entity, delta)
+			elif entity.boss_profile == 7:
+				_update_super_robo_z_motion(entity, delta)
+			elif entity.boss_profile == 8:
+				_update_true_area_53_boss_motion(entity, delta)
+			elif entity.boss_profile == 3:
+				_update_aero_egg_motion(entity, delta)
+			else:
+				_update_boss_motion(entity, delta)
 			continue
 		entity.world_x += entity.velocity_x * delta
 		if entity.world_x <= entity.patrol_min_x:
@@ -4209,6 +4787,96 @@ func _update_straw_motion(entity: EntityState, delta: float) -> void:
 	entity.world_y += entity.velocity_y * delta
 	entity.world_x = clampf(entity.world_x, _level_state.min_x, _level_state.max_x)
 	entity.world_y = clampf(entity.world_y, _level_state.min_y + 32.0, _level_state.max_y - 32.0)
+
+func _update_gejigeji_motion(entity: EntityState, delta: float) -> void:
+	if entity.trail_positions.is_empty():
+		for _segment in range(4):
+			entity.trail_positions.append(Vector2(entity.world_x, entity.world_y))
+	for i in range(entity.trail_positions.size() - 1, 0, -1):
+		entity.trail_positions[i] = entity.trail_positions[i - 1]
+	entity.world_x += entity.velocity_x * delta
+	entity.trail_positions[0] = Vector2(entity.world_x, entity.world_y)
+	if entity.world_x <= entity.patrol_min_x or entity.world_x >= entity.patrol_max_x:
+		entity.world_x = clampf(entity.world_x, entity.patrol_min_x, entity.patrol_max_x)
+		entity.velocity_x = -entity.velocity_x
+
+func _update_kubinaga_motion(entity: EntityState, delta: float) -> void:
+	entity.state_timer -= delta
+	if entity.state_timer <= 0.0:
+		entity.state_timer = 1.8
+	var cycle := 1.8 - entity.state_timer
+	var extension := sin(clampf(cycle / 1.0, 0.0, 1.0) * PI)
+	var target := Vector2(_player_state.world_x, _player_state.world_y - 16.0)
+	var base := Vector2(entity.origin_x, entity.origin_y)
+	var head := base.lerp(target, extension * 0.72)
+	entity.target_x = head.x
+	entity.target_y = head.y
+
+func _update_madillo_motion(entity: EntityState, delta: float) -> void:
+	if entity.variant == 0:
+		var player_delta := _player_state.world_x - entity.world_x
+		if absf(player_delta) < 120.0 and absf(_player_state.world_y - entity.world_y) < 50.0:
+			entity.variant = 1
+			entity.velocity_x = signf(player_delta) * 384.0
+		return
+	if entity.variant == 1:
+		entity.world_x += entity.velocity_x * delta
+		if entity.world_x <= entity.patrol_min_x or entity.world_x >= entity.patrol_max_x:
+			entity.world_x = clampf(entity.world_x, entity.patrol_min_x, entity.patrol_max_x)
+			entity.variant = 2
+			entity.state_timer = 2.0
+		return
+	entity.world_x += entity.velocity_x * delta
+	entity.velocity_x = move_toward(entity.velocity_x, 0.0, 240.0 * delta)
+	entity.state_timer -= delta
+	if entity.state_timer <= 0.0:
+		entity.variant = 0
+		entity.velocity_x = 0.0
+
+func _update_kyura_motion(entity: EntityState, delta: float) -> void:
+	entity.state_timer = fmod(entity.state_timer + delta * 5.0, TAU)
+	entity.world_x = entity.origin_x + cos(entity.state_timer) * entity.target_x
+	entity.world_y = entity.origin_y + sin(entity.state_timer * 0.6) * entity.target_y
+	if entity.state_timer < delta * 5.0:
+		var projectile := _add_entity(_level_state, ENTITY_PROJECTILE, entity.world_x, entity.world_y + 20.0)
+		projectile.velocity_x = -70.0 if entity.variant == 0 else 70.0
+		projectile.velocity_y = 180.0
+		entity.variant = 1 - entity.variant
+
+func _update_flickey_motion(entity: EntityState, delta: float) -> void:
+	if entity.trail_positions.is_empty():
+		for _segment in range(4):
+			entity.trail_positions.append(Vector2(entity.world_x, entity.world_y))
+	for i in range(entity.trail_positions.size() - 1, 0, -1):
+		entity.trail_positions[i] = entity.trail_positions[i - 1]
+	entity.velocity_y += 36.0 * delta
+	entity.world_x += entity.velocity_x * delta
+	entity.world_y += entity.velocity_y * delta
+	entity.trail_positions[0] = Vector2(entity.world_x, entity.world_y)
+	if entity.world_y <= _level_state.min_y + 32.0 or entity.world_y >= _level_state.max_y - 32.0:
+		entity.velocity_y = -entity.velocity_y * 0.85
+		entity.world_y = clampf(entity.world_y, _level_state.min_y + 32.0, _level_state.max_y - 32.0)
+	if entity.world_x <= entity.patrol_min_x or entity.world_x >= entity.patrol_max_x:
+		entity.velocity_x = -entity.velocity_x
+
+func _update_mon_motion(entity: EntityState, delta: float) -> void:
+	if entity.variant == 0:
+		if absf(_player_state.world_x - entity.world_x) < 256.0 and absf(_player_state.world_y - entity.world_y) < 50.0:
+			entity.variant = 1
+			entity.state_timer = 0.35
+		return
+	if entity.variant == 1:
+		entity.state_timer -= delta
+		if entity.state_timer <= 0.0:
+			entity.variant = 2
+			entity.velocity_y = -330.0
+		return
+	entity.velocity_y += 900.0 * delta
+	entity.world_y += entity.velocity_y * delta
+	if entity.world_y >= entity.origin_y:
+		entity.world_y = entity.origin_y
+		entity.velocity_y = 0.0
+		entity.variant = 0
 
 func _update_buzzer_motion(entity: EntityState, delta: float) -> void:
 	# Buzzer patrols, lunges at a nearby player, then returns to its flight path.
@@ -4532,6 +5200,274 @@ func _spawn_amy_attack_hearts() -> void:
 		heart.velocity_y = -26.0 - float(i % 3) * 8.0
 		heart.state_timer = 0.0
 
+func _update_aero_egg_motion(entity: EntityState, delta: float) -> void:
+	# boss_4.c advances the craft horizontally and drops bombs on a cooldown.
+	entity.hit_timer = maxf(0.0, entity.hit_timer - delta)
+	entity.effect_offset = _elapsed_time * 2.4 + 0.7
+	entity.world_x += entity.velocity_x * delta
+	entity.world_x = clampf(entity.world_x, entity.origin_x - 180.0, entity.origin_x + 180.0)
+	if entity.world_x <= entity.origin_x - 180.0 or entity.world_x >= entity.origin_x + 180.0:
+		entity.velocity_x *= -1.0
+	entity.state_timer -= delta
+	if entity.state_timer <= 0.0:
+		_spawn_aero_egg_bomb(entity)
+		entity.state_timer = 1.333 if entity.health <= 4 else 2.333
+	entity.target_y = entity.origin_y + sin(_elapsed_time * 1.8) * 10.0
+	entity.world_y = move_toward(entity.world_y, entity.target_y, 70.0 * delta)
+
+func _update_hammer_tank_motion(entity: EntityState, delta: float) -> void:
+	# boss_1.c's reset/extend/aim/plunge/slam/hold/drag/retract cycle.
+	entity.hit_timer = maxf(0.0, entity.hit_timer - delta)
+	entity.world_x += entity.velocity_x * delta
+	entity.world_x = clampf(entity.world_x, entity.origin_x - 150.0, entity.origin_x + 150.0)
+	if entity.world_x <= entity.origin_x - 150.0 or entity.world_x >= entity.origin_x + 150.0:
+		entity.velocity_x *= -1.0
+	var hammer_length := entity.target_x
+	var hammer_angle := entity.effect_offset
+	entity.state_timer -= delta
+	match entity.variant:
+		0:
+			hammer_length = move_toward(hammer_length, 56.0, 170.0 * delta)
+			hammer_angle = move_toward(hammer_angle, -PI * 0.5, 2.8 * delta)
+			if entity.state_timer <= 0.0:
+				entity.variant = 1
+				entity.state_timer = 0.28
+		1:
+			hammer_length = move_toward(hammer_length, 128.0, 270.0 * delta)
+			if entity.state_timer <= 0.0:
+				entity.variant = 2
+				entity.state_timer = 0.25
+		2:
+			var aim := Vector2(_player_state.world_x - entity.world_x, (_player_state.world_y - 20.0) - entity.world_y)
+			if aim.length_squared() > 1.0:
+				hammer_angle = lerp_angle(hammer_angle, aim.angle(), 0.18)
+			if entity.state_timer <= 0.0:
+				entity.variant = 3
+				entity.state_timer = 0.55
+		3:
+			hammer_angle = move_toward(hammer_angle, PI * 0.5, 4.0 * delta)
+			hammer_length = move_toward(hammer_length, 184.0, 360.0 * delta)
+			if entity.state_timer <= 0.0:
+				entity.variant = 4
+				entity.state_timer = 0.45
+				_request_screen_shake(7.0, 0.45, 0.25, false, true, false)
+		4:
+			if entity.state_timer <= 0.0:
+				entity.variant = 5
+				entity.state_timer = 0.95
+		5:
+			hammer_length = move_toward(hammer_length, 96.0, 90.0 * delta)
+			if entity.state_timer <= 0.0:
+				entity.variant = 6
+				entity.state_timer = 0.78
+		6:
+			hammer_length = move_toward(hammer_length, 56.0, 70.0 * delta)
+			if entity.state_timer <= 0.0:
+				entity.variant = 7
+				entity.state_timer = 0.8
+		7:
+			hammer_length = move_toward(hammer_length, 42.0, 140.0 * delta)
+			hammer_angle = move_toward(hammer_angle, -PI * 0.5, 3.4 * delta)
+			if entity.state_timer <= 0.0:
+				entity.variant = 0
+				entity.state_timer = 1.2
+	entity.target_x = hammer_length
+	entity.effect_offset = hammer_angle
+
+func _hammer_tank_tip(entity: EntityState) -> Vector2:
+	return Vector2(entity.world_x + cos(entity.effect_offset) * entity.target_x, entity.world_y + sin(entity.effect_offset) * entity.target_x)
+
+func _update_bomber_tank_motion(entity: EntityState, delta: float) -> void:
+	# boss_2.c keeps the tank moving while the cannon retargets and reloads.
+	entity.hit_timer = maxf(0.0, entity.hit_timer - delta)
+	entity.world_x += entity.velocity_x * delta
+	entity.world_x = clampf(entity.world_x, entity.origin_x - 160.0, entity.origin_x + 160.0)
+	if entity.world_x <= entity.origin_x - 160.0 or entity.world_x >= entity.origin_x + 160.0:
+		entity.velocity_x *= -1.0
+	var target := Vector2(_player_state.world_x - entity.world_x, (_player_state.world_y - 22.0) - entity.world_y)
+	if target.length_squared() > 1.0:
+		entity.effect_offset = lerp_angle(entity.effect_offset, target.angle(), 0.12)
+	entity.state_timer -= delta
+	if entity.state_timer <= 0.0:
+		_spawn_bomber_tank_bomb(entity)
+		entity.state_timer = 2.5
+
+func _spawn_bomber_tank_bomb(source: EntityState) -> void:
+	var bomb := _add_entity(_level_state, ENTITY_PROJECTILE, source.world_x - 8.0, source.world_y - 22.0)
+	bomb.enemy_profile = 5
+	bomb.velocity_x = cos(source.effect_offset) * 170.0
+	bomb.velocity_y = sin(source.effect_offset) * 170.0
+	bomb.state_timer = 4.0
+	bomb.origin_x = source.world_x
+	bomb.origin_y = source.world_y
+
+func _update_totem_boss_motion(entity: EntityState, delta: float) -> void:
+	# boss_3.c moves the stacked totem and periodically fires at the player.
+	entity.hit_timer = maxf(0.0, entity.hit_timer - delta)
+	entity.world_x += entity.velocity_x * delta
+	entity.world_x = clampf(entity.world_x, entity.origin_x - 170.0, entity.origin_x + 170.0)
+	if entity.world_x <= entity.origin_x - 170.0 or entity.world_x >= entity.origin_x + 170.0:
+		entity.velocity_x *= -1.0
+	entity.effect_offset = fmod(entity.effect_offset + delta * 1.8, TAU)
+	entity.state_timer -= delta
+	if entity.state_timer <= 0.0:
+		_spawn_totem_bullet(entity)
+		entity.state_timer = 2.2 if entity.health > 4 else 1.5
+
+func _spawn_totem_bullet(source: EntityState) -> void:
+	var bullet := _add_entity(_level_state, ENTITY_PROJECTILE, source.world_x - 40.0, source.world_y - 98.0)
+	var target := Vector2(_player_state.world_x, _player_state.world_y - 20.0) - Vector2(bullet.world_x, bullet.world_y)
+	if target.length_squared() < 1.0:
+		target = Vector2(-1.0, 0.0)
+	target = target.normalized()
+	bullet.velocity_x = target.x * 190.0
+	bullet.velocity_y = target.y * 190.0
+	bullet.enemy_profile = 6
+	bullet.origin_x = source.world_x
+	bullet.origin_y = source.world_y
+
+func _update_saucer_boss_motion(entity: EntityState, delta: float) -> void:
+	# boss_5.c alternates a charge-beam window with a long recharge.
+	entity.hit_timer = maxf(0.0, entity.hit_timer - delta)
+	entity.world_x += entity.velocity_x * delta
+	entity.world_x = clampf(entity.world_x, entity.origin_x - 130.0, entity.origin_x + 130.0)
+	if entity.world_x <= entity.origin_x - 130.0 or entity.world_x >= entity.origin_x + 130.0:
+		entity.velocity_x *= -1.0
+	entity.world_y = entity.origin_y + sin(_elapsed_time * 1.4) * 18.0
+	var target := Vector2(_player_state.world_x - entity.world_x, (_player_state.world_y - 20.0) - entity.world_y)
+	if target.length_squared() > 1.0:
+		entity.effect_offset = lerp_angle(entity.effect_offset, target.angle(), 0.10)
+	entity.state_timer -= delta
+	if entity.state_timer <= 0.0:
+		if entity.variant == 0:
+			entity.variant = 1
+			entity.state_timer = 1.0
+		else:
+			entity.variant = 0
+			entity.state_timer = 4.0 if entity.health > 4 else 2.5
+
+func _saucer_beam_hits_player(entity: EntityState) -> bool:
+	if entity.variant != 1:
+		return false
+	var beam_origin := Vector2(entity.world_x, entity.world_y - 18.0)
+	var to_player := Vector2(_player_state.world_x, _player_state.world_y - 20.0) - beam_origin
+	if to_player.length_squared() > 520.0 * 520.0 or to_player.length_squared() < 1.0:
+		return false
+	return absf(wrapf(to_player.angle() - entity.effect_offset, -PI, PI)) < 0.10
+
+func _update_go_round_boss_motion(entity: EntityState, delta: float) -> void:
+	# boss_6.c rotates four linked platforms and launches three tracked shots.
+	entity.hit_timer = maxf(0.0, entity.hit_timer - delta)
+	entity.world_x += entity.velocity_x * delta
+	entity.world_x = clampf(entity.world_x, entity.origin_x - 150.0, entity.origin_x + 150.0)
+	if entity.world_x <= entity.origin_x - 150.0 or entity.world_x >= entity.origin_x + 150.0:
+		entity.velocity_x *= -1.0
+	entity.effect_offset = fmod(entity.effect_offset + delta * (1.8 if entity.health > 4 else 2.8), TAU)
+	entity.state_timer -= delta
+	if entity.state_timer <= 0.0:
+		for shot_index in range(3):
+			_spawn_go_round_projectile(entity, shot_index)
+		entity.state_timer = 2.8 if entity.health > 4 else 1.8
+
+func _spawn_go_round_projectile(source: EntityState, shot_index: int) -> void:
+	var bullet := _add_entity(_level_state, ENTITY_PROJECTILE, source.world_x, source.world_y + 26.0)
+	var spread := (float(shot_index) - 1.0) * 0.22
+	var direction := Vector2(_player_state.world_x - source.world_x, (_player_state.world_y - 20.0) - bullet.world_y)
+	if direction.length_squared() < 1.0:
+		direction = Vector2(-1.0, 0.0)
+	direction = direction.normalized().rotated(spread)
+	bullet.velocity_x = direction.x * 185.0
+	bullet.velocity_y = direction.y * 185.0
+	bullet.enemy_profile = 7
+	bullet.origin_x = source.world_x
+	bullet.origin_y = source.world_y
+
+func _update_frog_boss_motion(entity: EntityState, delta: float) -> void:
+	# boss_7.c alternates a ground run with a high jump and bomb release.
+	entity.hit_timer = maxf(0.0, entity.hit_timer - delta)
+	entity.world_x += entity.velocity_x * delta
+	entity.world_x = clampf(entity.world_x, entity.origin_x - 150.0, entity.origin_x + 150.0)
+	if entity.world_x <= entity.origin_x - 150.0 or entity.world_x >= entity.origin_x + 150.0:
+		entity.velocity_x *= -1.0
+	if entity.variant == 0:
+		entity.state_timer -= delta
+		if entity.state_timer <= 0.0:
+			entity.variant = 1
+			entity.velocity_y = -330.0
+			entity.state_timer = 0.0
+	else:
+		entity.velocity_y += 640.0 * delta
+		entity.world_y += entity.velocity_y * delta
+		if entity.variant == 1 and entity.velocity_y < -80.0:
+			_spawn_frog_bomb(entity)
+			entity.variant = 2
+		if entity.world_y >= entity.origin_y:
+			entity.world_y = entity.origin_y
+			entity.velocity_y = 0.0
+			entity.variant = 0
+			entity.state_timer = 1.8 if entity.health > 4 else 1.2
+
+func _spawn_frog_bomb(source: EntityState) -> void:
+	var bomb := _add_entity(_level_state, ENTITY_PROJECTILE, source.world_x + 28.0, source.world_y - 20.0)
+	bomb.enemy_profile = 8
+	bomb.velocity_x = 180.0 if source.velocity_x >= 0.0 else -180.0
+	bomb.velocity_y = -90.0
+	bomb.state_timer = 3.0
+	bomb.origin_x = source.world_x
+	bomb.origin_y = source.world_y
+
+func _update_super_robo_z_motion(entity: EntityState, delta: float) -> void:
+	# boss_8.c keeps two arms and three tower platforms active around the cockpit.
+	entity.hit_timer = maxf(0.0, entity.hit_timer - delta)
+	entity.effect_offset = fmod(entity.effect_offset + delta * 0.9, TAU)
+	entity.state_timer -= delta
+	if entity.state_timer <= 0.0:
+		for shot_index in range(3):
+			_spawn_super_robo_z_cloud(entity, shot_index)
+		entity.state_timer = 2.4 if entity.health > 3 else 1.4
+
+func _spawn_super_robo_z_cloud(source: EntityState, shot_index: int) -> void:
+	var arm_angle: float = source.effect_offset + (float(shot_index) - 1.0) * 0.24
+	var spawn := Vector2(source.world_x, source.world_y - 36.0) + Vector2(cos(arm_angle), sin(arm_angle)) * 48.0
+	var cloud := _add_entity(_level_state, ENTITY_PROJECTILE, spawn.x, spawn.y)
+	cloud.enemy_profile = 9
+	cloud.velocity_x = cos(arm_angle) * 150.0
+	cloud.velocity_y = sin(arm_angle) * 150.0
+	cloud.state_timer = 2.4
+	cloud.origin_x = source.world_x
+	cloud.origin_y = source.world_y
+
+func _update_true_area_53_boss_motion(entity: EntityState, delta: float) -> void:
+	# boss_9.c alternates segmented rockets with red/yellow projectile volleys.
+	entity.hit_timer = maxf(0.0, entity.hit_timer - delta)
+	entity.world_x += sin(_elapsed_time * 0.8) * 18.0 * delta
+	entity.world_y = entity.origin_y + sin(_elapsed_time * 1.2) * 24.0
+	entity.effect_offset = fmod(entity.effect_offset + delta * 1.2, TAU)
+	entity.state_timer -= delta
+	if entity.state_timer <= 0.0:
+		for shot_index in range(2):
+			_spawn_true_area_53_projectile(entity, shot_index)
+		entity.state_timer = 2.0 if entity.health > 4 else 1.1
+
+func _spawn_true_area_53_projectile(source: EntityState, shot_index: int) -> void:
+	var projectile := _add_entity(_level_state, ENTITY_PROJECTILE, source.world_x + (float(shot_index) * 26.0) - 13.0, source.world_y + 20.0)
+	var angle := PI * 0.5 + (float(shot_index) - 0.5) * 0.28 + sin(source.effect_offset) * 0.18
+	projectile.enemy_profile = 10
+	projectile.velocity_x = cos(angle) * 175.0
+	projectile.velocity_y = sin(angle) * 175.0
+	projectile.state_timer = 3.0
+	projectile.origin_x = source.world_x
+	projectile.origin_y = source.world_y
+
+func _spawn_aero_egg_bomb(source: EntityState) -> void:
+	var bomb := _add_entity(_level_state, ENTITY_PROJECTILE, source.world_x, source.world_y + 26.0)
+	bomb.enemy_profile = 4
+	bomb.velocity_x = 300.0 if source.velocity_x >= 0.0 else -300.0
+	bomb.velocity_y = 60.0
+	bomb.state_timer = 3.0
+	bomb.origin_x = source.world_x
+	bomb.origin_y = source.world_y
+
 func _update_boss_motion(entity: EntityState, delta: float) -> void:
 	entity.hit_timer = maxf(0.0, entity.hit_timer - delta)
 	entity.state_timer -= delta
@@ -4685,10 +5621,17 @@ func _update_platform_motion(delta: float) -> void:
 				platform.arrow_active = false
 			continue
 		if platform.crumble_timer >= 0.0:
-			platform.crumble_timer = maxf(0.0, platform.crumble_timer - delta)
-			if platform.crumble_timer <= 0.0:
-				platform.active = false
-				continue
+			if platform.crumble_phase == 1:
+				platform.crumble_timer = maxf(0.0, platform.crumble_timer - delta)
+				if platform.crumble_timer <= 0.0:
+					platform.crumble_phase = 2
+					platform.crumble_break_timer = 32.0 / 60.0
+			elif platform.crumble_phase == 2:
+				platform.crumble_break_timer = maxf(0.0, platform.crumble_break_timer - delta)
+				if platform.crumble_break_timer <= 0.0:
+					platform.crumble_phase = 3
+					platform.active = false
+					continue
 		if not platform.moving:
 			continue
 		var old_x1: float = platform.x1
@@ -4777,8 +5720,7 @@ func _resolve_platforms(previous_world_x: float, previous_world_y: float) -> voi
 				_player_state.is_grounded = true
 				_player_state.char_state = 0
 				_set_surface_rotation(platform)
-				if platform.crumble_delay >= 0.0 and platform.crumble_timer < 0.0:
-					platform.crumble_timer = platform.crumble_delay
+				_start_crumbling_platform(platform)
 				if platform.arrow_mode:
 					platform.arrow_active = true
 				if platform.speeding_mode:
@@ -4799,8 +5741,7 @@ func _resolve_platforms(previous_world_x: float, previous_world_y: float) -> voi
 				_player_state.is_grounded = true
 				_player_state.char_state = 0
 				_set_surface_rotation(platform)
-				if platform.crumble_delay >= 0.0 and platform.crumble_timer < 0.0:
-					platform.crumble_timer = platform.crumble_delay
+				_start_crumbling_platform(platform)
 				if platform.arrow_mode:
 					platform.arrow_active = true
 				if platform.speeding_mode:
@@ -4832,6 +5773,12 @@ func _resolve_platforms(previous_world_x: float, previous_world_y: float) -> voi
 		_player_state.speed_y = 0.0
 		_player_state.is_grounded = true
 		_player_state.char_state = 0
+
+func _start_crumbling_platform(platform: PlatformState) -> void:
+	if platform.crumble_delay < 0.0 or platform.crumble_phase != 0:
+		return
+	platform.crumble_timer = platform.crumble_delay
+	platform.crumble_phase = 1
 
 func _set_surface_rotation(platform: PlatformState) -> void:
 	if not platform.sloped or platform.x2 <= platform.x1:
@@ -4878,6 +5825,7 @@ func _respawn_player() -> void:
 	_gravity_inverted = false
 	_pipe_active = false
 	_pipe_timer = 0.0
+	_pipe_target_entity = null
 	_hook_active = false
 	_hook_timer = 0.0
 	_player_layer = 0
@@ -4905,11 +5853,12 @@ func _open_game_over(time_over: bool = false) -> void:
 	_game_state = GAME_STATE_GAME_OVER
 	_player_state.is_alive = false
 	_game_over_time_over = time_over
-	_game_over_timer = 3.6 if _run_from_time_attack else 4.6
-	_game_over_input_lock_timer = 1.6 if _run_from_time_attack else 2.2
+	_game_over_timer = TIME_OVER_DURATION_SECONDS if time_over else GAME_OVER_DURATION_SECONDS
+	# game_over.c is an automatic cutscene; A/B do not alter its destination.
+	_game_over_input_lock_timer = 0.0
 	_status_text = "TIME OVER" if time_over else "GAME OVER"
 
-func _handle_entity_interactions(held_input: int, delta: float) -> void:
+func _handle_entity_interactions(held_input: int, frame_input: int, delta: float) -> void:
 	for entity in _level_state.entities:
 		if not entity.active:
 			continue
@@ -4933,6 +5882,10 @@ func _handle_entity_interactions(held_input: int, delta: float) -> void:
 				_try_grind_rail(entity)
 			ENTITY_GRAVITY_TOGGLE:
 				_try_gravity_toggle(entity)
+			ENTITY_NOTE_BLOCK:
+				_try_note_block(entity)
+			ENTITY_NOTE_SPHERE:
+				_try_note_sphere(entity)
 			ENTITY_BOUNCY_SPRING:
 				_try_bouncy_spring(entity, delta)
 			ENTITY_CONVEYOR:
@@ -4940,19 +5893,21 @@ func _handle_entity_interactions(held_input: int, delta: float) -> void:
 			ENTITY_LAYER_TOGGLE:
 				_try_layer_toggle(entity)
 			ENTITY_RAMP:
-				_try_ramp(entity)
+				_try_ramp(entity, frame_input)
 			ENTITY_ROTATING_HANDLE:
-				_try_rotating_handle(entity, held_input, delta)
+				_try_rotating_handle(entity, held_input, frame_input, delta)
+			ENTITY_FLYING_HANDLE:
+				_try_flying_handle(entity, frame_input)
 			ENTITY_CORK_SCREW:
-				_try_corkscrew(entity, delta)
+				_try_corkscrew(entity, frame_input, delta)
 			ENTITY_CANNON:
 				_try_cannon(entity, held_input, delta)
 			ENTITY_LAUNCHER:
-				_try_launcher(entity, held_input, delta)
+				_try_launcher(entity, frame_input, delta)
 			ENTITY_PIPE_START:
 				_try_pipe_start(entity, delta)
 			ENTITY_HOOK_RAIL:
-				_try_hook_rail(entity, delta)
+				_try_hook_rail(entity, frame_input, delta)
 			ENTITY_SPIKES:
 				_try_spikes(entity)
 			ENTITY_SPIKE_PLATFORM:
@@ -4962,11 +5917,11 @@ func _handle_entity_interactions(held_input: int, delta: float) -> void:
 			ENTITY_KEYBOARD:
 				_try_keyboard(entity)
 			ENTITY_POLE:
-				_try_pole(entity, held_input)
+				_try_pole(entity, held_input, frame_input)
 			ENTITY_LIGHT_GLOBE:
 				_try_light_globe(entity)
 			ENTITY_WINDUP_STICK:
-				_try_windup_stick(entity)
+				_try_windup_stick(entity, held_input)
 			ENTITY_GERMAN_FLUTE:
 				_try_german_flute(entity)
 			ENTITY_SMALL_WINDMILL:
@@ -5241,6 +6196,8 @@ func _try_gravity_toggle(entity: EntityState) -> void:
 
 func _try_bouncy_spring(entity: EntityState, delta: float) -> void:
 	if entity.variant == 2:
+		if not entity.activated and (_velocity_y <= 0.0 or _player_state.world_y + 4.0 >= entity.world_y):
+			return
 		var bar_inside := absf(_player_state.world_x - entity.world_x) <= entity.width * 0.5 and absf(_player_state.world_y - entity.world_y) <= entity.height * 0.5 + _player_half_height
 		if not bar_inside:
 			entity.activated = false
@@ -5248,15 +6205,19 @@ func _try_bouncy_spring(entity: EntityState, delta: float) -> void:
 			return
 		if not entity.activated:
 			entity.activated = true
-			entity.state_timer = 0.22
-			entity.target_x = absf(_player_state.world_x - entity.world_x)
+			entity.bouncy_landing_speed = clampi(int(_velocity_y / 240.0), 0, 2)
+			entity.bouncy_launch_frame = entity.bouncy_landing_speed * 5 + 10
+			entity.bouncy_landing_position = absf(_player_state.world_x - entity.world_x)
+			entity.state_timer = float(entity.bouncy_launch_frame) / 60.0
 			_velocity_y = 0.0
 			_player_state.is_grounded = false
 		if entity.state_timer > 0.0:
 			entity.state_timer = maxf(0.0, entity.state_timer - delta)
 			_player_state.world_y = entity.world_y - entity.height * 0.5 - 1.0
 			if entity.state_timer <= 0.0:
-				_velocity_y = -540.0 - minf(180.0, entity.target_x * 2.0)
+				var launch_factor := minf(24.0, entity.bouncy_landing_position * 0.75)
+				var launch_bonus := minf(180.0, launch_factor * (16.0 + entity.bouncy_landing_speed * 2.0) * entity.bouncy_spring_stiffness / 18.0)
+				_velocity_y = -540.0 - launch_bonus
 				_player_state.char_state = 2
 				entity.activated = false
 			return
@@ -5275,7 +6236,7 @@ func _try_bouncy_spring(entity: EntityState, delta: float) -> void:
 		return
 	if entity.activated:
 		return
-	var rebound := clampf(maxf(420.0, absf(_velocity_y) * entity.bounce_strength), 420.0, 680.0)
+	var rebound := clampf(maxf(450.0, absf(_velocity_y) * entity.bounce_strength), 450.0, 720.0)
 	_velocity_y = -rebound * gravity_direction
 	_player_state.world_y = entity.world_y - half_height - 1.0 if not _gravity_inverted else entity.world_y + half_height + 1.0
 	_player_state.is_grounded = false
@@ -5305,76 +6266,199 @@ func _try_layer_toggle(entity: EntityState) -> void:
 	entity.activated = _player_layer == 1
 	_status_text = "PLAYER LAYER: %s" % ("BACK" if _player_layer == 1 else "FRONT")
 
-func _try_ramp(entity: EntityState) -> void:
-	if not _player_state.is_grounded:
+func _try_ramp(entity: EntityState, frame_input: int) -> void:
+	var half_width := maxf(48.0, entity.width * 0.5)
+	var half_height := maxf(28.0, entity.height * 0.5)
+	var dx := _player_state.world_x - entity.world_x
+	var inside := absf(dx) <= half_width and absf(_player_state.world_y - entity.world_y) <= half_height + _player_half_height
+	var direction := -1.0 if (entity.variant & 1) != 0 else 1.0
+	var moving_with_ramp := _player_state.speed_x * direction > 120.0
+	if entity.ramp_incline:
+		if not inside:
+			entity.activated = false
+			return
+		if not _player_state.is_grounded or not moving_with_ramp:
+			return
+		_velocity_y = -180.0
+		_player_state.speed_x = 1020.0 * direction
+		_player_state.ground_speed = _player_state.speed_x
+		_player_state.is_grounded = false
+		_player_state.char_state = 2
+		entity.activated = true
 		return
-	var inside := absf(_player_state.world_x - entity.world_x) <= entity.width * 0.5 and absf(_player_state.world_y - entity.world_y) <= entity.height * 0.5 + _player_half_height
 	if not inside:
+		if entity.activated and _player_state.is_grounded and moving_with_ramp:
+			_launch_ramp(entity, direction)
+		entity.activated = false
 		return
-	var direction := -1.0 if entity.variant == 1 else 1.0
-	if absf(_player_state.speed_x) < 120.0:
+	if not _player_state.is_grounded or not moving_with_ramp:
+		entity.activated = false
 		return
+	if frame_input & A_BUTTON:
+		_launch_ramp(entity, direction)
+		return
+	# ramp.c keeps the player stood on the slope until its exit transition.
+	_player_state.world_y = entity.world_y - half_height - 1.0
+	_player_state.speed_y = 0.0
+	_velocity_y = 0.0
+	_player_state.ground_speed = _player_state.speed_x
+	entity.activated = true
+
+func _launch_ramp(entity: EntityState, direction: float) -> void:
 	_velocity_y = -330.0
 	_player_state.speed_x = maxf(absf(_player_state.speed_x), 300.0) * direction
 	_player_state.ground_speed = _player_state.speed_x
 	_player_state.is_grounded = false
 	_player_state.char_state = 5
-	entity.activated = true
+	entity.activated = false
 
-func _try_rotating_handle(entity: EntityState, _held_input: int, delta: float) -> void:
+func _update_flying_handle_state(delta: float) -> void:
+	for entity in _level_state.entities:
+		if not entity.active or not entity.flying_handle:
+			continue
+		entity.flying_handle_cooldown = maxf(0.0, entity.flying_handle_cooldown - delta)
+		entity.flying_handle_phase = fmod(entity.flying_handle_phase + delta * 60.0 * 0.015625 * TAU, TAU)
+		if entity.activated:
+			entity.flying_handle_speed_y = minf(180.0, entity.flying_handle_speed_y + 225.0 * delta)
+			entity.world_y -= entity.flying_handle_speed_y * delta
+			if entity.world_y <= entity.flying_handle_top_y:
+				entity.world_y = entity.flying_handle_top_y
+				entity.flying_handle_speed_y = 0.0
+			entity.effect_offset = sin(entity.flying_handle_phase) * 8.0
+			_player_state.world_x = entity.world_x
+			_player_state.world_y = entity.world_y
+			_player_state.is_grounded = false
+		else:
+			entity.world_y = entity.flying_handle_bottom_y
+			entity.effect_offset = sin(entity.flying_handle_phase) * 8.0
+
+func _try_flying_handle(entity: EntityState, frame_input: int) -> void:
+	if entity.activated:
+		_player_state.world_x = entity.world_x
+		_player_state.world_y = entity.world_y
+		_player_state.is_grounded = false
+		_player_state.speed_x = 0.0
+		_velocity_y = 0.0
+		_player_state.speed_y = 0.0
+		_player_state.char_state = 8
+		if entity.flying_handle_cooldown <= 0.0 and frame_input & A_BUTTON:
+			entity.activated = false
+			entity.flying_handle_cooldown = 0.5
+			_velocity_y = -_jump_speed
+			_player_state.speed_y = _velocity_y
+			_player_state.char_state = 5
+		return
+	var dx := _player_state.world_x - entity.world_x
+	var dy := _player_state.world_y - entity.world_y
+	if dx * dx + dy * dy > 16.0 * 16.0 or _player_state.is_grounded:
+		return
+	entity.activated = true
+	entity.flying_handle_cooldown = 0.5
+	entity.flying_handle_speed_y = -90.0
+	_player_state.world_x = entity.world_x
+	_player_state.world_y = entity.world_y
+	_player_state.is_grounded = false
+	_player_state.speed_x = 0.0
+	_velocity_y = 0.0
+	_player_state.char_state = 8
+
+func _try_rotating_handle(entity: EntityState, _held_input: int, frame_input: int, delta: float) -> void:
 	var dx := _player_state.world_x - entity.world_x
 	var dy := _player_state.world_y - entity.world_y
 	if entity.activated:
-		entity.state_timer += delta
-		var progress := clampf(entity.state_timer / 0.85, 0.0, 1.0)
-		var angle := lerpf(-PI * 0.5, PI * 0.65, progress)
-		_player_state.world_x = entity.world_x + cos(angle) * 54.0
-		_player_state.world_y = entity.world_y + sin(angle) * 54.0
+		if not _player_state.is_alive:
+			entity.activated = false
+			return
+		# rotating_handle.c advances the handle from the player's incoming air
+		# speed and keeps the player centered until the jump transition releases it.
+		entity.rotating_handle_angle = fmod(entity.rotating_handle_angle + entity.rotating_handle_speed * delta, TAU)
+		entity.effect_offset = entity.rotating_handle_angle
+		_player_state.world_x = entity.world_x
+		_player_state.world_y = entity.world_y
+		_player_state.speed_x = 0.0
+		_player_state.speed_y = 0.0
+		_velocity_y = 0.0
 		_player_state.is_grounded = false
 		_player_state.char_state = 5
-		if progress >= 1.0:
+		if frame_input & A_BUTTON:
+			var tangent := Vector2(-sin(entity.rotating_handle_angle), cos(entity.rotating_handle_angle))
 			entity.activated = false
 			entity.state_timer = 0.0
-			_velocity_y = -360.0
-			_player_state.speed_x = 300.0
-			_player_state.ground_speed = 300.0
+			_player_state.speed_x = tangent.x * 300.0
+			_velocity_y = tangent.y * 300.0
+			_player_state.speed_y = _velocity_y
+			_player_state.ground_speed = _player_state.speed_x
+			_player_state.char_state = 1
 		return
-	if absf(dx) > 42.0 or absf(dy) > 42.0:
+	if absf(dx) > 42.0 or absf(dy) > 42.0 or _player_state.is_grounded:
 		return
 	entity.activated = true
 	entity.state_timer = 0.0
+	entity.rotating_handle_angle = 0.0
+	entity.effect_offset = 0.0
+	entity.rotating_handle_speed = clampf(absf(_player_state.speed_x) + absf(_velocity_y), 220.0, 384.0)
+	_player_state.world_x = entity.world_x
+	_player_state.world_y = entity.world_y
 	_velocity_y = 0.0
 	_player_state.speed_x = 0.0
 	_player_state.speed_y = 0.0
 
-func _try_corkscrew(entity: EntityState, delta: float) -> void:
-	if entity.variant == 1:
-		if _corkscrew_timer > 0.0 and absf(_player_state.world_x - entity.world_x) <= 48.0 and absf(_player_state.world_y - entity.world_y) <= 64.0:
-			_corkscrew_timer = 0.0
+func _try_corkscrew(entity: EntityState, frame_input: int, delta: float) -> void:
+	var direction := 1.0 if entity.variant == 0 else -1.0
+	if _corkscrew_active_entity != null and _corkscrew_active_entity != entity:
 		return
-	if _corkscrew_timer > 0.0:
-		_corkscrew_timer = maxf(0.0, _corkscrew_timer - delta)
-		var progress := 1.0 - (_corkscrew_timer / 1.8)
-		var angle := progress * TAU * 1.5 * _corkscrew_direction
-		_player_state.world_x = _corkscrew_origin.x + progress * 160.0 * _corkscrew_direction
-		_player_state.world_y = _corkscrew_origin.y + sin(angle) * (46.0 * (1.0 - progress * 0.35))
-		_player_state.speed_x = 160.0 * _corkscrew_direction
+
+	if entity.activated:
+		if not _player_state.is_alive:
+			_corkscrew_stop(entity, false)
+			return
+		var relative := (_player_state.world_x - entity.world_x) * direction
+		var speed := _player_state.speed_x
+		if relative > 560.0 or speed * direction < 120.0:
+			_corkscrew_stop(entity, false)
+			return
+		_player_state.world_x += speed * delta
+		relative = (_player_state.world_x - entity.world_x) * direction
+		var angle := relative * 930.0 / 1024.0 * TAU
+		_player_state.world_y = entity.world_y - 28.0 + sin(angle) * 24.0
 		_player_state.speed_y = 0.0
+		_velocity_y = 0.0
 		_player_state.is_grounded = false
 		_player_state.char_state = 5
-		if _corkscrew_timer <= 0.0:
-			_player_state.speed_x = 260.0 * _corkscrew_direction
-			_player_state.ground_speed = _player_state.speed_x
+		if frame_input & A_BUTTON:
+			_player_state.speed_y = -292.5
+			_velocity_y = _player_state.speed_y
+			_corkscrew_stop(entity, true)
+		elif frame_input & DPAD_DOWN:
+			_player_state.char_state = 6
 		return
+
 	var dx := _player_state.world_x - entity.world_x
 	var dy := _player_state.world_y - entity.world_y
-	if absf(dx) > 36.0 or absf(dy) > 48.0:
+	var half_width := maxf(48.0, entity.width * 0.5)
+	var half_height := maxf(48.0, entity.height * 0.5)
+	var is_correct_side := dx >= 0.0 if entity.variant == 0 else dx <= 0.0
+	if absf(dx) > half_width or absf(dy) > half_height or not is_correct_side:
+		entity.activated = false
 		return
-	_corkscrew_timer = 1.8
+	if not _player_state.is_grounded or (_player_state.speed_x * direction) < 120.0 or frame_input & A_BUTTON:
+		entity.activated = false
+		return
+	entity.activated = true
+	_corkscrew_active_entity = entity
+	_corkscrew_timer = 1.0
 	_corkscrew_origin = Vector2(entity.world_x, entity.world_y)
-	_corkscrew_direction = 1.0 if _player_state.speed_x >= 0.0 else -1.0
-	_player_state.is_grounded = false
-	_player_state.char_state = 5
+	_corkscrew_direction = direction
+
+func _corkscrew_stop(entity: EntityState, jumped: bool) -> void:
+	entity.activated = false
+	if _corkscrew_active_entity == entity:
+		_corkscrew_active_entity = null
+	_corkscrew_timer = 0.0
+	_player_state.char_state = 1
+	_player_state.ground_speed = _player_state.speed_x
+	if not jumped:
+		_player_state.speed_y = 0.0
 
 func _try_cannon(entity: EntityState, held_input: int, delta: float) -> void:
 	var dx := _player_state.world_x - entity.world_x
@@ -5414,7 +6498,7 @@ func _try_cannon(entity: EntityState, held_input: int, delta: float) -> void:
 	_player_state.speed_y = 0.0
 	_velocity_y = 0.0
 
-func _try_launcher(entity: EntityState, _held_input: int, delta: float) -> void:
+func _try_launcher(entity: EntityState, frame_input: int, delta: float) -> void:
 	if entity.launcher_wait_timer > 0.0:
 		entity.launcher_wait_timer = maxf(0.0, entity.launcher_wait_timer - delta)
 		return
@@ -5435,6 +6519,17 @@ func _try_launcher(entity: EntityState, _held_input: int, delta: float) -> void:
 		_velocity_y = 0.0
 		_player_state.is_grounded = false
 		_player_state.char_state = 5
+		if frame_input & A_BUTTON:
+			# launcher.c releases the scripted cart state on jump input.
+			_player_state.char_state = 1
+			_player_state.speed_x = entity.launcher_direction * 180.0 * entity.launcher_scale
+			_velocity_y = -292.5
+			_player_state.speed_y = _velocity_y
+			_player_state.ground_speed = _player_state.speed_x
+			entity.launcher_active = false
+			entity.launcher_wait_timer = 1.0
+			entity.launcher_returning = true
+			return
 		if is_equal_approx(entity.launcher_cart_x, entity.launcher_target_x) or not _player_state.is_alive:
 			_player_state.speed_x = entity.launcher_direction * 900.0 * entity.launcher_scale
 			_velocity_y = -180.0 * entity.launcher_scale
@@ -5469,10 +6564,14 @@ func _try_pipe_start(entity: EntityState, delta: float) -> void:
 		_player_state.char_state = 5
 		if progress >= 1.0:
 			_pipe_active = false
-			_player_state.char_state = 0
-			_player_state.is_grounded = true
+			_player_layer = 1 if _pipe_target_entity != null and _pipe_target_entity.pipe_exit_back_layer else 0
+			_player_state.char_state = 5 if _pipe_target_entity != null and _pipe_target_entity.pipe_exit_uncurl else 0
+			_player_state.is_grounded = not (_pipe_target_entity != null and _pipe_target_entity.pipe_exit_uncurl)
+			_pipe_target_entity = null
 		return
-	if absf(_player_state.world_x - entity.world_x) > 24.0 or absf(_player_state.world_y - entity.world_y) > 24.0:
+	# pipe.c uses a 24x24 map rectangle and ignores a second entry while
+	# the scripted in-pipe state is active.
+	if absf(_player_state.world_x - entity.world_x) > 12.0 or absf(_player_state.world_y - entity.world_y) > 12.0:
 		return
 	var nearest_exit: EntityState = null
 	var nearest_distance := INF
@@ -5489,14 +6588,27 @@ func _try_pipe_start(entity: EntityState, delta: float) -> void:
 	_pipe_timer = 0.0
 	_pipe_origin = Vector2(entity.world_x, entity.world_y)
 	_pipe_target = Vector2(nearest_exit.world_x, nearest_exit.world_y)
+	_pipe_target_entity = nearest_exit
+	_player_state.world_x = entity.world_x
+	_player_state.world_y = entity.world_y
 	_player_state.speed_x = 0.0
 	_player_state.speed_y = 0.0
 	_velocity_y = 0.0
+	_player_state.is_grounded = false
+	_player_state.char_state = 5
 
-func _try_hook_rail(entity: EntityState, delta: float) -> void:
+func _try_hook_rail(entity: EntityState, frame_input: int, delta: float) -> void:
 	if entity.variant != 0:
 		return
 	if _hook_active:
+		if frame_input & A_BUTTON:
+			_hook_active = false
+			_player_state.char_state = 1
+			_player_state.speed_x = 120.0 if _hook_target.x >= _hook_origin.x else -120.0
+			_velocity_y = -292.5
+			_player_state.speed_y = _velocity_y
+			_player_state.is_grounded = false
+			return
 		_hook_timer += delta
 		var progress := clampf(_hook_timer / 1.0, 0.0, 1.0)
 		var eased_progress := progress * progress * (3.0 - 2.0 * progress)
@@ -5515,7 +6627,14 @@ func _try_hook_rail(entity: EntityState, delta: float) -> void:
 			_velocity_y = -120.0
 			_player_state.speed_y = _velocity_y
 		return
-	if absf(_player_state.world_x - entity.world_x) > entity.width * 0.5 or absf(_player_state.world_y - entity.world_y) > 24.0:
+	var rail_left := minf(entity.world_x, entity.target_x)
+	var rail_right := maxf(entity.world_x, entity.target_x)
+	var rail_midpoint := (rail_left + rail_right) * 0.5
+	if _player_state.world_x < rail_left or _player_state.world_x > rail_right or absf(_player_state.world_y - entity.world_y) > 24.0:
+		return
+	# hook_rail.c's START trigger accepts the forward half of the rail;
+	# the END marker is only a destination for that state.
+	if _player_state.world_x > rail_midpoint:
 		return
 	var nearest_end: EntityState = null
 	var nearest_distance := INF
@@ -5590,6 +6709,12 @@ func _try_hit_enemy(entity: EntityState) -> void:
 	var dx: float = abs(_player_state.world_x - entity.world_x)
 	var dy: float = abs((_player_state.world_y - 20.0) - entity.world_y)
 	if dx < 20.0 and dy < 22.0:
+		if entity.enemy_profile == 5 and _player_state.world_y < entity.world_y and _velocity_y >= 0.0:
+			_velocity_y = -420.0
+			_player_state.speed_y = _velocity_y
+			_player_state.is_grounded = false
+			_player_state.char_state = 2
+			return
 		if _attack_timer > 0.0:
 			_spawn_dust_cloud(entity.world_x, entity.world_y)
 			entity.active = false
@@ -5637,6 +6762,21 @@ func _try_koura(entity: EntityState) -> void:
 func _try_boss(entity: EntityState) -> void:
 	if _damage_cooldown > 0.0:
 		return
+	if entity.boss_profile == 4 and _saucer_beam_hits_player(entity):
+		_apply_contact_damage(-260.0, 0.7)
+		return
+	if entity.boss_profile == 0 and entity.variant != 4:
+		var hammer_delta := Vector2(_player_state.world_x, _player_state.world_y - 20.0) - _hammer_tank_tip(entity)
+		if hammer_delta.length_squared() <= 26.0 * 26.0:
+			_apply_contact_damage(-300.0, 0.8)
+			return
+	if entity.boss_profile == 3:
+		var tail_phase := _elapsed_time * 2.4 + 0.7
+		var tail_tip := Vector2(entity.world_x + cos(tail_phase) * 15.0, entity.world_y + 20.0 + sin(tail_phase) * 15.0)
+		var tail_delta := Vector2(_player_state.world_x, _player_state.world_y - 20.0) - tail_tip
+		if tail_delta.length_squared() <= 24.0 * 24.0:
+			_apply_contact_damage(-260.0, 0.7)
+			return
 	var dx := absf(_player_state.world_x - entity.world_x)
 	var dy := absf((_player_state.world_y - 20.0) - entity.world_y)
 	if dx > entity.width * 0.5 + _player_half_width or dy > entity.height * 0.5 + 20.0:
@@ -5680,6 +6820,7 @@ func _complete_boss() -> void:
 	_clear_count_step_accumulator = 0.0
 	_clear_count_delay_timer = 2.5 if not _run_from_time_attack and not _run_from_multiplayer else 0.0
 	_time_attack_result_timer = 0.0
+	_time_attack_exit_timer = 0.0
 	_clear_input_lock_timer = 2.666 if _run_from_time_attack else 1.2
 	_clear_counting_done = _run_from_time_attack
 	_store_clear_time_attack_result()
@@ -5703,9 +6844,10 @@ func _try_turnaround_bar(entity: EntityState) -> void:
 		return
 	if absf(_player_state.ground_speed) < 240.0:
 		return
-	if absf(_player_state.world_x - entity.world_x) > 12.0 or absf(_player_state.world_y - entity.world_y) > 32.0:
+	if absf(_player_state.world_x - entity.world_x) > 6.0 or _player_state.world_y < entity.world_y - 32.0 or _player_state.world_y > entity.world_y:
 		return
 	entity.turnaround_direction = signf(_player_state.ground_speed)
+	entity.turnaround_entry_speed = absf(_player_state.ground_speed)
 	entity.turnaround_timer = 48.0 / 60.0
 	entity.activated = true
 	_player_state.world_x = entity.world_x
@@ -5726,31 +6868,51 @@ func _try_keyboard(entity: EntityState) -> void:
 	entity.keyboard_timer = 8.0 / 60.0
 	entity.activated = true
 	_player_state.is_grounded = false
-	_player_state.char_state = 5
+	_player_state.char_state = 6
 	_player_state.rotation = 0
 	var gravity_direction := -1.0 if _gravity_inverted else 1.0
 	if entity.keyboard_type == 0:
-		_player_state.speed_x = entity.velocity_x * 210.0
-		_velocity_y = -430.0 * gravity_direction
+		# keyboard.c uses 3/4 px per frame in Music Plant.
+		_player_state.speed_x = entity.velocity_x * 180.0
+		_velocity_y = -240.0 * gravity_direction
 	else:
-		_player_state.speed_x = (-1.0 if entity.keyboard_type == 1 else 1.0) * 330.0
-		_velocity_y = (1.0 if entity.velocity_y >= 0.0 else -1.0) * 360.0 * gravity_direction
+		_player_state.speed_x = (-1.0 if entity.keyboard_type == 1 else 1.0) * 300.0
+		_velocity_y = (1.0 if entity.velocity_y >= 0.0 else -1.0) * 480.0 * gravity_direction
 	_player_state.ground_speed = _player_state.speed_x
 	_player_state.speed_y = _velocity_y
 
-func _try_pole(entity: EntityState, held_input: int) -> void:
-	var dx := absf(_player_state.world_x - entity.world_x)
-	var dy := absf(_player_state.world_y - entity.world_y)
+func _try_pole(entity: EntityState, held_input: int, frame_input: int) -> void:
 	if entity.pole_sliding:
+		if frame_input & A_BUTTON:
+			entity.pole_sliding = false
+			entity.activated = false
+			_player_state.speed_x = -300.0 if held_input & DPAD_LEFT else 300.0
+			_player_state.ground_speed = _player_state.speed_x
+			_velocity_y = 0.0
+			_player_state.speed_y = _velocity_y
+			_player_state.char_state = 5
+			_player_state.is_grounded = false
+			return
+		var gravity_direction := -1.0 if _gravity_inverted else 1.0
+		_player_state.world_y += gravity_direction * 60.0 * (1.0 / 60.0)
+		var still_touching := absf(_player_state.world_x - entity.world_x) <= entity.width * 0.5 and absf(_player_state.world_y - entity.world_y) <= entity.height * 0.5
+		if not still_touching:
+			entity.pole_sliding = false
+			entity.activated = false
+			_player_state.char_state = 1
+			_player_state.speed_y = gravity_direction * 60.0
+			_velocity_y = _player_state.speed_y
+			_player_state.is_grounded = false
+			return
 		_player_state.world_x = entity.world_x
-		_player_state.world_y = entity.world_y
 		_player_state.is_grounded = false
 		_player_state.speed_x = 0.0
+		_player_state.speed_y = 0.0
 		_velocity_y = 0.0
 		return
-	if dx > entity.width * 0.5 + 14.0 or dy > entity.height * 0.5 + 20.0:
-		return
-	if _player_state.is_grounded and absf(_player_state.speed_x) < 20.0:
+	var dx := absf(_player_state.world_x - entity.world_x)
+	var dy := absf(_player_state.world_y - entity.world_y)
+	if dx > entity.width * 0.5 or dy > entity.height * 0.5:
 		return
 	entity.pole_sliding = true
 	entity.activated = true
@@ -5761,12 +6923,6 @@ func _try_pole(entity: EntityState, held_input: int) -> void:
 	_player_state.ground_speed = 0.0
 	_velocity_y = 0.0
 	_player_state.char_state = 4
-	if _frame_input & A_BUTTON:
-		entity.pole_sliding = false
-		_player_state.speed_x = -300.0 if held_input & DPAD_LEFT else 300.0
-		_velocity_y = -330.0
-		_player_state.speed_y = _velocity_y
-		_player_state.char_state = 5
 
 func _try_light_globe(entity: EntityState) -> void:
 	var dx := _player_state.world_x - entity.world_x
@@ -5781,8 +6937,13 @@ func _try_light_globe(entity: EntityState) -> void:
 	_player_state.char_state = 5
 	_player_state.rotation = 0
 
-func _try_windup_stick(entity: EntityState) -> void:
+func _try_windup_stick(entity: EntityState, held_input: int) -> void:
 	if entity.windup_stick_timer > 0.0:
+		if entity.windup_stick_mode == 1 or entity.windup_stick_mode == 2:
+			if held_input & DPAD_RIGHT:
+				_player_state.world_x = minf(_player_state.world_x + 30.0 / 60.0, entity.world_x + entity.width * 0.5)
+			if held_input & DPAD_LEFT:
+				_player_state.world_x = maxf(_player_state.world_x - 30.0 / 60.0, entity.world_x - entity.width * 0.5)
 		return
 	var dx := absf(_player_state.world_x - entity.world_x)
 	var dy := absf((_player_state.world_y - 20.0) - entity.world_y)
@@ -5796,18 +6957,21 @@ func _try_windup_stick(entity: EntityState) -> void:
 	entity.windup_stick_mode = 1 if rising else (2 if falling else (3 if _player_state.speed_x >= 0.0 else 4))
 	entity.windup_stick_timer = 0.24
 	entity.activated = true
-	_player_state.world_y = entity.world_y
+	_player_state.world_y = entity.world_y + 3.0
 	_player_state.rotation = 0
 	if rising:
-		_velocity_y = -520.0
+		_player_state.speed_x = 0.0
+		_velocity_y -= 390.0
 		_player_state.is_grounded = false
 	elif falling:
-		_velocity_y = 260.0
+		_player_state.speed_x = 0.0
 		_player_state.is_grounded = false
 	else:
-		_player_state.ground_speed = -_player_state.speed_x if absf(_player_state.speed_x) > 1.0 else 240.0
+		var turn_direction := -1.0 if _player_state.speed_x < 0.0 else 1.0
+		var turn_amount := 150.0 if turn_direction > 0.0 else 75.0
+		_player_state.ground_speed += turn_direction * turn_amount
 		_player_state.speed_x = _player_state.ground_speed
-		_velocity_y = -180.0
+		_velocity_y = -60.0
 		_player_state.is_grounded = false
 	_player_state.speed_y = _velocity_y
 	_player_state.char_state = 8
@@ -5820,6 +6984,7 @@ func _try_german_flute(entity: EntityState) -> void:
 	if dx > 20.0 or dy > 32.0:
 		return
 	entity.german_flute_timer = 0.0001
+	entity.german_flute_phase = 0
 	entity.activated = true
 	_player_state.world_x = entity.world_x
 	_player_state.world_y = entity.world_y + 24.0
@@ -5836,16 +7001,23 @@ func _try_small_windmill(entity: EntityState) -> void:
 	if offset.length_squared() > 38.0 * 38.0:
 		return
 	var bit := 1
+	var touch_angle := 1
+	var horizontal_dominant := absf(_player_state.speed_x) > absf(_velocity_y)
 	if offset.x < 0.0 and offset.y < 0.0:
 		bit = 1
+		touch_angle = 1 if horizontal_dominant else 2
 	elif offset.x >= 0.0 and offset.y < 0.0:
 		bit = 2
+		touch_angle = 4 if horizontal_dominant else 3
 	elif offset.x < 0.0 and offset.y >= 0.0:
 		bit = 4
+		touch_angle = 6 if horizontal_dominant else 5
 	else:
 		bit = 8
+		touch_angle = 7 if horizontal_dominant else 8
 	if entity.small_windmill_type != 0 and (entity.small_windmill_type & bit) == 0:
 		return
+	entity.small_windmill_touch_angle = touch_angle
 	entity.small_windmill_angle = atan2(offset.y, offset.x)
 	entity.small_windmill_timer = 0.0001
 	entity.activated = true
@@ -5853,18 +7025,19 @@ func _try_small_windmill(entity: EntityState) -> void:
 	_player_state.char_state = 8
 
 func _try_chord(entity: EntityState) -> void:
-	if entity.chord_timer > 0.0:
+	if entity.chord_phase != 0:
 		return
 	var dx := absf(_player_state.world_x - entity.world_x)
-	var dy := absf((_player_state.world_y - 20.0) - entity.world_y)
-	if dx > 30.0 or dy > 28.0:
+	var dy := absf(_player_state.world_y - entity.world_y)
+	if _velocity_y <= 0.0 or dx > 48.0 or dy > 9.0:
 		return
-	entity.chord_timer = 0.35
+	entity.chord_bounce_speed = clampf(maxf(240.0, _velocity_y * 1.5), 240.0, 720.0)
+	entity.chord_phase = 1
+	entity.chord_timer = 0.0001
 	entity.activated = true
 	_player_state.is_grounded = false
-	_velocity_y = -590.0
 	_player_state.speed_y = _velocity_y
-	_player_state.char_state = 5
+	_player_state.char_state = 6
 	_player_state.rotation = 0
 
 func _try_half_pipe(entity: EntityState) -> void:
@@ -5874,9 +7047,9 @@ func _try_half_pipe(entity: EntityState) -> void:
 	var dy := _player_state.world_y - entity.world_y
 	if absf(dx) > entity.width * 0.5 or absf(dy) > entity.height * 0.5:
 		return
-	if entity.half_pipe_direction > 0.0 and _player_state.speed_x < 220.0:
+	if entity.half_pipe_direction > 0.0 and _player_state.speed_x < 135.0:
 		return
-	if entity.half_pipe_direction < 0.0 and _player_state.speed_x > -220.0:
+	if entity.half_pipe_direction < 0.0 and _player_state.speed_x > -135.0:
 		return
 	entity.half_pipe_active = true
 	entity.activated = true
@@ -5897,6 +7070,7 @@ func _try_crane(entity: EntityState) -> void:
 	if dx * dx + dy * dy > 26.0 * 26.0:
 		return
 	entity.crane_timer = 0.9
+	entity.crane_launch_speed = clampf(absf(_velocity_y) * 2.0, 450.0, 720.0)
 	entity.activated = true
 	_player_state.world_x = entity.crane_hook_x
 	_player_state.world_y = entity.crane_hook_y
@@ -5906,12 +7080,13 @@ func _try_crane(entity: EntityState) -> void:
 	_player_state.char_state = 8
 
 func _try_ceiling_slope(entity: EntityState) -> void:
-	if entity.ceiling_slope_timer > 0.0 or _player_state.is_grounded or _velocity_y >= 0.0:
+	if entity.ceiling_slope_latched or _player_state.is_grounded or _velocity_y >= 0.0:
 		return
 	var dx := absf(_player_state.world_x - entity.world_x)
 	var dy := absf((_player_state.world_y - 20.0) - entity.world_y)
-	if dx > entity.width * 0.5 + 14.0 or dy > entity.height * 0.5 + 20.0:
+	if dx > entity.width * 0.5 or dy > entity.height * 0.5:
 		return
+	entity.ceiling_slope_latched = true
 	entity.ceiling_slope_timer = 0.35
 	entity.activated = true
 	_player_state.world_y = entity.world_y + entity.height * 0.5 + 18.0
@@ -5923,9 +7098,9 @@ func _try_ceiling_slope(entity: EntityState) -> void:
 func _try_gapped_loop(entity: EntityState) -> void:
 	if entity.gapped_loop_active or not _player_state.is_grounded:
 		return
-	if entity.gapped_loop_direction > 0.0 and _player_state.speed_x < 200.0:
+	if entity.gapped_loop_direction > 0.0 and _player_state.speed_x < 180.0:
 		return
-	if entity.gapped_loop_direction < 0.0 and _player_state.speed_x > -200.0:
+	if entity.gapped_loop_direction < 0.0 and _player_state.speed_x > -180.0:
 		return
 	var dx := _player_state.world_x - entity.gapped_loop_center_x
 	var dy := _player_state.world_y - entity.gapped_loop_center_y
@@ -5938,7 +7113,7 @@ func _try_gapped_loop(entity: EntityState) -> void:
 	_player_state.char_state = 5
 
 func _try_funnel_sphere(entity: EntityState) -> void:
-	if entity.funnel_sphere_timer > 0.0 or not _player_state.is_grounded:
+	if entity.funnel_sphere_timer > 0.0:
 		return
 	var dx := _player_state.world_x - entity.world_x
 	var dy := _player_state.world_y - entity.world_y
@@ -5948,7 +7123,7 @@ func _try_funnel_sphere(entity: EntityState) -> void:
 	entity.funnel_sphere_timer = 0.0001
 	entity.activated = true
 	_player_state.is_grounded = false
-	_player_state.char_state = 8
+	_player_state.char_state = 6
 
 func _try_music_entry(entity: EntityState) -> void:
 	if entity.music_entry_timer > 0.0:
@@ -6068,6 +7243,7 @@ func _try_reach_goal(entity: EntityState) -> void:
 		_clear_count_step_accumulator = 0.0
 		_clear_count_delay_timer = 2.5 if not _run_from_time_attack and not _run_from_multiplayer else 0.0
 		_time_attack_result_timer = 0.0
+		_time_attack_exit_timer = 0.0
 		_clear_input_lock_timer = 2.666 if _run_from_time_attack else 1.2
 		_clear_counting_done = _run_from_time_attack
 		_store_clear_time_attack_result()
@@ -6188,6 +7364,7 @@ func _reset_player() -> void:
 	_gravity_inverted = false
 	_player_layer = 0
 	_corkscrew_timer = 0.0
+	_corkscrew_active_entity = null
 	_speed_up_timer = 0.0
 	_magnetic_shielded = false
 	_defeat_score_index = 0
@@ -6202,21 +7379,113 @@ func save_checkpoint(x: float, y: float) -> void:
 	_checkpoint_time = _elapsed_time
 
 func get_status_text() -> String:
-	return _status_text
+	return _localize_status_text(_status_text)
+
+func _localize_status_text(status: String) -> String:
+	if status.is_empty() or _language_index == 1:
+		return status
+	if status.begins_with("CONFIRM RESET?"):
+		return "%s %s %s %s %s" % [
+			_language_text("CONFIRM RESET?", "RESET BESTAETIGEN?", "CONFIRMER RESET ?", "CONFIRMAR REINICIO?", "CONFERMA RESET?"),
+			get_confirm_label(),
+			_language_text("YES", "JA", "OUI", "SI", "SI"),
+			get_secondary_label(),
+			_language_text("NO", "NEIN", "NON", "NO", "NO"),
+		]
+	if status.begins_with("PLAYER LAYER: "):
+		var layer := status.trim_prefix("PLAYER LAYER: ")
+		return "%s: %s" % [_language_text("PLAYER LAYER", "SPIELEREBENE", "CALQUE JOUEUR", "CAPA DEL JUGADOR", "LIVELLO GIOCATORE"), _language_text(layer, "HINTEN", "ARRIERE", "ATRAS", "DIETRO") if layer == "BACK" else _language_text(layer, "VORNE", "AVANT", "DELANTE", "DAVANTI")]
+	if status.begins_with(" "):
+		return status
+	if status.ends_with(" UNLOCKED"):
+		var unlocked_name := status.trim_suffix(" UNLOCKED")
+		return "%s %s" % [unlocked_name, _language_text("UNLOCKED", "FREIGESCHALTET", "DEVERROUILLE", "DESBLOQUEADO", "SBLOCCATO")]
+	match status:
+		"READY!":
+			return _language_text(status, "BEREIT!", "PRET !", "LISTO!", "PRONTO!")
+		"GO!":
+			return _language_text(status, "LOS!", "GO !", "YA!", "VIA!")
+		"BOSS READY":
+			return _language_text(status, "BOSS BEREIT", "BOSS PRET", "JEFE LISTO", "BOSS PRONTO")
+		"DEFEAT THE BOSS":
+			return _language_text(status, "BESIEGE DEN BOSS", "BATTEZ LE BOSS", "DERROTA AL JEFE", "SCONFIGGI IL BOSS")
+		"OUTRUN RIVALS":
+			return _language_text(status, "HAENGE DIE RIVALEN AB", "DISTANCEZ LES RIVAUX", "DEJA ATRAS A LOS RIVALES", "SUPERA I RIVALI")
+		"REACH THE GOAL":
+			return _language_text(status, "ERREICHE DAS ZIEL", "ATTEIGNEZ L'ARRIVEE", "LLEGA A LA META", "RAGGIUNGI IL TRAGUARDO")
+		"TIME OVER":
+			return _language_text(status, "ZEIT ABGELAUFEN", "TEMPS ECOULE", "TIEMPO AGOTADO", "TEMPO SCADUTO")
+		"GAME OVER":
+			return _language_text(status, "GAME OVER", "GAME OVER", "FIN DE LA PARTIDA", "GAME OVER")
+		"BOSS CLEAR - START OR A TO REPLAY":
+			return _language_text(status, "BOSS GESCHAFFT - START ODER A ZUM WIEDERHOLEN", "BOSS TERMINE - START OU A POUR REJOUER", "JEFE COMPLETADO - START O A PARA REPETIR", "BOSS COMPLETATO - START O A PER RIPETERE")
+		"STAGE CLEAR - START OR A TO REPLAY":
+			return _language_text(status, "STUFE GESCHAFFT - START ODER A ZUM WIEDERHOLEN", "STAGE TERMINE - START OU A POUR REJOUER", "FASE COMPLETADA - START O A PARA REPETIR", "STAGE COMPLETATO - START O A PER RIPETERE")
+		"OPTIONS":
+			return _language_text(status, "OPTIONEN", "OPTIONS", "OPCIONES", "OPZIONI")
+		"SELECT PROFILE LANGUAGE":
+			return _language_text(status, "PROFILERSPRACHE WAEHLEN", "CHOISIR LA LANGUE DU PROFIL", "ELIGE IDIOMA DEL PERFIL", "SCEGLI LINGUA PROFILO")
+		"NAME ENTRY":
+			return _language_text(status, "NAMEN EINGEBEN", "SAISIE DU NOM", "INTRODUCIR NOMBRE", "INSERISCI NOME")
+		"VERSUS RECORDS":
+			return _language_text(status, "VS-REKORDE", "RECORDS VS", "RECORDS VS", "RECORD VS")
+		"PLAYER DATA":
+			return _language_text(status, "SPIELERDATEN", "DONNEES JOUEUR", "DATOS DEL JUGADOR", "DATI GIOCATORE")
+		"SAVE DATA DELETED":
+			return _language_text(status, "SPEICHERDATEN GELOESCHT", "DONNEES EFFACEES", "DATOS BORRADOS", "DATI CANCELLATI")
+		"PROFILE NAME REQUIRED":
+			return _language_text(status, "PROFILNAME ERFORDERLICH", "NOM DE PROFIL REQUIS", "NOMBRE DE PERFIL REQUERIDO", "NOME PROFILO RICHIESTO")
+		"NAME SAVED":
+			return _language_text(status, "NAME GESPEICHERT", "NOM ENREGISTRE", "NOMBRE GUARDADO", "NOME SALVATO")
+		"CHARACTER SELECT":
+			return _language_text(status, "CHARAKTER WAEHLEN", "CHOIX DU PERSONNAGE", "SELECCION DE PERSONAJE", "SCELTA PERSONAGGIO")
+		"CHARACTER LOCKED":
+			return _language_text(status, "CHARAKTER GESPERRT", "PERSONNAGE VERROUILLE", "PERSONAJE BLOQUEADO", "PERSONAGGIO BLOCCATO")
+		"SPECIAL STAGE READY":
+			return _language_text(status, "SPECIAL-STAGE BEREIT", "STAGE SPECIAL PRET", "FASE ESPECIAL LISTA", "SPECIAL STAGE PRONTA")
+		"SPECIAL STAGE RUN":
+			return _language_text(status, "SPECIAL-STAGE-LAUF", "COURSE SPECIALE", "RECORRIDO ESPECIAL", "CORSA SPECIALE")
+		"SPECIAL STAGE RESULTS":
+			return _language_text(status, "SPECIAL-STAGE-ERGEBNIS", "RESULTAT SPECIAL", "RESULTADO ESPECIAL", "RISULTATO SPECIALE")
+		"SPECIAL STAGE JUMP":
+			return _language_text(status, "SPECIAL-STAGE SPRUNG", "SAUT SPECIAL", "SALTO ESPECIAL", "SALTO SPECIALE")
+		"COPYRIGHT":
+			return _language_text(status, "URHEBERRECHT", "DROITS D'AUTEUR", "DERECHOS DE AUTOR", "DIRITTI D'AUTORE")
+		"DEMO PLAYBACK":
+			return _language_text(status, "DEMO-WIEDERGABE", "LECTURE DE LA DEMO", "REPRODUCCION DE DEMO", "RIPRODUZIONE DEMO")
+		"ALL CHAOS EMERALDS COLLECTED":
+			return _language_text(status, "ALLE CHAOS-EMERALDS GESAMMELT", "TOUS LES EMERAUDES DU CHAOS COLLECTEES", "TODAS LAS ESMERALDAS DEL CAOS REUNIDAS", "TUTTI I CHAOS EMERALD RACCOLTI")
+		"COLLECT ALL CHAOS EMERALDS":
+			return _language_text(status, "SAMMLE ALLE CHAOS-EMERALDS", "COLLECTEZ TOUTES LES EMERAUDES DU CHAOS", "REUNE TODAS LAS ESMERALDAS DEL CAOS", "RACCOGLI TUTTI I CHAOS EMERALD")
+		"TO BE CONTINUED":
+			return _language_text(status, "FORTSETZUNG FOLGT", "A SUIVRE", "CONTINUARA", "CONTINUA")
+		"PRESENTED BY SEGA":
+			return _language_text(status, "PRASENTIERT VON SEGA", "PRESENTE PAR SEGA", "PRESENTADO POR SEGA", "PRESENTATO DA SEGA")
+		"CREATED BY SONIC TEAM":
+			return _language_text(status, "ERSTELLT VON SONIC TEAM", "CREE PAR SONIC TEAM", "CREADO POR SONIC TEAM", "CREATO DA SONIC TEAM")
+		"LEFT/RIGHT MOVE   A CARE   B EXIT":
+			return _language_text(status, "LINKS/RECHTS BEWEGEN   A PFLEGEN   B ENDE", "GAUCHE/DROITE DEPLACER   A SOIGNER   B QUITTER", "IZQ/DER MOVER   A CUIDAR   B SALIR", "SINISTRA/DESTRA MUOVI   A CURA   B ESCI")
+		"TRUE AREA 53 INTRO":
+			return _language_text(status, "TRUE AREA 53 INTRO", "INTRO TRUE AREA 53", "INTRO TRUE AREA 53", "INTRO TRUE AREA 53")
+		"GUARD ROBO HIT - 10 RINGS LOST":
+			return _language_text(status, "GUARD ROBO GETROFFEN - 10 RINGE VERLOREN", "ROBO GARDE TOUCHE - 10 ANNEAUX PERDUS", "ROBO GUARDIA GOLPEADO - 10 ANILLOS PERDIDOS", "GUARD ROBO COLPITO - 10 ANELLI PERSI")
+		"GUARD ROBO HIT - NO RINGS":
+			return _language_text(status, "GUARD ROBO GETROFFEN - KEINE RINGE", "ROBO GARDE TOUCHE - AUCUN ANNEAU", "ROBO GUARDIA GOLPEADO - SIN ANILLOS", "GUARD ROBO COLPITO - NESSUN ANELLO")
+	return status
 
 func get_hud_titles() -> Dictionary:
 	if _run_from_multiplayer:
 		return {
-			"score": "PTS",
-			"rings": "RINGS",
-			"time": "TIME",
-			"lives": "VS",
+			"score": _language_text("PTS", "PKT", "PTS", "PTS", "PTI"),
+			"rings": _language_text("RINGS", "RINGE", "ANNEAUX", "ANILLOS", "ANELLI"),
+			"time": _language_text("TIME", "ZEIT", "TEMPS", "TIEMPO", "TEMPO"),
+			"lives": _language_text("VS", "VS", "VS", "VS", "VS"),
 		}
 	return {
-		"score": "SCORE",
-		"rings": "RINGS",
-		"time": "TIME",
-		"lives": "LIFE",
+		"score": _language_text("SCORE", "PUNKTE", "SCORE", "PUNTOS", "PUNTEGGIO"),
+		"rings": _language_text("RINGS", "RINGE", "ANNEAUX", "ANILLOS", "ANELLI"),
+		"time": _language_text("TIME", "ZEIT", "TEMPS", "TIEMPO", "TEMPO"),
+		"lives": _language_text("LIFE", "LEBEN", "VIE", "VIDA", "VITE"),
 	}
 
 func get_hud_character_short_name(character_variant: int) -> String:
@@ -6338,7 +7607,7 @@ func is_mobile_platform() -> bool:
 	return platform == "Android" or platform == "iOS"
 
 func should_show_touch_controls() -> bool:
-	return is_touch_device() and is_mobile_platform()
+	return is_touch_device() and (is_mobile_platform() or _setting_enabled(TOUCH_CONTROLS_OVERRIDE_SETTING))
 
 func should_show_touch_gameplay_controls() -> bool:
 	return should_show_touch_controls() and is_gameplay_active() and not is_clear_screen() and not is_intro_screen()
@@ -6373,14 +7642,61 @@ func get_touch_menu_labels() -> Dictionary:
 		var save_labels := _get_touch_save_adjust_labels()
 		left_text = str(save_labels.get("left", left_text))
 		right_text = str(save_labels.get("right", right_text))
-	return {
-		"confirm": confirm_text,
-		"back": back_text,
-		"left": left_text,
-		"right": right_text,
-		"up": up_text,
-		"down": down_text,
+	var labels := {
+		"confirm": _localize_touch_label(confirm_text),
+		"back": _localize_touch_label(back_text),
+		"left": _localize_touch_label(left_text),
+		"right": _localize_touch_label(right_text),
+		"up": _localize_touch_label(up_text),
+		"down": _localize_touch_label(down_text),
 	}
+	return labels
+
+func _localize_touch_label(label: String) -> String:
+	match label:
+		"Left": return _language_text("Left", "Links", "Gauche", "Izq", "Sinistra")
+		"Right": return _language_text("Right", "Rechts", "Droite", "Der", "Destra")
+		"Up": return _language_text("Up", "Hoch", "Haut", "Arriba", "Su")
+		"Down": return _language_text("Down", "Runter", "Bas", "Abajo", "Giu")
+		"Start": return _language_text("Start", "Start", "Depart", "Inicio", "Avvio")
+		"Options": return _language_text("Options", "Optionen", "Options", "Opciones", "Opzioni")
+		"Back": return _language_text("Back", "Zurueck", "Retour", "Atras", "Indietro")
+		"Open": return _language_text("Open", "Oeffnen", "Ouvrir", "Abrir", "Apri")
+		"Prev": return _language_text("Prev", "Zurueck", "Prec", "Ant", "Prec")
+		"Next": return _language_text("Next", "Weiter", "Suiv", "Sig", "Succ")
+		"Off": return _language_text("Off", "Aus", "Non", "No", "No")
+		"On": return _language_text("On", "An", "Oui", "Si", "Si")
+		"Zone": return _language_text("Zone", "Zone", "Zone", "Zona", "Zona")
+		"Boss": return _language_text("Boss", "Boss", "Boss", "Jefe", "Boss")
+		"Yes": return _language_text("Yes", "Ja", "Oui", "Si", "Si")
+		"No": return _language_text("No", "Nein", "Non", "No", "No")
+		"Apply": return _language_text("Apply", "Anwenden", "Appliquer", "Aplicar", "Applica")
+		"Play": return _language_text("Play", "Abspielen", "Lire", "Reproducir", "Riproduci")
+		"Stop": return _language_text("Stop", "Stopp", "Stop", "Parar", "Stop")
+		"View": return _language_text("View", "Ansehen", "Voir", "Ver", "Vedi")
+		"Pick": return _language_text("Pick", "Waehlen", "Choisir", "Elegir", "Scegli")
+		"Delete": return _language_text("Delete", "Loeschen", "Suppr", "Borrar", "Elimina")
+		"Continue": return _language_text("Continue", "Weiter", "Continuer", "Continuar", "Continua")
+		"Rematch": return _language_text("Rematch", "Rueckspiel", "Rejouer", "Revancha", "Rivincita")
+		"Skip": return _language_text("Skip", "Ueberspringen", "Passer", "Omitir", "Salta")
+		"Fast": return _language_text("Fast", "Schnell", "Rapide", "Rapido", "Veloce")
+		"Wait": return _language_text("Wait", "Warten", "Attendre", "Espera", "Attendi")
+		"Lobby": return _language_text("Lobby", "Lobby", "Salle", "Sala", "Stanza")
+		"Enter": return _language_text("Enter", "Eingabe", "Entrer", "Entrar", "Invio")
+		"Select": return _language_text("Select", "Waehlen", "Selectionner", "Seleccionar", "Seleziona")
+		"Restart": return _language_text("Restart", "Neustart", "Recommencer", "Reiniciar", "Riavvia")
+		"Title": return _language_text("Title", "Titel", "Titre", "Titulo", "Titolo")
+		"Link": return _language_text("Link", "Link", "Lien", "Enlace", "Collegamento")
+		"Scan": return _language_text("Scan", "Suchen", "Scanner", "Buscar", "Scansione")
+		"Send": return _language_text("Send", "Senden", "Envoyer", "Enviar", "Invia")
+		"Sync": return _language_text("Sync", "Sync", "Sync", "Sincronizar", "Sincronizza")
+		"Results": return _language_text("Results", "Ergebnisse", "Resultats", "Resultados", "Risultati")
+		"Character": return _language_text("Character", "Charakter", "Personnage", "Personaje", "Personaggio")
+		"Course": return _language_text("Course", "Kurs", "Parcours", "Fase", "Corso")
+		"Lock": return _language_text("Lock", "Sperren", "Verrouiller", "Bloquear", "Blocca")
+		"Auto": return _language_text("Auto", "Auto", "Auto", "Auto", "Auto")
+		"Advance": return _language_text("Advance", "Weiter", "Avancer", "Avanzar", "Avanti")
+	return label
 
 func _is_touch_menu_interactive_screen() -> bool:
 	return is_title_screen() \
@@ -6513,7 +7829,7 @@ func _get_touch_menu_action_labels() -> Dictionary:
 	if is_sonic_team_logo_screen():
 		return {"confirm": "Skip", "back": "Skip"}
 	if is_credits_screen():
-		return {"confirm": "Next", "back": "Skip"}
+		return {"confirm": "Auto", "back": "Skip"}
 	if is_copyright_screen():
 		return {"confirm": "Continue", "back": "Skip"}
 	if is_credits_end_screen() or is_character_unlock_screen():
@@ -6525,7 +7841,7 @@ func _get_touch_menu_action_labels() -> Dictionary:
 	if is_intro_screen():
 		return {"confirm": "Skip", "back": "Skip"}
 	if is_game_over_screen():
-		if get_game_over_title_text() == "TIME OVER" and not _run_from_time_attack:
+		if _game_over_time_over and not _run_from_time_attack:
 			return {"confirm": "Restart", "back": "Restart"}
 		return {"confirm": "Title", "back": "Title"}
 	if is_paused():
@@ -6539,16 +7855,12 @@ func _get_touch_title_action_labels() -> Dictionary:
 		TITLE_PHASE_PRESS_START:
 			return {"confirm": "Start", "back": "Options"}
 		TITLE_PHASE_PLAY_MODE, TITLE_PHASE_SINGLE_PLAYER, TITLE_PHASE_MULTI_PLAYER, TITLE_PHASE_TIME_ATTACK, TITLE_PHASE_TINY_CHAO_GARDEN:
-			var items := get_title_menu_items()
-			if _title_menu_index >= 0 and _title_menu_index < items.size():
-				var item_text := str(items[_title_menu_index])
-				if item_text.contains("BACK"):
-					return {"confirm": "Back", "back": "Back"}
-				if item_text.contains("START"):
-					return {"confirm": "Start", "back": "Back"}
-				if item_text.contains("OPTIONS"):
-					return {"confirm": "Open", "back": "Back"}
-			return {"confirm": "Open", "back": "Back"}
+			var confirm_action := "Open"
+			if _title_phase == TITLE_PHASE_SINGLE_PLAYER and _title_menu_index == 0:
+				confirm_action = "Start"
+			elif _title_phase == TITLE_PHASE_TINY_CHAO_GARDEN and _title_menu_index == 1:
+				confirm_action = "Back"
+			return {"confirm": confirm_action, "back": "Back"}
 		TITLE_PHASE_MULTI_CONNECT:
 			match _title_menu_index:
 				0:
@@ -6566,10 +7878,10 @@ func _get_touch_title_action_labels() -> Dictionary:
 				_:
 					return {"confirm": "Back", "back": "Back"}
 		TITLE_PHASE_SINGLEPAK_RESULTS:
-			var result_items := get_singlepak_results_items()
-			if _singlepak_results_cursor >= 0 and _singlepak_results_cursor < result_items.size():
-				var result_text := str(result_items[_singlepak_results_cursor])
-				return {"confirm": "Continue" if result_text.contains("CONTINUE") else ("Rematch" if result_text.contains("REMATCH") else "Back"), "back": "Back"}
+			if _singlepak_results_cursor == 0:
+				return {"confirm": "Continue" if _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION else "Rematch", "back": "Back"}
+			if _singlepak_results_cursor == 1:
+				return {"confirm": "Back", "back": "Back"}
 			return {"confirm": "OK", "back": "Back"}
 		TITLE_PHASE_MULTIPLAYER_LOBBY:
 			return {"confirm": "Rematch" if _multiplayer_lobby_cursor == 0 else "Title", "back": "Back"}
@@ -6654,60 +7966,60 @@ func get_back_label() -> String:
 func get_title_prompt_text() -> String:
 	match _title_phase:
 		TITLE_PHASE_PRESS_START:
-			return "%s OR %s TO START" % [get_confirm_label(), "Z"]
+			return _language_text("%s OR %s TO START", "%s ODER %s ZUM STARTEN", "%s OU %s POUR COMMENCER", "%s O %s PARA EMPEZAR", "%s O %s PER INIZIARE") % [get_confirm_label(), "Z"]
 		TITLE_PHASE_PLAY_MODE:
-			return "%s SELECT   %s CONFIRM   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+			return _language_text("%s SELECT   %s CONFIRM   %s BACK", "%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK", "%s SELECTIONNER   %s CONFIRMER   %s RETOUR", "%s SELECCIONAR   %s CONFIRMAR   %s ATRAS", "%s SELEZIONA   %s CONFERMA   %s INDIETRO") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 		TITLE_PHASE_SINGLE_PLAYER:
-			return "%s SELECT   %s CONFIRM   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+			return _language_text("%s SELECT   %s CONFIRM   %s BACK", "%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK", "%s SELECTIONNER   %s CONFIRMER   %s RETOUR", "%s SELECCIONAR   %s CONFIRMAR   %s ATRAS", "%s SELEZIONA   %s CONFERMA   %s INDIETRO") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 		TITLE_PHASE_MULTI_PLAYER:
-			return "%s SELECT   %s CONFIRM   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+			return _language_text("%s SELECT   %s CONFIRM   %s BACK", "%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK", "%s SELECTIONNER   %s CONFIRMER   %s RETOUR", "%s SELECCIONAR   %s CONFIRMAR   %s ATRAS", "%s SELEZIONA   %s CONFERMA   %s INDIETRO") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 		TITLE_PHASE_TIME_ATTACK:
-			return "%s SELECT   %s CONFIRM   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+			return _language_text("%s SELECT   %s CONFIRM   %s BACK", "%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK", "%s SELECTIONNER   %s CONFIRMER   %s RETOUR", "%s SELECCIONAR   %s CONFIRMAR   %s ATRAS", "%s SELEZIONA   %s CONFERMA   %s INDIETRO") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 		TITLE_PHASE_TINY_CHAO_GARDEN:
-			return "%s SELECT   %s CONFIRM   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+			return _language_text("%s SELECT   %s CONFIRM   %s BACK", "%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK", "%s SELECTIONNER   %s CONFIRMER   %s RETOUR", "%s SELECCIONAR   %s CONFIRMAR   %s ATRAS", "%s SELEZIONA   %s CONFERMA   %s INDIETRO") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 		TITLE_PHASE_MULTI_CONNECT:
-			return "%s SELECT   %s CONFIRM   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+			return _language_text("%s SELECT   %s CONFIRM   %s BACK", "%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK", "%s SELECTIONNER   %s CONFIRMER   %s RETOUR", "%s SELECCIONAR   %s CONFIRMAR   %s ATRAS", "%s SELEZIONA   %s CONFERMA   %s INDIETRO") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 		TITLE_PHASE_TINY_CHAO_SETUP:
-			return "%s SELECT   %s CONFIRM   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+			return _language_text("%s SELECT   %s CONFIRM   %s BACK", "%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK", "%s SELECTIONNER   %s CONFIRMER   %s RETOUR", "%s SELECCIONAR   %s CONFIRMAR   %s ATRAS", "%s SELEZIONA   %s CONFERMA   %s INDIETRO") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 		TITLE_PHASE_SINGLEPAK_SYNC:
-			return "%s SELECT   %s CONFIRM   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+			return _language_text("%s SELECT   %s CONFIRM   %s BACK", "%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK", "%s SELECTIONNER   %s CONFIRMER   %s RETOUR", "%s SELECCIONAR   %s CONFIRMAR   %s ATRAS", "%s SELEZIONA   %s CONFERMA   %s INDIETRO") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 		TITLE_PHASE_SINGLEPAK_RESULTS:
-			return "%s SELECT   %s CONFIRM   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+			return _language_text("%s SELECT   %s CONFIRM   %s BACK", "%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK", "%s SELECTIONNER   %s CONFIRMER   %s RETOUR", "%s SELECCIONAR   %s CONFIRMAR   %s ATRAS", "%s SELEZIONA   %s CONFERMA   %s INDIETRO") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 		TITLE_PHASE_MULTIPLAYER_LOBBY:
-			return "%s SELECT   %s CONFIRM   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+			return _language_text("%s SELECT   %s CONFIRM   %s BACK", "%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK", "%s SELECTIONNER   %s CONFIRMER   %s RETOUR", "%s SELECCIONAR   %s CONFIRMAR   %s ATRAS", "%s SELEZIONA   %s CONFERMA   %s INDIETRO") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 		TITLE_PHASE_TIME_ATTACK_LOBBY:
-			return "%s SELECT   %s CONFIRM   LEFT/RIGHT COURSE   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+			return _language_text("%s SELECT   %s CONFIRM   LEFT/RIGHT COURSE   %s BACK", "%s AUSWAEHLEN   %s BESTAETIGEN   LINKS/RECHTS KURS   %s ZURUECK", "%s SELECTIONNER   %s CONFIRMER   PARCOURS GAUCHE/DROITE   %s RETOUR", "%s SELECCIONAR   %s CONFIRMAR   FASE IZQ/DER   %s ATRAS", "%s SELEZIONA   %s CONFERMA   CORSO SINISTRA/DESTRA   %s INDIETRO") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 		TITLE_PHASE_COURSE_SELECT:
 			if is_course_select_starting():
-				return "STARTING STAGE..."
+				return _language_text("STARTING STAGE...", "STUFE STARTET...", "DEBUT DU STAGE...", "INICIANDO FASE...", "AVVIO STAGE...")
 			if is_course_select_busy():
-				return "COURSE MOVING..."
-			return "LEFT/RIGHT COURSE   %s START   %s BACK" % [get_confirm_label(), get_secondary_label()]
+				return _language_text("COURSE MOVING...", "KURS BEWEGT SICH...", "PARCOURS EN MOUVEMENT...", "FASE EN MOVIMIENTO...", "CORSO IN MOVIMENTO...")
+			return _language_text("LEFT/RIGHT COURSE   %s START   %s BACK", "LINKS/RECHTS KURS   %s START   %s ZURUECK", "PARCOURS GAUCHE/DROITE   %s DEPART   %s RETOUR", "FASE IZQ/DER   %s INICIO   %s ATRAS", "CORSO SINISTRA/DESTRA   %s AVVIO   %s INDIETRO") % [get_confirm_label(), get_secondary_label()]
 		TITLE_PHASE_MULTIPLAYER_OUTCOME:
-			return "%s CONTINUE   %s SKIP" % [get_confirm_label(), get_secondary_label()]
-	return "%s SELECT, %s TO BEGIN, %s OPTIONS" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+			return _language_text("%s CONTINUE   %s SKIP", "%s WEITER   %s UEBERSPRINGEN", "%s CONTINUER   %s PASSER", "%s CONTINUAR   %s OMITIR", "%s CONTINUA   %s SALTA") % [get_confirm_label(), get_secondary_label()]
+	return _language_text("%s SELECT, %s TO BEGIN, %s OPTIONS", "%s AUSWAEHLEN, %s ZUM STARTEN, %s OPTIONEN", "%s SELECTIONNER, %s POUR COMMENCER, %s OPTIONS", "%s SELECCIONAR, %s PARA EMPEZAR, %s OPCIONES", "%s SELEZIONA, %s PER INIZIARE, %s OPZIONI") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 
 func get_press_start_title_text() -> String:
 	return get_title_text()
 
 func get_press_start_prompt_text() -> String:
 	if not _title_notice_text.is_empty():
-		return _title_notice_text
+		return get_title_notice_text()
 	return get_title_prompt_text()
 
 func get_press_start_subtitle_text() -> String:
-	return "HIGH-SPEED ACTION"
+	return _language_text("HIGH-SPEED ACTION", "HOCHGESCHWINDIGKEIT", "ACTION RAPIDE", "ACCION A TODA VELOCIDAD", "AZIONE AD ALTA VELOCITA")
 
 func get_press_start_info_rows() -> Array:
 	return [
 		{
-			"text": "SINGLE PLAYER   MULTIPLAYER",
+			"text": _language_text("SINGLE PLAYER   MULTIPLAYER", "EINZELSPIELER   MULTIPLAYER", "JOUEUR SOLO   MULTIJOUEUR", "UN JUGADOR   MULTIJUGADOR", "GIOCATORE SINGOLO   MULTIPLAYER"),
 			"position": Vector2(292.0, 382.0),
 			"color": Color(0.22, 0.42, 0.78, 0.94),
 			"pulse": false,
 		},
 		{
-			"text": "PRESS START",
+			"text": _language_text("PRESS START", "START DRUECKEN", "APPUYER SUR START", "PULSA START", "PREMI START"),
 			"position": Vector2(444.0, 468.0),
 			"color": Color(0.92, 0.42, 0.18, 0.95),
 			"pulse": true,
@@ -6855,13 +8167,14 @@ func start_title_selection() -> void:
 		TITLE_PHASE_TIME_ATTACK:
 			match _title_menu_index:
 				0:
-					open_character_select(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_ZONE)
+					# time_attack_mode_select.c creates the carousel at Sonic.
+					open_character_select(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_ZONE, 0)
 					return
 				1:
 					if not _boss_time_attack_unlocked:
 						_title_notice_text = "BOSS TIME ATTACK LOCKED"
 						return
-					open_character_select(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_BOSS)
+					open_character_select(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_BOSS, 0)
 					return
 		TITLE_PHASE_TIME_ATTACK_LOBBY:
 			match _time_attack_lobby_cursor:
@@ -6869,6 +8182,9 @@ func start_title_selection() -> void:
 					_begin_level_run(_selected_level_index, true)
 					return
 				1:
+					# time_attack_lobby.c resets gCurrentLevel to Zone 1 Act 1
+					# before opening character select.
+					_selected_level_index = 0
 					open_character_select(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_BOSS if _time_attack_boss_mode else CHARACTER_SELECT_CONTEXT_TIME_ATTACK_ZONE)
 					return
 				2:
@@ -6985,6 +8301,10 @@ func open_save_options_from_title() -> void:
 		open_title_screen_at_single_player_menu(3)
 		return
 	if _title_phase == TITLE_PHASE_MULTI_CONNECT:
+		# singlepak_connection.c ignores B once MultiBootStartMaster has
+		# begun; interrupting that transfer leaves the linked client half-booted.
+		if _multiplayer_pak_mode == 1 and is_singlepak_transfer_started():
+			return
 		_multiplayer_disconnect_timer = 5.0 / 60.0
 		_title_notice_text = "DISCONNECTING LINK"
 		_status_text = get_title_prompt_text()
@@ -7018,6 +8338,12 @@ func open_save_options_from_title() -> void:
 func open_options_screen() -> void:
 	_game_state = GAME_STATE_SAVE_OPTIONS
 	_options_mode = OPTIONS_MODE_MAIN
+	# CreateOptionsScreen starts a fresh options context. Do not let a
+	# previous profile-creation route affect a normal title/options visit.
+	_creating_new_profile = false
+	_return_to_multiplayer_after_name_entry = false
+	_return_to_title_after_new_profile = false
+	_return_to_multiplayer_menu_index = 0
 	_options_menu_index = 0
 	_player_data_menu_index = 0
 	_button_config_index = 0
@@ -7051,10 +8377,7 @@ func open_profile_name_from_multiplayer() -> void:
 		_status_text = "SELECT PROFILE LANGUAGE"
 		return
 	_options_mode = OPTIONS_MODE_NAME_ENTRY
-	_name_entry_menu_index = 0
-	_name_entry_cursor_col = 0
-	_name_entry_cursor_row = 0
-	_name_entry_matrix_page_index = 0
+	_reset_name_entry_navigation()
 	_name_entry_snapshot = _player_profile_name.duplicate()
 	_multiplayer_name_entry_snapshot = _player_profile_name.duplicate()
 	_status_text = "NAME ENTRY"
@@ -7079,6 +8402,19 @@ func _return_from_name_entry_to_multiplayer(saved: bool) -> void:
 	_return_to_title_after_new_profile = false
 	_creating_new_profile = false
 	open_title_screen_at_multiplayer_menu(clampi(_return_to_multiplayer_menu_index, 0, 1), "PROFILE NAME SAVED" if saved else "")
+
+func _reset_name_entry_navigation() -> void:
+	# ProfileNameScreenInitRegisters starts non-Japanese names on the source
+	# character-matrix page 99 and places the input cursor at the first empty
+	# name slot. Japanese starts at the first matrix page.
+	_name_entry_menu_index = _player_profile_name.size() - 1
+	for i in range(_player_profile_name.size()):
+		if str(_player_profile_name[i]).strip_edges().is_empty():
+			_name_entry_menu_index = i
+			break
+	_name_entry_cursor_col = 0
+	_name_entry_cursor_row = 0
+	_name_entry_matrix_page_index = 0 if _language_index == 0 else 99
 
 func _start_multiplayer_mode(pak_mode: int) -> void:
 	_multiplayer_pak_mode = clampi(pak_mode, 0, 1)
@@ -7123,7 +8459,7 @@ func move_save_selection(direction: int) -> void:
 			# The original delete prompts only react to Left/Right.
 			return
 		OPTIONS_MODE_TIME_RECORDS:
-			if _time_records_context == TIME_RECORDS_CONTEXT_OPTIONS and _time_records_view == TIME_RECORDS_VIEW_COURSES and not _time_records_boss_mode:
+			if _time_records_context == TIME_RECORDS_CONTEXT_OPTIONS and _time_records_view == TIME_RECORDS_VIEW_COURSES:
 				_time_records_character_index = wrapi(_time_records_character_index + direction, 0, get_time_records_character_rows().size())
 		OPTIONS_MODE_NAME_ENTRY:
 			_move_name_entry_cursor_vertical(direction)
@@ -7198,33 +8534,42 @@ func accept_save_selection() -> void:
 		return
 	match _options_mode:
 		OPTIONS_MODE_MAIN:
-			var option_items := get_options_menu_items()
-			var option_label := ""
-			if _options_menu_index >= 0 and _options_menu_index < option_items.size():
-				option_label = str(option_items[_options_menu_index])
-			match option_label:
-				"PLAYER DATA":
+			# Keep the action semantic. Display labels are localized and must not
+			# be used as control-flow keys.
+			match _options_menu_index:
+				0:
 					_options_mode = OPTIONS_MODE_PLAYER_DATA
 					_player_data_menu_index = 0
-				"DIFFICULTY":
+				1:
+					_difficulty_before_edit = _difficulty_index
 					_options_mode = OPTIONS_MODE_DIFFICULTY
-				"TIME LIMIT":
+				2:
+					_time_limit_before_edit = _time_limit_enabled
 					_options_mode = OPTIONS_MODE_TIME_LIMIT
-				"LANGUAGE":
+				3:
 					_language_index_before_edit = _language_index
 					_options_mode = OPTIONS_MODE_LANGUAGE
-				"BUTTON CONFIG":
+				4:
 					_options_mode = OPTIONS_MODE_BUTTON_CONFIG
 					_button_config_index = 0
 					_button_bindings_before_edit = _button_bindings.duplicate()
-				"SOUND TEST":
-					_options_mode = OPTIONS_MODE_SOUND_TEST
-					_sound_test_menu_index = 0
-					_sound_test_state = SOUND_TEST_STATE_STOPPED
-				"DELETE GAME DATA":
-					_options_mode = OPTIONS_MODE_DELETE_CONFIRM
-					_delete_confirm_index = 1
-				"EXIT":
+				5:
+					if _sound_test_unlocked:
+						_options_mode = OPTIONS_MODE_SOUND_TEST
+						_sound_test_menu_index = 0
+						_sound_test_state = SOUND_TEST_STATE_STOPPED
+					else:
+						_options_mode = OPTIONS_MODE_DELETE_CONFIRM
+						_delete_confirm_index = 1
+				6:
+					if _sound_test_unlocked:
+						_options_mode = OPTIONS_MODE_DELETE_CONFIRM
+						_delete_confirm_index = 1
+					else:
+						_persist_frontend_state()
+						open_title_screen_at_single_player_menu(0)
+						return
+				7:
 					_persist_frontend_state()
 					open_title_screen_at_single_player_menu(0)
 					return
@@ -7232,10 +8577,7 @@ func accept_save_selection() -> void:
 			match _player_data_menu_index:
 				0:
 					_options_mode = OPTIONS_MODE_NAME_ENTRY
-					_name_entry_menu_index = 0
-					_name_entry_cursor_col = 0
-					_name_entry_cursor_row = 0
-					_name_entry_matrix_page_index = 0
+					_reset_name_entry_navigation()
 					_name_entry_snapshot = _player_profile_name.duplicate()
 				1:
 					_options_mode = OPTIONS_MODE_TIME_RECORDS
@@ -7260,10 +8602,7 @@ func accept_save_selection() -> void:
 				_player_profile_name = [" ", " ", " ", " ", " ", " "]
 				_name_entry_snapshot = _player_profile_name.duplicate()
 				_multiplayer_name_entry_snapshot = _player_profile_name.duplicate()
-				_name_entry_menu_index = 0
-				_name_entry_cursor_col = 0
-				_name_entry_cursor_row = 0
-				_name_entry_matrix_page_index = 0
+				_reset_name_entry_navigation()
 				_options_mode = OPTIONS_MODE_NAME_ENTRY
 				_status_text = "NAME ENTRY"
 			else:
@@ -7273,12 +8612,8 @@ func accept_save_selection() -> void:
 			match _button_config_index:
 				0:
 					_finalize_button_config_a_stage()
-					update_save_menu_status()
-					return
 				1:
 					_finalize_button_config_b_stage()
-					update_save_menu_status()
-					return
 				2:
 					_commit_button_config_bindings()
 					_options_mode = OPTIONS_MODE_MAIN
@@ -7393,10 +8728,12 @@ func cancel_save_selection() -> void:
 					_options_mode = OPTIONS_MODE_MAIN
 					_options_menu_index = 4
 				1:
+					# The original B stage starts the configuration over at A.
 					_button_config_index = 0
 				2:
-					# B from the R stage returns directly to the A stage.
-					_button_config_index = 0
+					# The original R stage returns to the B stage, preserving the
+					# preview so the last assignment can still be adjusted.
+					_button_config_index = 1
 			update_save_menu_status()
 		OPTIONS_MODE_SOUND_TEST:
 			if _sound_test_state == SOUND_TEST_STATE_PLAYING:
@@ -7406,10 +8743,12 @@ func cancel_save_selection() -> void:
 				_options_menu_index = 5
 			update_save_menu_status()
 		OPTIONS_MODE_DIFFICULTY:
+			_difficulty_index = _difficulty_before_edit
 			_options_mode = OPTIONS_MODE_MAIN
 			_options_menu_index = 1
 			update_save_menu_status()
 		OPTIONS_MODE_TIME_LIMIT:
+			_time_limit_enabled = _time_limit_before_edit
 			_options_mode = OPTIONS_MODE_MAIN
 			_options_menu_index = 2
 			update_save_menu_status()
@@ -7419,8 +8758,7 @@ func cancel_save_selection() -> void:
 			update_save_menu_status()
 		OPTIONS_MODE_TIME_RECORDS:
 			if _time_records_context == TIME_RECORDS_CONTEXT_TIME_ATTACK:
-				open_character_select(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_BOSS if _time_records_boss_mode else CHARACTER_SELECT_CONTEXT_TIME_ATTACK_ZONE)
-				_selected_character_index = _time_records_character_index
+				open_character_select(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_BOSS if _time_records_boss_mode else CHARACTER_SELECT_CONTEXT_TIME_ATTACK_ZONE, _time_records_character_index)
 			else:
 				_options_mode = OPTIONS_MODE_PLAYER_DATA
 				_player_data_menu_index = 1
@@ -7519,11 +8857,14 @@ func can_skip_intro() -> bool:
 		return false
 	return not (_run_from_time_attack and _time_attack_boss_mode)
 
+func _is_boss_intro() -> bool:
+	return _run_from_time_attack and _time_attack_boss_mode
+
 func clear_replay() -> void:
 	if _game_state != GAME_STATE_CLEAR or not is_clear_input_ready():
 		return
 	if _run_from_time_attack:
-		open_time_attack_lobby(_time_attack_boss_mode)
+		_time_attack_exit_timer = TIME_ATTACK_RESULTS_EXIT_FADE_SECONDS
 
 
 func clear_return_to_title() -> void:
@@ -7589,14 +8930,16 @@ func get_play_mode_rows() -> Array:
 	return [
 		{
 			"name": _language_text("SINGLE PLAYER", "EINZELSPIELER", "JOUEUR SOLO", "UN JUGADOR", "GIOCATORE SINGOLO"),
-			"description": "STORY, STAGES AND SOLO PROGRESSION",
-			"status": "READY",
+			"description": _language_text("STORY, STAGES AND SOLO PROGRESSION", "GESCHICHTE, LEVELS UND SOLO-FORTSCHRITT", "HISTOIRE, NIVEAUX ET PROGRESSION SOLO", "HISTORIA, FASES Y PROGRESO EN SOLITARIO", "STORIA, LIVELLI E PROGRESSIONE SOLA"),
+			"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
+			"available": true,
 			"selected": _title_menu_index == 0,
 		},
 		{
 			"name": _language_text("MULTI PLAYER", "MEHRSPIELER", "MULTIJOUEUR", "MULTIJUGADOR", "MULTIGIOCATORE"),
-			"description": "LINK RACES, BATTLES AND SHARED RESULTS",
-			"status": "READY" if has_profile_name() else "NAME REQ",
+			"description": _language_text("LINK RACES, BATTLES AND SHARED RESULTS", "LINK-RENNEN, KAEMPFE UND GEMEINSAME ERGEBNISSE", "COURSES, COMBATS ET RESULTATS PARTAGES", "CARRERAS, BATALLAS Y RESULTADOS COMPARTIDOS", "GARE, SFIDE E RISULTATI CONDIVISI"),
+			"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO") if has_profile_name() else _language_text("NAME REQ", "NAME NOETIG", "NOM REQUIS", "NOMBRE REQUERIDO", "NOME RICHIESTO"),
+			"available": has_profile_name(),
 			"selected": _title_menu_index == 1,
 		},
 	]
@@ -7606,21 +8949,21 @@ func get_play_mode_title_text() -> String:
 
 func get_play_mode_prompt_text() -> String:
 	if not _title_notice_text.is_empty():
-		return _title_notice_text
-	return "SELECT A PLAY STYLE"
+		return get_title_notice_text()
+	return _language_text("SELECT A PLAY STYLE", "SPIELART AUSWAEHLEN", "CHOISIR UN MODE", "SELECCIONA UN MODO", "SCEGLI UNA MODALITA")
 
 func get_play_mode_detail_text() -> String:
 	return get_title_prompt_text()
 
 func get_play_mode_info_text() -> String:
 	if _title_menu_index == 0:
-		return "START THE SINGLE-PLAYER FRONT END"
-	return "OPEN THE MULTIPLAYER MODE SELECT"
+		return _language_text("START THE SINGLE-PLAYER FRONT END", "EINZELSPIELER-MENUE STARTEN", "LANCER LE MENU SOLO", "INICIAR EL MENU EN SOLITARIO", "AVVIA IL MENU GIOCATORE SINGOLO")
+	return _language_text("OPEN THE MULTIPLAYER MODE SELECT", "MEHRSPIELER-MODUS OEFFNEN", "OUVRIR LE CHOIX MULTIJOUEUR", "ABRIR SELECCION MULTIJUGADOR", "APRI LA SELEZIONE MULTIGIOCATORE")
 
 func get_play_mode_summary_text() -> String:
 	if _title_menu_index == 0:
-		return "SINGLE PLAYER\nPROFILE: %s\nSTART POINT: %s" % [get_profile_name_text(), get_selected_level_text()]
-	return "MULTIPLAYER\nPROFILE: %s\nNAME STATUS: %s" % [get_profile_name_text(), "READY" if has_profile_name() else "REQUIRED"]
+		return "%s\n%s: %s\n%s: %s" % [_language_text("SINGLE PLAYER", "EINZELSPIELER", "JOUEUR SOLO", "UN JUGADOR", "GIOCATORE SINGOLO"), _language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), get_profile_name_text(), _language_text("START POINT", "STARTPUNKT", "POINT DE DEPART", "PUNTO DE INICIO", "PUNTO DI PARTENZA"), get_selected_level_text()]
+	return "%s\n%s: %s\n%s: %s" % [_language_text("MULTIPLAYER", "MEHRSPIELER", "MULTIJOUEUR", "MULTIJUGADOR", "MULTIGIOCATORE"), _language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), get_profile_name_text(), _language_text("NAME STATUS", "NAMENSSTATUS", "STATUT DU NOM", "ESTADO DEL NOMBRE", "STATO NOME"), _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO") if has_profile_name() else _language_text("REQUIRED", "ERFORDERLICH", "REQUIS", "REQUERIDO", "RICHIESTO")]
 
 func get_play_mode_badge_text() -> String:
 	return "SOLO" if _title_menu_index == 0 else "VS"
@@ -7644,28 +8987,32 @@ func get_single_player_rows() -> Array:
 	var rows := [
 		{
 			"name": _language_text("GAME START", "SPIELSTART", "DEBUT DU JEU", "INICIO", "INIZIO"),
-			"description": "BEGIN THE MAIN ADVENTURE",
-			"status": "READY",
+			"description": _language_text("BEGIN THE MAIN ADVENTURE", "DAS HAUPTABENTEUER STARTEN", "COMMENCER L'AVENTURE PRINCIPALE", "COMENZAR LA AVENTURA PRINCIPAL", "INIZIA L'AVVENTURA PRINCIPALE"),
+			"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
+			"available": true,
 			"selected": _title_menu_index == 0,
 		},
 		{
 			"name": _language_text("TIME ATTACK", "ZEITANGRIFF", "CONTRE LA MONTRE", "CONTRARRELOJ", "ATTACCO A TEMPO"),
-			"description": "RACE FOR THE FASTEST CLEAR TIME",
-			"status": "READY",
+			"description": _language_text("RACE FOR THE FASTEST CLEAR TIME", "UM DIE SCHNELLSTE ABSCHLUSSZEIT RENNEN", "COURIR POUR LE MEILLEUR TEMPS", "CORRE POR EL MEJOR TIEMPO", "CORRI PER IL TEMPO MIGLIORE"),
+			"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
+			"available": true,
 			"selected": _title_menu_index == 1,
 		},
 		{
 			"name": _language_text("OPTIONS", "OPTIONEN", "OPTIONS", "OPCIONES", "OPZIONI"),
-			"description": "ADJUST SAVE DATA AND SYSTEM SETTINGS",
-			"status": "SETUP",
+			"description": _language_text("ADJUST SAVE DATA AND SYSTEM SETTINGS", "SPEICHER- UND SYSTEMEINSTELLUNGEN AENDERN", "REGLER LES DONNEES ET LE SYSTEME", "AJUSTAR DATOS Y SISTEMA", "REGOLA DATI E IMPOSTAZIONI"),
+			"status": _language_text("SETUP", "EINSTELLUNGEN", "CONFIGURATION", "AJUSTES", "CONFIGURA"),
+			"available": true,
 			"selected": _title_menu_index == 2,
 		},
 	]
 	if is_tiny_chao_unlocked():
 		rows.append({
 			"name": _language_text("TINY CHAO GARDEN", "KLEINER CHAO-GARTEN", "MINI JARDIN CHAO", "JARDIN CHAO", "GIARDINO CHAO"),
-			"description": "OPEN THE HANDHELD CHAO GARDEN LINK",
-			"status": "READY",
+			"description": _language_text("OPEN THE HANDHELD CHAO GARDEN LINK", "CHAO-GARTEN-LINK OEFFNEN", "OUVRIR LE LIEN DU JARDIN CHAO", "ABRIR EL ENLACE DEL JARDIN CHAO", "APRI IL COLLEGAMENTO GIARDINO CHAO"),
+			"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
+			"available": true,
 			"selected": _title_menu_index == 3,
 		})
 	return rows
@@ -7675,8 +9022,8 @@ func get_single_player_title_text() -> String:
 
 func get_single_player_prompt_text() -> String:
 	if not _title_notice_text.is_empty():
-		return _title_notice_text
-	return "SELECT A MODE"
+		return get_title_notice_text()
+	return _language_text("SELECT A MODE", "MODUS AUSWAEHLEN", "CHOISIR UN MODE", "SELECCIONA UN MODO", "SCEGLI UNA MODALITA")
 
 func get_single_player_detail_text() -> String:
 	return get_title_prompt_text()
@@ -7684,40 +9031,40 @@ func get_single_player_detail_text() -> String:
 func get_single_player_info_text() -> String:
 	match _title_menu_index:
 		0:
-			return "START A STANDARD STORY RUN"
+			return _language_text("START A STANDARD STORY RUN", "STANDARD-GESCHICHTE STARTEN", "LANCER UNE AVENTURE STANDARD", "INICIAR UNA HISTORIA ESTANDAR", "AVVIA UNA STORIA STANDARD")
 		1:
-			return "REPLAY CLEARED STAGES FOR BEST TIMES"
+			return _language_text("REPLAY CLEARED STAGES FOR BEST TIMES", "GESCHAFFTE LEVELS FUER BESTZEITEN SPIELEN", "REJOUER LES NIVEAUX POUR LES RECORDS", "REPITE FASES PARA MEJORES TIEMPOS", "RIGIOCA I LIVELLI PER I RECORD")
 		2:
-			return "PROFILE, SAVE, SOUND, AND CONTROL SETTINGS"
+			return _language_text("PROFILE, SAVE, SOUND, AND CONTROL SETTINGS", "PROFIL-, SPEICHER-, TON- UND STEUERUNGSOPTIONEN", "PROFIL, SAUVEGARDE, SON ET COMMANDES", "PERFIL, DATOS, SONIDO Y CONTROLES", "PROFILO, SALVATAGGI, AUDIO E COMANDI")
 		3:
 			if is_tiny_chao_unlocked():
-				return "DIRECT HANDOFF TO TINY CHAO GARDEN"
-	return "SELECT A MODE"
+				return _language_text("DIRECT HANDOFF TO TINY CHAO GARDEN", "DIREKTE UEBERGABE ZUM CHAO-GARTEN", "TRANSFERT DIRECT AU JARDIN CHAO", "ENLACE DIRECTO AL JARDIN CHAO", "COLLEGAMENTO DIRETTO AL GIARDINO CHAO")
+	return _language_text("SELECT A MODE", "MODUS WAEHLEN", "CHOISIR UN MODE", "SELECCIONA UN MODO", "SCEGLI UNA MODALITA")
 
 func get_single_player_summary_title() -> String:
 	match _title_menu_index:
 		0:
-			return "GAME START"
+			return _language_text("GAME START", "SPIELSTART", "DEBUT DU JEU", "INICIO", "INIZIO")
 		1:
-			return "TIME ATTACK"
+			return _language_text("TIME ATTACK", "ZEITANGRIFF", "CONTRE LA MONTRE", "CONTRARRELOJ", "ATTACCO A TEMPO")
 		2:
-			return "OPTIONS"
+			return _language_text("OPTIONS", "OPTIONEN", "OPTIONS", "OPCIONES", "OPZIONI")
 		3:
 			if is_tiny_chao_unlocked():
-				return "TINY CHAO GARDEN"
-	return "SINGLE PLAYER"
+				return _language_text("TINY CHAO GARDEN", "KLEINER CHAO-GARTEN", "MINI JARDIN CHAO", "JARDIN CHAO", "GIARDINO CHAO")
+	return _language_text("SINGLE PLAYER", "EINZELSPIELER", "JOUEUR SOLO", "UN JUGADOR", "GIOCATORE SINGOLO")
 
 func get_single_player_summary_text() -> String:
 	match _title_menu_index:
 		0:
-			return "MAIN GAME\nCURRENT RUNNER: %s\nSTART POINT: %s" % [get_selected_character_name(), get_selected_level_text()]
+			return "%s\n%s: %s\n%s: %s" % [_language_text("MAIN GAME", "HAUPTSPIEL", "JEU PRINCIPAL", "JUEGO PRINCIPAL", "GIOCO PRINCIPALE"), _language_text("CURRENT RUNNER", "AKTUELLER CHARAKTER", "PERSONNAGE ACTUEL", "PERSONAJE ACTUAL", "PERSONAGGIO ATTUALE"), get_selected_character_name(), _language_text("START POINT", "STARTPUNKT", "POINT DE DEPART", "PUNTO DE INICIO", "PUNTO DI PARTENZA"), get_selected_level_text()]
 		1:
-			return "TIME ATTACK\nBOSS ATTACK: %s\nBEST MODE: SOLO" % ["UNLOCKED" if _boss_time_attack_unlocked else "LOCKED"]
+			return "%s\n%s: %s\n%s: SOLO" % [_language_text("TIME ATTACK", "ZEITANGRIFF", "CONTRE LA MONTRE", "CONTRARRELOJ", "ATTACCO A TEMPO"), _language_text("BOSS ATTACK", "BOSS-ANGRIFF", "ATTAQUE BOSS", "ATAQUE BOSS", "ATTACCO BOSS"), _language_text("UNLOCKED", "FREIGESCHALTET", "DEBLOQUE", "DESBLOQUEADO", "SBLOCCATO") if _boss_time_attack_unlocked else _language_text("LOCKED", "GESPERRT", "VERROUILLE", "BLOQUEADO", "BLOCCATO"), _language_text("BEST MODE", "BESTER MODUS", "MEILLEUR MODE", "MEJOR MODO", "MODALITA MIGLIORE")]
 		2:
-			return "SAVE OPTIONS\nPROFILE: %s\nLANGUAGE: %s" % [get_profile_name_text(), get_language_text()]
+			return "%s\n%s: %s\n%s: %s" % [_language_text("SAVE OPTIONS", "SPEICHEROPTIONEN", "OPTIONS DE SAUVEGARDE", "OPCIONES DE DATOS", "OPZIONI SALVATAGGIO"), _language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), get_profile_name_text(), _language_text("LANGUAGE", "SPRACHE", "LANGUE", "IDIOMA", "LINGUA"), get_language_text()]
 		3:
 			if is_tiny_chao_unlocked():
-				return "TINY CHAO GARDEN\nSESSION ID: %s\nSTATUS: READY" % _tiny_chao_session_id
+				return "%s\n%s: %s\n%s: %s" % [_language_text("TINY CHAO GARDEN", "KLEINER CHAO-GARTEN", "MINI JARDIN CHAO", "JARDIN CHAO", "GIARDINO CHAO"), _language_text("SESSION ID", "SITZUNGS-ID", "ID SESSION", "ID DE SESION", "ID SESSIONE"), _tiny_chao_session_id, _language_text("STATUS", "STATUS", "STATUT", "ESTADO", "STATO"), _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")]
 	return ""
 
 func get_single_player_chrome_colors() -> Dictionary:
@@ -7744,17 +9091,23 @@ func get_single_player_chrome_colors() -> Dictionary:
 	}
 
 func get_multiplayer_mode_rows() -> Array:
+	var multi_pak := _language_text("MULTI-PAK", "MULTI-PAK", "MULTI-PAK", "MULTI-PAK", "MULTI-PAK")
+	var single_pak := _language_text("SINGLE-PAK", "SINGLE-PAK", "SINGLE-PAK", "SINGLE-PAK", "SINGLE-PAK")
+	var ready := _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
+	var name_required := _language_text("NAME REQ", "NAME NOETIG", "NOM REQUIS", "NOMBRE REQ", "NOME RICHIESTO")
 	return [
 		{
-			"name": "MULTI-PAK",
-			"description": "2-4 PLAYERS USING ONE GAME PAK EACH",
-			"status": "READY" if has_profile_name() else "NAME REQ",
+			"name": multi_pak,
+			"description": _language_text("2-4 PLAYERS USING ONE GAME PAK EACH", "2-4 SPIELER MIT JE EINEM GAME PAK", "2-4 JOUEURS AVEC UN GAME PAK CHACUN", "2-4 JUGADORES CON UN GAME PAK CADA UNO", "2-4 GIOCATORI CON UN GAME PAK CIASCUNO"),
+			"status": ready if has_profile_name() else name_required,
+			"available": has_profile_name(),
 			"selected": _title_menu_index == 0,
 		},
 		{
-			"name": "SINGLE-PAK",
-			"description": "HOST A DOWNLOAD MATCH FROM ONE GAME PAK",
-			"status": "READY" if has_profile_name() else "NAME REQ",
+			"name": single_pak,
+			"description": _language_text("HOST A DOWNLOAD MATCH FROM ONE GAME PAK", "DOWNLOAD-MATCH MIT EINEM GAME PAK HOSTEN", "HEBER UNE PARTIE TELECHARGEE DEPUIS UN GAME PAK", "ALBERGAR UNA PARTIDA DESCARGADA DESDE UN GAME PAK", "OSPITA UNA PARTITA DOWNLOAD DA UN GAME PAK"),
+			"status": ready if has_profile_name() else name_required,
+			"available": has_profile_name(),
 			"selected": _title_menu_index == 1,
 		},
 	]
@@ -7764,13 +9117,16 @@ func get_multiplayer_mode_title_text() -> String:
 
 func get_multiplayer_mode_prompt_text() -> String:
 	if not _title_notice_text.is_empty():
-		return _title_notice_text
-	return "CHOOSE A LINK STYLE"
+		return get_title_notice_text()
+	return _language_text("CHOOSE A LINK STYLE", "LINK-ART AUSWAEHLEN", "CHOISIR UN MODE DE LIAISON", "ELIGE UN TIPO DE ENLACE", "SCEGLI UN TIPO DI COLLEGAMENTO")
 
 func get_multiplayer_mode_summary_text() -> String:
+	var mode_label := _language_text("MODE", "MODUS", "MODE", "MODO", "MODALITA")
+	var players_label := _language_text("PLAYERS", "SPIELER", "JOUEURS", "JUGADORES", "GIOCATORI")
+	var profile_label := _language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO")
 	if _title_menu_index == 0:
-		return "MODE\nMULTI-PAK\n\nPLAYERS\n2-4 LINKED SYSTEMS\n\nPROFILE\n%s" % get_profile_name_text()
-	return "MODE\nSINGLE-PAK\n\nPLAYERS\n1 HOST + CLIENT DOWNLOADS\n\nPROFILE\n%s" % get_profile_name_text()
+		return "%s\nMULTI-PAK\n\n%s\n2-4 LINKED SYSTEMS\n\n%s\n%s" % [mode_label, players_label, profile_label, get_profile_name_text()]
+	return "%s\nSINGLE-PAK\n\n%s\n1 HOST + CLIENT DOWNLOADS\n\n%s\n%s" % [mode_label, players_label, profile_label, get_profile_name_text()]
 
 func get_multiplayer_mode_detail_text() -> String:
 	if has_profile_name():
@@ -7779,11 +9135,14 @@ func get_multiplayer_mode_detail_text() -> String:
 
 func get_multiplayer_mode_info_text() -> String:
 	if _title_menu_index == 0:
-		return "ONE GAME PAK PER PLAYER.\nSTART A STANDARD LINK SESSION."
-	return "THE HOST SENDS THE CLIENT PROGRAM.\nBEST FOR QUICK LOCAL MATCHES."
+		return _language_text("ONE GAME PAK PER PLAYER.\nSTART A STANDARD LINK SESSION.", "EIN GAME PAK PRO SPIELER.\nSTANDARD-LINKSESSION STARTEN.", "UN GAME PAK PAR JOUEUR.\nLANCER UNE SESSION STANDARD.", "UN GAME PAK POR JUGADOR.\nINICIA UNA SESION ESTANDAR.", "UN GAME PAK PER GIOCATORE.\nAVVIA UNA SESSIONE STANDARD.")
+	return _language_text("THE HOST SENDS THE CLIENT PROGRAM.\nBEST FOR QUICK LOCAL MATCHES.", "DER HOST SENDT DAS CLIENT-PROGRAMM.\nIDEAL FUER SCHNELLE LOKALE PARTIEN.", "L'HOTE ENVOIE LE PROGRAMME CLIENT.\nIDEAL POUR DES PARTIES LOCALES RAPIDES.", "EL HOST ENVIA EL PROGRAMA CLIENT.\nIDEAL PARA PARTIDAS LOCALES RAPIDAS.", "L'HOST INVIA IL PROGRAMMA CLIENT.\nIDEALE PER PARTITE LOCALI RAPIDE.")
 
 func get_multiplayer_mode_badge_text() -> String:
 	return "LINK" if _title_menu_index == 0 else "DL"
+
+func is_multiplayer_link_mode() -> bool:
+	return _title_menu_index == 0
 
 func get_multiplayer_mode_chrome_colors() -> Dictionary:
 	if _title_menu_index == 0:
@@ -7801,15 +9160,17 @@ func get_multiplayer_mode_chrome_colors() -> Dictionary:
 func get_time_attack_mode_rows() -> Array:
 	return [
 		{
-			"name": "ZONE",
-			"description": "CLEAR A ZONE AS FAST AS POSSIBLE",
-			"status": "READY",
+			"name": _language_text("ZONE", "ZONE", "ZONE", "ZONA", "ZONA"),
+			"description": _language_text("CLEAR A ZONE AS FAST AS POSSIBLE", "EINE ZONE SO SCHNELL WIE MOEGLICH ABSCHLIESSEN", "TERMINER UNE ZONE LE PLUS VITE POSSIBLE", "SUPERA UNA ZONA LO MAS RAPIDO POSIBLE", "COMPLETA UNA ZONA IL PIU VELOCE POSSIBILE"),
+			"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
+			"locked": false,
 			"selected": _title_menu_index == 0,
 		},
 		{
-			"name": "BOSS",
-			"description": "DEFEAT A BOSS AS FAST AS POSSIBLE",
-			"status": "READY" if _boss_time_attack_unlocked else "LOCKED",
+			"name": _language_text("BOSS", "BOSS", "BOSS", "JEFE", "BOSS"),
+			"description": _language_text("DEFEAT A BOSS AS FAST AS POSSIBLE", "EINEN BOSS SO SCHNELL WIE MOEGLICH BESIEGEN", "VAINCRE UN BOSS LE PLUS VITE POSSIBLE", "DERROTA AL JEFE LO MAS RAPIDO POSIBLE", "SCONFIGGI UN BOSS IL PIU VELOCE POSSIBILE"),
+			"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO") if _boss_time_attack_unlocked else _language_text("LOCKED", "GESPERRT", "VERROUILLE", "BLOQUEADO", "BLOCCATO"),
+			"locked": not _boss_time_attack_unlocked,
 			"selected": _title_menu_index == 1,
 		},
 	]
@@ -7819,26 +9180,26 @@ func get_time_attack_mode_title_text() -> String:
 
 func get_time_attack_mode_prompt_text() -> String:
 	if not _title_notice_text.is_empty():
-		return _title_notice_text
-	return "SELECT ATTACK MODE"
+		return get_title_notice_text()
+	return _language_text("SELECT ATTACK MODE", "ANGRIFFSMODUS WAEHLEN", "CHOISIR LE MODE D'ATTAQUE", "ELIGE MODO DE ATAQUE", "SCEGLI MODALITA ATTACCO")
 
 func get_time_attack_mode_detail_text() -> String:
-	return "CLEAR RECORDS AND BOSS CHALLENGES\n%s SELECT   %s CONFIRM   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+	return "%s\n%s SELECT   %s CONFIRM   %s BACK" % [_language_text("CLEAR RECORDS AND BOSS CHALLENGES", "REKORDE UND BOSS-HERAUSFORDERUNGEN", "RECORDS ET DEFIS BOSS", "RECORDS Y RETOS DE JEFE", "RECORD E SFIDE BOSS"), get_navigation_label(), get_confirm_label(), get_secondary_label()]
 
 func get_time_attack_mode_summary_text() -> String:
 	match _title_menu_index:
 		0:
-			return "ZONE TIME ATTACK\nCOURSE: %s\nCHARACTER: %s" % [get_selected_level_text(), get_selected_character_name()]
+			return "%s\n%s: %s\n%s: %s" % [_language_text("ZONE TIME ATTACK", "ZONEN-ZEITANGRIFF", "CONTRE-LA-MONTRE ZONE", "CONTRARRELOJ DE ZONA", "ATTACCO A TEMPO ZONA"), _language_text("COURSE", "KURS", "PARCOURS", "FASE", "CORSO"), get_selected_level_text(), _language_text("CHARACTER", "CHARAKTER", "PERSONNAGE", "PERSONAJE", "PERSONAGGIO"), get_selected_character_name()]
 		1:
-			return "BOSS TIME ATTACK\nSTATUS: %s\nCHARACTER: %s" % ["UNLOCKED" if _boss_time_attack_unlocked else "LOCKED", get_selected_character_name()]
+			return "%s\n%s: %s\n%s: %s" % [_language_text("BOSS TIME ATTACK", "BOSS-ZEITANGRIFF", "CONTRE-LA-MONTRE BOSS", "CONTRARRELOJ DE JEFE", "ATTACCO A TEMPO BOSS"), _language_text("STATUS", "STATUS", "STATUT", "ESTADO", "STATO"), _language_text("UNLOCKED", "FREIGESCHALTET", "DEBLOQUE", "DESBLOQUEADO", "SBLOCCATO") if _boss_time_attack_unlocked else _language_text("LOCKED", "GESPERRT", "VERROUILLE", "BLOQUEADO", "BLOCCATO"), _language_text("CHARACTER", "CHARAKTER", "PERSONNAGE", "PERSONAJE", "PERSONAGGIO"), get_selected_character_name()]
 	return ""
 
 func get_time_attack_mode_info_text() -> String:
 	if _title_menu_index == 1:
 		if _boss_time_attack_unlocked:
-			return "DEFEAT THE BOSS AS FAST AS POSSIBLE"
-		return "CAN'T PLAY THIS YET"
-	return "CLEAR THE ZONE AS FAST AS POSSIBLE"
+			return _language_text("DEFEAT THE BOSS AS FAST AS POSSIBLE", "BOSS SO SCHNELL WIE MOEGLICH BESIEGEN", "VAINCRE LE BOSS LE PLUS VITE POSSIBLE", "DERROTA AL JEFE LO MAS RAPIDO POSIBLE", "SCONFIGGI IL BOSS IL PIU VELOCE POSSIBILE")
+		return _language_text("CAN'T PLAY THIS YET", "NOCH NICHT SPIELBAR", "PAS ENCORE DISPONIBLE", "AUN NO DISPONIBLE", "NON ANCORA DISPONIBILE")
+	return _language_text("CLEAR THE ZONE AS FAST AS POSSIBLE", "DIE ZONE SO SCHNELL WIE MOEGLICH ABSCHLIESSEN", "TERMINER LA ZONE LE PLUS VITE POSSIBLE", "SUPERA LA ZONA LO MAS RAPIDO POSIBLE", "COMPLETA LA ZONA IL PIU VELOCE POSSIBILE")
 
 func get_tiny_chao_rows() -> Array:
 	if _title_phase == TITLE_PHASE_TINY_CHAO_GARDEN_PLAY:
@@ -7847,51 +9208,61 @@ func get_tiny_chao_rows() -> Array:
 			var chao: Dictionary = _tiny_chao_roster[i]
 			rows.append({
 				"name": str(chao.get("name", "CHAO")),
-				"description": "MOOD %03d%%   CARE %d" % [int(chao.get("mood", 0)), int(chao.get("care", 0))],
-				"status": "FRUIT %d" % _tiny_chao_fruit if i == _tiny_chao_selected_index else "READY",
+				"description": _language_text("MOOD %03d%%   CARE %d", "STIMMUNG %03d%%   PFLEGE %d", "HUMEUR %03d%%   SOINS %d", "ANIMO %03d%%   CUIDADO %d", "UMORE %03d%%   CURA %d") % [int(chao.get("mood", 0)), int(chao.get("care", 0))],
+				"status": (_language_text("FRUIT %d", "FRUECHTE %d", "FRUITS %d", "FRUTA %d", "FRUTTA %d") % _tiny_chao_fruit) if i == _tiny_chao_selected_index else _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
+				"ready": true,
+				"back": false,
 				"selected": i == _tiny_chao_selected_index,
 			})
 		return rows
 	if _title_phase == TITLE_PHASE_TINY_CHAO_SETUP:
 		return [
 			{
-				"name": "ENTER GARDEN",
-				"description": "PREPARE THE HANDOFF DATA",
-				"status": "READY",
+				"name": _language_text("ENTER GARDEN", "GARTEN OEFFNEN", "ENTRER DANS LE JARDIN", "ENTRAR AL JARDIN", "ENTRA NEL GIARDINO"),
+				"description": _language_text("PREPARE THE HANDOFF DATA", "UEBERGABEDATEN VORBEREITEN", "PREPARER LES DONNEES DE TRANSFERT", "PREPARAR DATOS DE ENTREGA", "PREPARA DATI PASSAGGIO"),
+				"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
+				"ready": true,
+				"back": false,
 				"selected": _title_menu_index == 0,
 			},
 			{
-				"name": "NEW SESSION",
-				"description": "BUILD A FRESH LINK TOKEN",
+				"name": _language_text("NEW SESSION", "NEUE SITZUNG", "NOUVELLE SESSION", "NUEVA SESION", "NUOVA SESSIONE"),
+				"description": _language_text("BUILD A FRESH LINK TOKEN", "NEUEN LINK-TOKEN ERSTELLEN", "CREER UN NOUVEAU JETON", "CREAR UN TOKEN NUEVO", "CREA UN NUOVO TOKEN LINK"),
 				"status": _tiny_chao_session_id,
+				"ready": true,
+				"back": false,
 				"selected": _title_menu_index == 1,
 			},
 			{
-				"name": "BACK",
-				"description": "RETURN TO TINY CHAO GARDEN",
-				"status": "READY",
+				"name": _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO"),
+				"description": _language_text("RETURN TO TINY CHAO GARDEN", "ZUM TINY CHAO GARTEN", "RETOUR AU JARDIN TINY CHAO", "VOLVER AL JARDIN TINY CHAO", "TORNA AL GIARDINO TINY CHAO"),
+				"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
+				"ready": true,
+				"back": true,
 				"selected": _title_menu_index == 2,
 			},
 		]
 	return [
 		{
-			"name": "ENTER GARDEN",
-			"description": "OPEN THE TINY CHAO GARDEN HANDOFF",
-			"status": "READY",
+			"name": _language_text("ENTER GARDEN", "GARTEN OEFFNEN", "ENTRER DANS LE JARDIN", "ENTRAR AL JARDIN", "ENTRA NEL GIARDINO"),
+			"description": _language_text("OPEN THE TINY CHAO GARDEN HANDOFF", "TINY CHAO GARTEN UEBERGABE OEFFNEN", "OUVRIR LE TRANSFERT DU JARDIN TINY CHAO", "ABRIR ENTREGA DEL JARDIN TINY CHAO", "APRI IL PASSAGGIO DEL GIARDINO TINY CHAO"),
+			"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
+			"ready": true,
+			"back": false,
 			"selected": _title_menu_index == 0,
 		},
 		{
-			"name": "BACK",
-			"description": "RETURN TO SINGLE PLAYER",
-			"status": "READY",
+			"name": _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO"),
+			"description": _language_text("RETURN TO SINGLE PLAYER", "ZUM EINZELSPIELER", "RETOUR AU MODE SOLO", "VOLVER A UN JUGADOR", "TORNA AL GIOCATORE SINGOLO"),
+			"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
+			"ready": true,
+			"back": true,
 			"selected": _title_menu_index == 1,
 		},
 	]
 
 func get_tiny_chao_title_text() -> String:
-	if _title_phase == TITLE_PHASE_TINY_CHAO_SETUP:
-		return "TINY CHAO GARDEN"
-	return "TINY CHAO GARDEN"
+	return _language_text("TINY CHAO GARDEN", "TINY CHAO GARTEN", "JARDIN TINY CHAO", "JARDIN TINY CHAO", "GIARDINO TINY CHAO")
 
 func get_tiny_chao_prompt_text() -> String:
 	var notice := get_title_notice_text()
@@ -7900,23 +9271,29 @@ func get_tiny_chao_prompt_text() -> String:
 	if _title_phase == TITLE_PHASE_TINY_CHAO_GARDEN_PLAY:
 		return _tiny_chao_action_text
 	if _title_phase == TITLE_PHASE_TINY_CHAO_SETUP:
-		return "PREPARE THE GARDEN HANDOFF"
-	return "OPEN THE TINY CHAO GARDEN"
+		return _language_text("PREPARE THE GARDEN HANDOFF", "GARTEN-UEBERGABE VORBEREITEN", "PREPARER LE TRANSFERT DU JARDIN", "PREPARAR ENTREGA DEL JARDIN", "PREPARA IL PASSAGGIO DEL GIARDINO")
+	return _language_text("OPEN THE TINY CHAO GARDEN", "TINY CHAO GARTEN OEFFNEN", "OUVRIR LE JARDIN TINY CHAO", "ABRIR EL JARDIN TINY CHAO", "APRI IL GIARDINO TINY CHAO")
 
 func get_tiny_chao_detail_text() -> String:
 	if _title_phase == TITLE_PHASE_TINY_CHAO_GARDEN_PLAY:
-		return "LEFT/RIGHT/UP/DOWN MOVE   %s CARE   %s EXIT" % [get_confirm_label(), get_secondary_label()]
+		return _language_text("LEFT/RIGHT/UP/DOWN MOVE   %s CARE   %s EXIT", "LINKS/RECHTS/HOCH/RUNTER BEWEGEN   %s PFLEGEN   %s AUSGANG", "GAUCHE/DROITE/HAUT/BAS BOUGER   %s SOIN   %s SORTIE", "IZQ/DER/ARRIBA/ABAJO MOVER   %s CUIDAR   %s SALIR", "SINISTRA/DESTRA/SU/GIU MUOVI   %s CURA   %s ESCI") % [get_confirm_label(), get_secondary_label()]
 	if _title_phase == TITLE_PHASE_TINY_CHAO_SETUP:
-		return "PREPARE SCORE, LANGUAGE, AND SESSION DATA\n%s SELECT   %s CONFIRM   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
-	return "THIS BRANCH DIRECTLY HANDS OFF TO TINY CHAO GARDEN\n%s SELECT   %s CONFIRM   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+		return _language_text("PREPARE SCORE, LANGUAGE, AND SESSION DATA\n%s SELECT   %s CONFIRM   %s BACK", "PUNKTZAHL, SPRACHE UND SITZUNG VORBEREITEN\n%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK", "PREPARER SCORE, LANGUE ET SESSION\n%s SELECTIONNER   %s CONFIRMER   %s RETOUR", "PREPARAR PUNTOS, IDIOMA Y SESION\n%s SELECCIONAR   %s CONFIRMAR   %s ATRAS", "PREPARA PUNTEGGIO, LINGUA E SESSIONE\n%s SELEZIONA   %s CONFERMA   %s INDIETRO") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+	return _language_text("THIS BRANCH DIRECTLY HANDS OFF TO TINY CHAO GARDEN\n%s SELECT   %s CONFIRM   %s BACK", "DIESER ZWEIG UEBERGIBT DIREKT AN DEN TINY CHAO GARTEN\n%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK", "CE BRANCHE PASSE DIRECTEMENT AU JARDIN TINY CHAO\n%s SELECTIONNER   %s CONFIRMER   %s RETOUR", "ESTA RAMA PASA DIRECTAMENTE AL JARDIN TINY CHAO\n%s SELECCIONAR   %s CONFIRMAR   %s ATRAS", "QUESTO RAMO PASSA DIRETTAMENTE AL GIARDINO TINY CHAO\n%s SELEZIONA   %s CONFERMA   %s INDIETRO") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 
 func get_tiny_chao_summary_text() -> String:
 	if _title_phase == TITLE_PHASE_TINY_CHAO_GARDEN_PLAY:
 		var selected_name := str(_tiny_chao_roster[_tiny_chao_selected_index].get("name", "CHAO")) if not _tiny_chao_roster.is_empty() else "CHAO"
-		return "%s STATUS\nHUNGER: %d%%\nMOOD: %d%%\nCARE: %d\nFRUIT: %d" % [selected_name, _tiny_chao_hunger, _tiny_chao_mood, _tiny_chao_care_count, _tiny_chao_fruit]
+		return _language_text("%s STATUS\nHUNGER: %d%%\nMOOD: %d%%\nCARE: %d\nFRUIT: %d", "%s STATUS\nHUNGER: %d%%\nSTIMMUNG: %d%%\nPFLEGE: %d\nFRUECHTE: %d", "%s STATUT\nFAIM: %d%%\nHUMEUR: %d%%\nSOINS: %d\nFRUITS: %d", "%s ESTADO\nHAMBRE: %d%%\nANIMO: %d%%\nCUIDADO: %d\nFRUTA: %d", "%s STATO\nFAME: %d%%\nUMORE: %d%%\nCURA: %d\nFRUTTA: %d") % [selected_name, _tiny_chao_hunger, _tiny_chao_mood, _tiny_chao_care_count, _tiny_chao_fruit]
 	if _title_phase == TITLE_PHASE_TINY_CHAO_SETUP:
-		return "HANDOFF READY\nTOKEN: %s\nPROFILE: %s" % [_tiny_chao_session_id, get_profile_name_text()]
-	return "DIRECT BRANCH\nUNLOCKED: %s\nPROFILE: %s" % ["YES" if _tiny_chao_unlocked else "NO", get_profile_name_text()]
+		return _language_text("HANDOFF READY\nTOKEN: %s\nPROFILE: %s", "UEBERGABE BEREIT\nTOKEN: %s\nPROFIL: %s", "TRANSFERT PRET\nJETON: %s\nPROFIL: %s", "ENTREGA LISTA\nTOKEN: %s\nPERFIL: %s", "PASSAGGIO PRONTO\nTOKEN: %s\nPROFILO: %s") % [_tiny_chao_session_id, get_profile_name_text()]
+	return _language_text("DIRECT BRANCH\nUNLOCKED: %s\nPROFILE: %s", "DIREKTZWEIG\nFREIGESCHALTET: %s\nPROFIL: %s", "BRANCHE DIRECTE\nDEVERROUILLE: %s\nPROFIL: %s", "RAMA DIRECTA\nDESBLOQUEADO: %s\nPERFIL: %s", "RAMO DIRETTO\nSBLOCCATO: %s\nPROFILO: %s") % [_language_text("YES", "JA", "OUI", "SI", "SI") if _tiny_chao_unlocked else _language_text("NO", "NEIN", "NON", "NO", "NO"), get_profile_name_text()]
+
+func get_tiny_chao_status_title_text() -> String:
+	return _language_text("GARDEN STATUS", "GARTENSTATUS", "STATUT DU JARDIN", "ESTADO DEL JARDIN", "STATO DEL GIARDINO")
+
+func get_tiny_chao_badge_text() -> String:
+	return _language_text("CHAO", "CHAO", "CHAO", "CHAO", "CHAO")
 
 func get_tiny_chao_info_rows() -> Array:
 	if _title_phase == TITLE_PHASE_TINY_CHAO_GARDEN_PLAY:
@@ -7928,17 +9305,97 @@ func get_tiny_chao_info_rows() -> Array:
 		]
 	var setup_phase := _title_phase == TITLE_PHASE_TINY_CHAO_SETUP
 	return [
-		"SCORE  %d" % get_total_ported_score(),
-		"LANG   %s" % get_language_text(),
+		"SCORE  %d" % get_profile_score(),
+		# title_screen.c maps Italian to the Tiny Chao Garden English build.
+		"LANG   %s" % get_tiny_chao_language_text(),
 		"TOKEN  %s" % _tiny_chao_session_id,
 		"MODE   %s" % ("HANDOFF" if setup_phase else "DIRECT"),
 	]
+
+func get_tiny_chao_language_text() -> String:
+	match _language_index:
+		0:
+			return "JAPANESE"
+		2:
+			return "GERMAN"
+		3:
+			return "FRENCH"
+		4:
+			return "SPANISH"
+		_:
+			return "ENGLISH"
 
 func get_title_menu_index() -> int:
 	return _title_menu_index
 
 func get_title_notice_text() -> String:
-	return _title_notice_text
+	return _localize_title_notice(_title_notice_text)
+
+func _localize_title_notice(notice: String) -> String:
+	if notice.is_empty() or _language_index == 1:
+		return notice
+	match notice:
+		"WAITING FOR ALL LINKED PLAYERS":
+			return _language_text(notice, "WARTE AUF ALLE VERBUNDENEN SPIELER", "EN ATTENTE DE TOUS LES JOUEURS", "ESPERANDO A TODOS LOS JUGADORES", "IN ATTESA DI TUTTI I GIOCATORI")
+		"REMATCH SELECTED":
+			return _language_text(notice, "RUECKSPIEL AUSGEWAEHLT", "REVANCHE SELECTIONNEE", "REVANCHA SELECCIONADA", "RIVINCITA SELEZIONATA")
+		"EXIT TO TITLE SELECTED":
+			return _language_text(notice, "TITEL AUSGEWAEHLT", "TITRE SELECTIONNE", "TITULO SELECCIONADO", "TITOLO SELEZIONATO")
+		"BOSS TIME ATTACK LOCKED":
+			return _language_text(notice, "BOSS-ZEITANGRIFF GESPERRT", "ATTAQUE BOSS VERROUILLEE", "ATAQUE AL JEFE BLOQUEADO", "ATTACCO BOSS BLOCCATO")
+		"COURSE LOCKED IN":
+			return _language_text(notice, "KURS FESTGELEGT", "PARCOURS VERROUILLE", "FASE FIJADA", "CORSO BLOCCATO")
+		"CLIENTS STILL SYNCHRONIZING":
+			return _language_text(notice, "CLIENTS SYNCHRONISIEREN NOCH", "CLIENTS ENCORE EN SYNCHRONISATION", "CLIENTES AUN SINCRONIZANDO", "CLIENT ANCORA IN SINCRONIZZAZIONE")
+		"WAIT FOR CLIENT BOOT TO FINISH":
+			return _language_text(notice, "AUF CLIENT-START WARTEN", "ATTENDRE LE DEMARRAGE DES CLIENTS", "ESPERA EL ARRANQUE DE CLIENTES", "ATTENDI AVVIO CLIENT")
+		"WAITING FOR REMATCH CONFIRMATIONS":
+			return _language_text(notice, "WARTE AUF RUECKSPIEL-BESTAETIGUNGEN", "EN ATTENTE DES CONFIRMATIONS DE REVANCHE", "ESPERANDO CONFIRMACIONES DE REVANCHA", "IN ATTESA DI CONFERME RIVINCITA")
+		"WAITING FOR EXIT CONFIRMATIONS":
+			return _language_text(notice, "WARTE AUF ENDE-BESTAETIGUNGEN", "EN ATTENTE DES CONFIRMATIONS DE SORTIE", "ESPERANDO CONFIRMACIONES DE SALIDA", "IN ATTESA DI CONFERME USCITA")
+		"NEW SESSION ID READY":
+			return _language_text(notice, "NEUE SITZUNGS-ID BEREIT", "NOUVEL ID DE SESSION PRET", "NUEVO ID DE SESION LISTO", "NUOVO ID SESSIONE PRONTO")
+		"DISCONNECTING LINK":
+			return _language_text(notice, "VERBINDUNG WIRD GETRENNT", "DECONNEXION DE LA LIAISON", "DESCONECTANDO ENLACE", "DISCONNESSIONE COLLEGAMENTO")
+		"SELECT YES OR NO TO CONTINUE":
+			return _language_text(notice, "JA ODER NEIN ZUM FORTFAHREN WAEHLEN", "CHOISIR OUI OU NON POUR CONTINUER", "ELIGE SI O NO PARA CONTINUAR", "SCEGLI SI O NO PER CONTINUARE")
+		"PROFILE SAVED", "PROFILE NAME SAVED":
+			return _language_text(notice, "PROFIL GESPEICHERT", "PROFIL ENREGISTRE", "PERFIL GUARDADO", "PROFILO SALVATO")
+		"PROFILE CREATION CANCELED":
+			return _language_text(notice, "PROFILERSTELLUNG ABGEBROCHEN", "CREATION DU PROFIL ANNULEE", "CREACION DE PERFIL CANCELADA", "CREAZIONE PROFILO ANNULLATA")
+		"COMMUNICATION ERROR":
+			return _language_text(notice, "KOMMUNIKATIONSFEHLER", "ERREUR DE COMMUNICATION", "ERROR DE COMUNICACION", "ERRORE COMUNICAZIONE")
+		"DOWNLOAD COMPLETE":
+			return _language_text(notice, "DOWNLOAD ABGESCHLOSSEN", "TELECHARGEMENT TERMINE", "DESCARGA COMPLETA", "DOWNLOAD COMPLETATO")
+		"CHARACTER SELECTION CANCELED":
+			return _language_text(notice, "CHARAKTERWAHL ABGEBROCHEN", "CHOIX DU PERSONNAGE ANNULE", "SELECCION DE PERSONAJE CANCELADA", "SCELTA PERSONAGGIO ANNULLATA")
+		"RETURNED TO MULTIPLAYER MENU":
+			return _language_text(notice, "ZURUECK IM MULTIPLAYER-MENUE", "RETOUR AU MENU MULTIJOUEUR", "REGRESO AL MENU MULTIJUGADOR", "TORNATO AL MENU MULTIGIOCATORE")
+		"LINK SESSION RESET":
+			return _language_text(notice, "LINK-SITZUNG ZURUECKGESETZT", "SESSION DE LIAISON REINITIALISEE", "SESION DE ENLACE REINICIADA", "SESSIONE COLLEGAMENTO RESETTATA")
+		"TINY CHAO GARDEN READY":
+			return _language_text(notice, "TINY CHAO GARTEN BEREIT", "JARDIN TINY CHAO PRET", "JARDIN TINY CHAO LISTO", "GIARDINO TINY CHAO PRONTO")
+		"NEW COURSE PATH UNLOCKING":
+			return _language_text(notice, "NEUER KURSPFAD WIRD FREIGESCHALTET", "NOUVEAU PARCOURS EN DEVERROUILLAGE", "DESBLOQUEANDO NUEVA RUTA", "SBLOCCO NUOVO PERCORSO")
+		"NEW COURSE PATH OPEN":
+			return _language_text(notice, "NEUER KURSPFAD OFFEN", "NOUVEAU PARCOURS OUVERT", "NUEVA RUTA ABIERTA", "NUOVO PERCORSO APERTO")
+		"MOVING TO NEW COURSE":
+			return _language_text(notice, "WECHSEL ZUM NEUEN KURS", "VERS LE NOUVEAU PARCOURS", "YENDO A LA NUEVA FASE", "VERSO IL NUOVO CORSO")
+		"NEW COURSE READY":
+			return _language_text(notice, "NEUER KURS BEREIT", "NOUVEAU PARCOURS PRET", "NUEVA FASE LISTA", "NUOVO CORSO PRONTO")
+	if notice.begins_with("STARTING "):
+		return "%s %s" % [_language_text("STARTING", "STARTET", "DEMARRAGE", "INICIANDO", "AVVIO"), notice.trim_prefix("STARTING ")]
+	if notice.begins_with("COURSE READY: "):
+		return "%s %s" % [_language_text("COURSE READY:", "KURS BEREIT:", "PARCOURS PRET :", "FASE LISTA:", "CORSO PRONTO:"), notice.trim_prefix("COURSE READY: ")]
+	if notice.begins_with("COURSE SET TO "):
+		return "%s %s" % [_language_text("COURSE SET TO", "KURS GESETZT AUF", "PARCOURS REGLE SUR", "FASE AJUSTADA A", "CORSO IMPOSTATO SU"), notice.trim_prefix("COURSE SET TO ")]
+	if notice.begins_with("COURSE LOCKED: "):
+		return "%s %s" % [_language_text("COURSE LOCKED:", "KURS GESPERRT:", "PARCOURS VERROUILLE :", "FASE BLOQUEADA:", "CORSO BLOCCATO:"), notice.trim_prefix("COURSE LOCKED: ")]
+	if notice.begins_with("COURSE SENT: "):
+		return "%s %s" % [_language_text("COURSE SENT:", "KURS GESENDET:", "PARCOURS ENVOYE :", "FASE ENVIADA:", "CORSO INVIATO:"), notice.trim_prefix("COURSE SENT: ")]
+	if notice.begins_with("NEW COURSE UNLOCKED: "):
+		return "%s %s" % [_language_text("NEW COURSE UNLOCKED:", "NEUER KURS FREIGESCHALTET:", "NOUVEAU PARCOURS DEVERROUILLE :", "NUEVA FASE DESBLOQUEADA:", "NUOVO CORSO SBLOCCATO:"), notice.trim_prefix("NEW COURSE UNLOCKED: ")]
+	return notice
 
 func is_title_main_screen() -> bool:
 	if _game_state != GAME_STATE_TITLE:
@@ -8000,7 +9457,7 @@ func _resolve_multiplayer_outcome() -> void:
 		var linked_notice := "ROOM LINKED: %d SYSTEMS READY" % get_multiplayer_link_count()
 		if _multiplayer_outcome_return_phase == TITLE_PHASE_MULTI_CONNECT and _multiplayer_pak_mode == 0:
 			# SA2 enters character selection immediately after a successful Multi-Pak link.
-			open_character_select(CHARACTER_SELECT_CONTEXT_MULTIPLAYER)
+			open_character_select(CHARACTER_SELECT_CONTEXT_MULTIPLAYER, 0)
 		else:
 			open_multiplayer_outcome_return_phase(_multiplayer_outcome_return_phase, linked_notice)
 	else:
@@ -8008,31 +9465,41 @@ func _resolve_multiplayer_outcome() -> void:
 		open_title_screen_at_multiplayer_menu(_multiplayer_pak_mode, "COMMUNICATION ERROR")
 
 func get_multiplayer_outcome_title() -> String:
-	return "CONNECTION SUCCESS" if _multiplayer_outcome_type == 0 else "COMMUNICATION ERROR"
+	return _language_text("CONNECTION SUCCESS", "VERBINDUNG ERFOLGREICH", "CONNEXION REUSSIE", "CONEXION CORRECTA", "CONNESSIONE RIUSCITA") if _multiplayer_outcome_type == 0 else _language_text("COMMUNICATION ERROR", "KOMMUNIKATIONSFEHLER", "ERREUR DE COMMUNICATION", "ERROR DE COMUNICACION", "ERRORE DI COMUNICAZIONE")
 
 func get_multiplayer_outcome_prompt() -> String:
 	if _multiplayer_outcome_type == 0:
-		return "LET'S PLAY WITH %dP" % max(2, get_multiplayer_link_count())
-	return "LINK COULD NOT BE MAINTAINED"
+		return _language_text("LET'S PLAY WITH %dP", "SPIELEN WIR MIT %dP", "JOUONS A %d", "JUGUEMOS CON %dP", "GIOCHIAMO IN %d") % max(2, get_multiplayer_link_count())
+	return _language_text("LINK COULD NOT BE MAINTAINED", "VERBINDUNG KONNTE NICHT GEHALTEN WERDEN", "LA LIAISON A ECHOUE", "NO SE PUDO MANTENER EL ENLACE", "COLLEGAMENTO INTERROTTO")
 
 func get_multiplayer_outcome_detail() -> String:
 	if _multiplayer_outcome_type == 0:
-		return "SYSTEMS LINKED: %d/4   MODE: %s\n%s CONTINUE   %s SKIP" % [get_multiplayer_link_count(), get_multiplayer_pak_mode_name(), get_confirm_label(), get_secondary_label()]
-	return "RETURNING TO MULTIPLAYER MODE SELECT\n%s CONTINUE   %s SKIP" % [get_confirm_label(), get_secondary_label()]
+		return _language_text("SYSTEMS LINKED: %d/4   MODE: %s\n%s CONTINUE   %s SKIP", "SYSTEME VERBUNDEN: %d/4   MODUS: %s\n%s WEITER   %s UEBERSPRINGEN", "SYSTEMES LIES: %d/4   MODE: %s\n%s CONTINUER   %s PASSER", "SISTEMAS ENLAZADOS: %d/4   MODO: %s\n%s CONTINUAR   %s OMITIR", "SISTEMI COLLEGATI: %d/4   MODALITA: %s\n%s CONTINUA   %s SALTA") % [get_multiplayer_link_count(), get_multiplayer_pak_mode_name(), get_confirm_label(), get_secondary_label()]
+	return _language_text("RETURNING TO MULTIPLAYER MODE SELECT\n%s CONTINUE   %s SKIP", "ZUR MULTIPLAYER-MODUSWAHL\n%s WEITER   %s UEBERSPRINGEN", "RETOUR AU CHOIX DU MODE MULTIJOUEUR\n%s CONTINUER   %s PASSER", "VOLVIENDO A SELECCION DE MODO\n%s CONTINUAR   %s OMITIR", "RITORNO ALLA SELEZIONE MODALITA\n%s CONTINUA   %s SALTA") % [get_confirm_label(), get_secondary_label()]
 
 func get_multiplayer_outcome_summary_text() -> String:
+	var status_label := _language_text("STATUS", "STATUS", "STATUT", "ESTADO", "STATO")
+	var players_label := _language_text("PLAYERS", "SPIELER", "JOUEURS", "JUGADORES", "GIOCATORI")
+	var next_label := _language_text("NEXT", "NAECHSTER SCHRITT", "SUIVANT", "SIGUIENTE", "PROSSIMO")
+	var mode_label := _language_text("MODE", "MODUS", "MODE", "MODO", "MODALITA")
 	if _multiplayer_outcome_type == 0:
-		return "STATUS\nLINK OK\n\nPLAYERS\n%d\n\nNEXT\nROOM READY" % get_multiplayer_link_count()
-	return "STATUS\nERROR\n\nMODE\n%s\n\nNEXT\nRESET ROOM" % get_multiplayer_pak_mode_name()
+		return "%s\n%s\n\n%s\n%d\n\n%s\n%s" % [status_label, _language_text("LINK OK", "LINK OK", "LIAISON OK", "ENLACE OK", "LINK OK"), players_label, get_multiplayer_link_count(), next_label, _language_text("ROOM READY", "RAUM BEREIT", "SALLE PRETE", "SALA LISTA", "STANZA PRONTA")]
+	return "%s\n%s\n\n%s\n%s\n\n%s\n%s" % [status_label, _language_text("ERROR", "FEHLER", "ERREUR", "ERROR", "ERRORE"), mode_label, get_multiplayer_pak_mode_name(), next_label, _language_text("RESET ROOM", "RAUM ZURUECKSETZEN", "REINITIALISER LA SALLE", "REINICIAR SALA", "RESETTA STANZA")]
+
+func get_multiplayer_outcome_badge_text() -> String:
+	return _language_text("OK", "OK", "OK", "OK", "OK") if _multiplayer_outcome_type == 0 else _language_text("ERR", "FEHLER", "ERR", "ERR", "ERR")
 
 func get_multiplayer_outcome_player_rows() -> Array:
 	var rows: Array = []
+	var host_label := _language_text("HOST", "HOST", "HOTE", "HOST", "HOST")
+	var link_ok_label := _language_text("LINK OK", "LINK OK", "LIAISON OK", "ENLACE OK", "LINK OK")
+	var offline_label := _language_text("OFFLINE", "OFFLINE", "HORS LIGNE", "DESCONECTADO", "OFFLINE")
 	for i in range(_multiplayer_link_players.size()):
 		var connected := bool(_multiplayer_link_connected[i])
 		var character_name: String = str(_character_names[clampi(int(_multiplayer_player_characters[i]), 0, _character_names.size() - 1)])
 		rows.append({
 			"name": get_multiplayer_link_player_name(i),
-			"status": ("HOST  %s" % character_name) if i == 0 else ("%s  LINK OK" % character_name if connected else "%s  OFFLINE" % character_name),
+			"status": ("%s  %s" % [host_label, character_name]) if i == 0 else ("%s  %s" % [character_name, link_ok_label] if connected else ("%s  %s" % [character_name, offline_label])),
 			"connected": connected or i == 0,
 		})
 	return rows
@@ -8051,22 +9518,22 @@ func get_multiplayer_outcome_chrome_colors() -> Dictionary:
 	}
 
 func get_multiplayer_comm_title() -> String:
-	return "COMMUNICATION" if _title_phase == TITLE_PHASE_MULTI_CONNECT else "SINGLE-PAK SYNC"
+	return _language_text("COMMUNICATION", "KOMMUNIKATION", "COMMUNICATION", "COMUNICACION", "COMUNICAZIONE") if _title_phase == TITLE_PHASE_MULTI_CONNECT else _language_text("SINGLE-PAK SYNC", "SINGLE-PAK-SYNC", "SYNC SINGLE-PAK", "SYNC SINGLE-PAK", "SYNC SINGLE-PAK")
 
 func get_multiplayer_comm_prompt() -> String:
 	if not _title_notice_text.is_empty():
-		return _title_notice_text
+		return get_title_notice_text()
 	if _title_phase == TITLE_PHASE_MULTI_CONNECT:
 		if _multiplayer_pak_mode == 0:
 			if _multiplayer_link_ready:
-				return "PRESS START ON THE HOST TO BEGIN"
+				return _language_text("PRESS START ON THE HOST TO BEGIN", "START AM HOST ZUM BEGINN DRUECKEN", "APPUYEZ SUR START SUR L'HOTE", "PULSA START EN EL HOST PARA EMPEZAR", "PREMI START SULL'HOST PER INIZIARE")
 			if get_multiplayer_link_count() > 1:
-				return "WAITING FOR THE HOST TO CONFIRM"
-			return "WAITING FOR OTHER PLAYERS"
+				return _language_text("WAITING FOR THE HOST TO CONFIRM", "WARTE AUF HOST-BESTAETIGUNG", "EN ATTENTE DE LA CONFIRMATION DE L'HOTE", "ESPERANDO CONFIRMACION DEL HOST", "IN ATTESA DELLA CONFERMA DELL'HOST")
+			return _language_text("WAITING FOR OTHER PLAYERS", "WARTE AUF ANDERE SPIELER", "EN ATTENTE DES AUTRES JOUEURS", "ESPERANDO A OTROS JUGADORES", "IN ATTESA DEGLI ALTRI GIOCATORI")
 		if not is_singlepak_transfer_started():
-			return "WAIT FOR CLIENT SYSTEMS TO JOIN"
-		return "SENDING THE CLIENT PROGRAM"
-	return "WAIT FOR CLIENT BOOT TO COMPLETE"
+			return _language_text("WAIT FOR CLIENT SYSTEMS TO JOIN", "WARTE AUF CLIENT-SYSTEME", "EN ATTENTE DES SYSTEMES CLIENTS", "ESPERANDO A LOS CLIENTES", "IN ATTESA DEI CLIENT")
+		return _language_text("SENDING THE CLIENT PROGRAM", "CLIENT-PROGRAMM WIRD GESENDET", "ENVOI DU PROGRAMME CLIENT", "ENVIANDO EL PROGRAMA CLIENTE", "INVIO DEL PROGRAMMA CLIENT")
+	return _language_text("WAIT FOR CLIENT BOOT TO COMPLETE", "WARTE AUF CLIENT-START", "ATTENDEZ LE DEMARRAGE DU CLIENT", "ESPERA EL ARRANQUE DEL CLIENTE", "ATTENDI L'AVVIO DEL CLIENT")
 
 func get_multiplayer_comm_prompt_color() -> Color:
 	if _title_phase == TITLE_PHASE_MULTI_CONNECT:
@@ -8078,30 +9545,45 @@ func get_multiplayer_comm_detail_text() -> String:
 		var mode_name := get_multiplayer_pak_mode_name()
 		if _multiplayer_pak_mode == 0:
 			if _multiplayer_link_ready:
-				return "MODE: %s   COURSE: %s\nROOM COMPLETE   %s CONFIRM TO START   %s BACK" % [mode_name, get_multiplayer_session_course_text(), get_confirm_label(), get_secondary_label()]
-			return "MODE: %s   COURSE: %s\nBUILD THE LINK ROOM BEFORE STARTING\n%s SELECT   %s CONFIRM   %s BACK" % [mode_name, get_navigation_label(), get_confirm_label(), get_secondary_label()]
+				return _language_text("MODE: %s   COURSE: %s\nROOM COMPLETE   %s CONFIRM TO START   %s BACK", "MODUS: %s   KURS: %s\nRAUM KOMPLETT   %s ZUM START BESTAETIGEN   %s ZURUECK", "MODE: %s   PARCOURS: %s\nSALLE COMPLETE   %s CONFIRMER POUR COMMENCER   %s RETOUR", "MODO: %s   FASE: %s\nSALA COMPLETA   %s CONFIRMA PARA EMPEZAR   %s ATRAS", "MODALITA: %s   ZONA: %s\nSTANZA COMPLETA   %s CONFERMA PER INIZIARE   %s INDIETRO") % [mode_name, get_multiplayer_session_course_text(), get_confirm_label(), get_secondary_label()]
+			return _language_text("MODE: %s   COURSE: %s\nBUILD THE LINK ROOM BEFORE STARTING\n%s SELECT   %s CONFIRM   %s BACK", "MODUS: %s   KURS: %s\nBAUE DEN VERBINDUNGSRAUM VOR DEM START\n%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK", "MODE: %s   PARCOURS: %s\nFORMEZ LA SALLE AVANT DE COMMENCER\n%s SELECTIONNER   %s CONFIRMER   %s RETOUR", "MODO: %s   FASE: %s\nCREA LA SALA ANTES DE EMPEZAR\n%s SELECCIONAR   %s CONFIRMAR   %s ATRAS", "MODALITA: %s   ZONA: %s\nCREA LA STANZA PRIMA DI INIZIARE\n%s SELEZIONA   %s CONFERMA   %s INDIETRO") % [mode_name, get_multiplayer_session_course_text(), get_navigation_label(), get_confirm_label(), get_secondary_label()]
 		if not is_singlepak_transfer_started():
-			return "MODE: %s   COURSE: %s\nCLIENTS: %d   PRESS START AFTER THEY JOIN\n%s SELECT   %s CONFIRM   %s BACK" % [mode_name, get_multiplayer_session_course_text(), max(0, get_multiplayer_link_count() - 1), get_navigation_label(), get_confirm_label(), get_secondary_label()]
-		return "MODE: %s   COURSE: %s\nCLIENTS: %d   DOWNLOAD: %d%%\nTRANSFER ACTIVE   %s BACK LOCKED" % [mode_name, get_multiplayer_session_course_text(), max(0, get_multiplayer_link_count() - 1), get_singlepak_download_progress(), get_secondary_label()]
+			return _language_text("MODE: %s   COURSE: %s\nCLIENTS: %d   PRESS START AFTER THEY JOIN\n%s SELECT   %s CONFIRM   %s BACK", "MODUS: %s   KURS: %s\nCLIENTS: %d   START NACH BEITRITT DRUECKEN\n%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK", "MODE: %s   PARCOURS: %s\nCLIENTS: %d   APPUYEZ SUR START APRES LEUR ARRIVEE\n%s SELECTIONNER   %s CONFIRMER   %s RETOUR", "MODO: %s   FASE: %s\nCLIENTES: %d   PULSA START CUANDO ENTREN\n%s SELECCIONAR   %s CONFIRMAR   %s ATRAS", "MODALITA: %s   ZONA: %s\nCLIENT: %d   PREMI START DOPO L'ACCESSO\n%s SELEZIONA   %s CONFERMA   %s INDIETRO") % [mode_name, get_multiplayer_session_course_text(), max(0, get_multiplayer_link_count() - 1), get_navigation_label(), get_confirm_label(), get_secondary_label()]
+		return _language_text("MODE: %s   COURSE: %s\nCLIENTS: %d   DOWNLOAD: %d%%\nTRANSFER ACTIVE   %s BACK LOCKED", "MODUS: %s   KURS: %s\nCLIENTS: %d   DOWNLOAD: %d%%\nUEBERTRAGUNG AKTIV   %s ZURUECK GESPERRT", "MODE: %s   PARCOURS: %s\nCLIENTS: %d   TELECHARGEMENT: %d%%\nTRANSFERT ACTIF   %s RETOUR VERROUILLE", "MODO: %s   FASE: %s\nCLIENTES: %d   DESCARGA: %d%%\nTRANSFERENCIA ACTIVA   %s ATRAS BLOQUEADO", "MODALITA: %s   ZONA: %s\nCLIENT: %d   DOWNLOAD: %d%%\nTRASFERIMENTO ATTIVO   %s INDIETRO BLOCCATO") % [mode_name, get_multiplayer_session_course_text(), max(0, get_multiplayer_link_count() - 1), get_singlepak_download_progress(), get_secondary_label()]
 	if is_singlepak_sync_ready():
-		return "COURSE: %s   SYNC STEP: %d/3\nCLIENT BOOT COMPLETE   %s CONFIRM TO START   %s BACK" % [get_multiplayer_session_course_text(), get_singlepak_sync_step(), get_confirm_label(), get_secondary_label()]
-	return "COURSE: %s   SYNC STEP: %d/3\nDOWNLOAD: %d%%   WAIT FOR CLIENT BOOT\n%s SELECT   %s CONFIRM   %s BACK LOCKED" % [get_multiplayer_session_course_text(), get_singlepak_sync_step(), get_singlepak_download_progress(), get_navigation_label(), get_confirm_label(), get_secondary_label()]
+		return _language_text("COURSE: %s   SYNC STEP: %d/3\nCLIENT BOOT COMPLETE   %s CONFIRM TO START   %s BACK", "KURS: %s   SYNC-SCHRITT: %d/3\nCLIENT-START KOMPLETT   %s ZUM START BESTAETIGEN   %s ZURUECK", "PARCOURS: %s   ETAPE SYNC: %d/3\nDEMARRAGE CLIENT TERMINE   %s CONFIRMER POUR COMMENCER   %s RETOUR", "FASE: %s   PASO SYNC: %d/3\nARRANQUE DEL CLIENTE COMPLETO   %s CONFIRMA PARA EMPEZAR   %s ATRAS", "ZONA: %s   PASSO SYNC: %d/3\nAVVIO CLIENT COMPLETO   %s CONFERMA PER INIZIARE   %s INDIETRO") % [get_multiplayer_session_course_text(), get_singlepak_sync_step(), get_confirm_label(), get_secondary_label()]
+	return _language_text("COURSE: %s   SYNC STEP: %d/3\nDOWNLOAD: %d%%   WAIT FOR CLIENT BOOT\n%s SELECT   %s CONFIRM   %s BACK LOCKED", "KURS: %s   SYNC-SCHRITT: %d/3\nDOWNLOAD: %d%%   WARTE AUF CLIENT-START\n%s AUSWAEHLEN   %s BESTAETIGEN   %s ZURUECK GESPERRT", "PARCOURS: %s   ETAPE SYNC: %d/3\nTELECHARGEMENT: %d%%   ATTENDEZ LE DEMARRAGE CLIENT\n%s SELECTIONNER   %s CONFIRMER   %s RETOUR VERROUILLE", "FASE: %s   PASO SYNC: %d/3\nDESCARGA: %d%%   ESPERA EL ARRANQUE DEL CLIENTE\n%s SELECCIONAR   %s CONFIRMAR   %s ATRAS BLOQUEADO", "ZONA: %s   PASSO SYNC: %d/3\nDOWNLOAD: %d%%   ATTENDI AVVIO CLIENT\n%s SELEZIONA   %s CONFERMA   %s INDIETRO BLOCCATO") % [get_multiplayer_session_course_text(), get_singlepak_sync_step(), get_singlepak_download_progress(), get_navigation_label(), get_confirm_label(), get_secondary_label()]
 
 func get_multiplayer_comm_info_text() -> String:
 	if _title_phase == TITLE_PHASE_MULTI_CONNECT:
 		if _multiplayer_pak_mode == 0:
-			return "FORM A MULTI-PAK ROOM FOR %s" % get_multiplayer_session_course_text()
+			return _language_text("FORM A MULTI-PAK ROOM FOR %s", "MULTI-PAK-RAUM FUER %s BILDEN", "FORMER UNE SALLE MULTI-PAK POUR %s", "CREAR UNA SALA MULTI-PAK PARA %s", "CREA UNA STANZA MULTI-PAK PER %s") % get_multiplayer_session_course_text()
 		if not is_singlepak_transfer_started():
-			return "WAIT FOR CLIENTS, THEN SEND THE MULTIBOOT PROGRAM" 
-		return "TRANSFER THE CLIENT PROGRAM FOR %s" % get_multiplayer_session_course_text()
-	return "WAIT FOR CLIENT BOOT AND FINAL SYNCHRONIZATION"
+			return _language_text("WAIT FOR CLIENTS, THEN SEND THE MULTIBOOT PROGRAM", "AUF CLIENTS WARTEN, DANN MULTIBOOT SENDEN", "ATTENDRE LES CLIENTS PUIS ENVOYER LE MULTIBOOT", "ESPERA A LOS CLIENTES Y ENVIA EL MULTIBOOT", "ATTENDI I CLIENT E INVIA IL MULTIBOOT")
+		return _language_text("TRANSFER THE CLIENT PROGRAM FOR %s", "CLIENT-PROGRAMM FUER %s UEBERTRAGEN", "TRANSFERER LE PROGRAMME CLIENT POUR %s", "TRANSFERIR EL PROGRAMA CLIENTE PARA %s", "TRASFERISCI IL PROGRAMMA CLIENT PER %s") % get_multiplayer_session_course_text()
+	return _language_text("WAIT FOR CLIENT BOOT AND FINAL SYNCHRONIZATION", "WARTE AUF CLIENT-START UND SYNC", "ATTENDRE LE DEMARRAGE ET LA SYNCHRONISATION", "ESPERA EL ARRANQUE Y LA SINCRONIZACION", "ATTENDI AVVIO E SINCRONIZZAZIONE DEL CLIENT")
 
 func get_multiplayer_comm_summary_text() -> String:
+	var mode_label := _language_text("MODE", "MODUS", "MODE", "MODO", "MODALITA")
+	var players_label := _language_text("PLAYERS", "SPIELER", "JOUEURS", "JUGADORES", "GIOCATORI")
+	var clients_label := _language_text("CLIENTS", "CLIENTS", "CLIENTS", "CLIENTES", "CLIENT")
+	var course_label := _language_text("COURSE", "KURS", "PARCOURS", "FASE", "ZONA")
+	var state_label := _language_text("STATE", "STATUS", "ETAT", "ESTADO", "STATO")
+	var linked_label := _language_text("LINKED", "VERBUNDEN", "LIES", "ENLAZADOS", "COLLEGATI")
+	var ready_label := _language_text("READY", "BEREIT", "PRETS", "LISTOS", "PRONTI")
+	var waiting_label := _language_text("WAITING", "WARTEN", "ATTENTE", "ESPERA", "ATTESA")
+	var booting_label := _language_text("BOOTING", "STARTET", "DEMARRAGE", "ARRANCANDO", "AVVIO")
 	if _title_phase == TITLE_PHASE_MULTI_CONNECT:
 		if _multiplayer_pak_mode == 0:
-			return "MODE\nMULTI-PAK\n\nPLAYERS\n%d/4 LINKED\n\nCOURSE\n%s" % [get_multiplayer_link_count(), get_selected_level_text()]
-		return "MODE\nSINGLE-PAK\n\nCLIENTS\n%d READY\n\nSTATE\n%s" % [max(0, get_multiplayer_link_count() - 1), ("WAITING" if not is_singlepak_transfer_started() else "DOWNLOAD %d%%" % get_singlepak_download_progress())]
-	return "SYNC STEP\n%d/3\n\nCOURSE\n%s\n\nSTATE\n%s" % [get_singlepak_sync_step(), get_selected_level_text(), "READY" if _singlepak_sync_step >= 3 else "BOOTING"]
+			return "%s\nMULTI-PAK\n\n%s\n%d/4 %s\n\n%s\n%s" % [mode_label, players_label, get_multiplayer_link_count(), linked_label, course_label, get_selected_level_text()]
+		return "%s\nSINGLE-PAK\n\n%s\n%d %s\n\n%s\n%s" % [mode_label, clients_label, max(0, get_multiplayer_link_count() - 1), ready_label, state_label, (waiting_label if not is_singlepak_transfer_started() else "DOWNLOAD %d%%" % get_singlepak_download_progress())]
+	return _language_text("SYNC STEP", "SYNC-SCHRITT", "ETAPE SYNC", "PASO SYNC", "PASSO SYNC") + "\n%d/3\n\n%s\n%s\n\n%s\n%s" % [get_singlepak_sync_step(), course_label, get_selected_level_text(), state_label, ready_label if _singlepak_sync_step >= 3 else booting_label]
+
+func get_multiplayer_comm_signal_text() -> String:
+	return _language_text("LINK", "LINK", "LIAISON", "ENLACE", "LINK") if _title_phase == TITLE_PHASE_MULTI_CONNECT else _language_text("SYNC", "SYNC", "SYNC", "SYNC", "SYNC")
+
+func get_multiplayer_comm_section_text() -> String:
+	return _language_text("PLAYER STATUS", "SPIELERSTATUS", "STATUT JOUEUR", "ESTADO DEL JUGADOR", "STATO GIOCATORE")
 
 func get_multiplayer_comm_chrome_colors() -> Dictionary:
 	if _title_phase == TITLE_PHASE_MULTI_CONNECT:
@@ -8121,47 +9603,70 @@ func get_multiplayer_comm_chrome_colors() -> Dictionary:
 
 func get_multiplayer_comm_rows() -> Array:
 	var rows: Array = []
+	var ready_label := _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
+	var wait_label := _language_text("WAIT", "WARTEN", "ATTENTE", "ESPERA", "ATTESA")
+	var locked_label := _language_text("LOCKED", "GESPERRT", "VERROUILLE", "BLOQUEADO", "BLOCCATO")
 	if _title_phase == TITLE_PHASE_MULTI_CONNECT:
 		rows.append({
-			"label": "CONNECT" if _multiplayer_pak_mode == 0 else "SCAN CLIENTS",
-			"value": "%d OF 4 SYSTEMS PRESENT" % get_multiplayer_link_count() if _multiplayer_pak_mode == 0 else "%d CLIENT SYSTEMS DETECTED" % max(0, get_multiplayer_link_count() - 1),
-			"status": "READY",
+			"label": _language_text("CONNECT", "VERBINDEN", "CONNECTER", "CONECTAR", "COLLEGA") if _multiplayer_pak_mode == 0 else _language_text("SCAN CLIENTS", "CLIENTS SUCHEN", "RECHERCHER LES CLIENTS", "BUSCAR CLIENTES", "CERCA CLIENT"),
+			"value": (_language_text("%d OF 4 SYSTEMS PRESENT", "%d VON 4 SYSTEMEN VORHANDEN", "%d SYSTEMES SUR 4 PRESENTS", "%d DE 4 SISTEMAS PRESENTES", "%d SISTEMI SU 4 PRESENTI") % get_multiplayer_link_count()) if _multiplayer_pak_mode == 0 else (_language_text("%d CLIENT SYSTEMS DETECTED", "%d CLIENT-SYSTEME GEFUNDEN", "%d SYSTEMES CLIENTS DETECTES", "%d CLIENTES DETECTADOS", "%d CLIENT RILEVATI") % max(0, get_multiplayer_link_count() - 1)),
+			"status": ready_label,
+			"ready": true,
+			"waiting": false,
+			"locked": false,
 			"selected": _title_menu_index == 0,
 		})
 		rows.append({
-			"label": "START MATCH" if _multiplayer_pak_mode == 0 and _multiplayer_link_ready else ("PRESS START" if _multiplayer_pak_mode == 0 else "START DOWNLOAD"),
-			"value": "HOST MAY BEGIN THE MATCH" if _multiplayer_pak_mode == 0 and _multiplayer_link_ready else ("WAIT FOR THE ROOM TO FILL" if _multiplayer_pak_mode == 0 else ("PRESS START AFTER CLIENTS JOIN" if not is_singlepak_transfer_started() else "TRANSFER %d%% COMPLETE" % get_singlepak_download_progress())),
-			"status": "READY" if (_multiplayer_link_ready or (_multiplayer_pak_mode == 1 and get_multiplayer_link_count() >= 2)) else "WAIT",
+			"label": _language_text("START MATCH", "MATCH STARTEN", "LANCER LA PARTIE", "INICIAR PARTIDA", "AVVIA PARTITA") if _multiplayer_pak_mode == 0 and _multiplayer_link_ready else (_language_text("PRESS START", "START DRUECKEN", "APPUYER SUR START", "PULSA START", "PREMI START") if _multiplayer_pak_mode == 0 else _language_text("START DOWNLOAD", "DOWNLOAD STARTEN", "DEMARRER LE TELECHARGEMENT", "INICIAR DESCARGA", "AVVIA DOWNLOAD")),
+			"value": _language_text("HOST MAY BEGIN THE MATCH", "HOST KANN MATCH STARTEN", "L'HOTE PEUT LANCER LA PARTIE", "EL HOST PUEDE INICIAR", "L'HOST PUO AVVIARE LA PARTITA") if _multiplayer_pak_mode == 0 and _multiplayer_link_ready else (_language_text("WAIT FOR THE ROOM TO FILL", "WARTE BIS RAUM VOLL IST", "ATTENDEZ QUE LA SALLE SOIT PLEINE", "ESPERA A LLENAR LA SALA", "ATTENDI CHE LA STANZA SIA PIENA") if _multiplayer_pak_mode == 0 else (_language_text("PRESS START AFTER CLIENTS JOIN", "START NACH CLIENT-BEITRITT DRUECKEN", "APPUYER SUR START APRES LES CLIENTS", "PULSA START TRAS UNIR CLIENTES", "PREMI START DOPO L'ACCESSO DEI CLIENT") if not is_singlepak_transfer_started() else (_language_text("TRANSFER %d%% COMPLETE", "UEBERTRAGUNG ZU %d%% FERTIG", "TRANSFERT TERMINE A %d%%", "TRANSFERENCIA AL %d%%", "TRASFERIMENTO AL %d%%") % get_singlepak_download_progress()))),
+			"status": ready_label if (_multiplayer_link_ready or (_multiplayer_pak_mode == 1 and get_multiplayer_link_count() >= 2)) else wait_label,
+			"ready": _multiplayer_link_ready or (_multiplayer_pak_mode == 1 and get_multiplayer_link_count() >= 2),
+			"waiting": not (_multiplayer_link_ready or (_multiplayer_pak_mode == 1 and get_multiplayer_link_count() >= 2)),
+			"locked": false,
 			"selected": _title_menu_index == 1,
 		})
 		rows.append({
-			"label": "BACK",
-			"value": "RETURN TO PAK MODE SELECT",
-			"status": "READY" if _multiplayer_pak_mode == 0 or not is_singlepak_transfer_started() else "LOCKED",
+			"label": _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO"),
+			"value": _language_text("RETURN TO PAK MODE SELECT", "ZUR PAK-MODUSWAHL", "RETOUR AU CHOIX DU MODE PAK", "VOLVER A SELECCION DE MODO", "TORNA ALLA SELEZIONE MODALITA PAK"),
+			"status": ready_label if _multiplayer_pak_mode == 0 or not is_singlepak_transfer_started() else locked_label,
+			"ready": _multiplayer_pak_mode == 0 or not is_singlepak_transfer_started(),
+			"waiting": false,
+			"locked": _multiplayer_pak_mode == 1 and is_singlepak_transfer_started(),
 			"selected": _title_menu_index == 2,
 		})
 		return rows
+	var sync_ready := is_singlepak_sync_ready()
 	rows.append({
-		"label": "START MATCH" if is_singlepak_sync_ready() else "SYNC CLIENTS",
-		"value": "CLIENTS FINISHED BOOTING" if is_singlepak_sync_ready() else "BOOT STATE %d OF 3" % get_singlepak_sync_step(),
-		"status": "READY" if is_singlepak_sync_ready() else "WAIT",
+		"label": _language_text("START MATCH", "MATCH STARTEN", "LANCER LA PARTIE", "INICIAR PARTIDA", "AVVIA PARTITA") if sync_ready else _language_text("SYNC CLIENTS", "CLIENTS SYNCHRONISIEREN", "SYNCHRONISER LES CLIENTS", "SINCRONIZAR CLIENTES", "SINCRONIZZA CLIENT"),
+		"value": _language_text("CLIENTS FINISHED BOOTING", "CLIENT-START ABGESCHLOSSEN", "DEMARRAGE CLIENTS TERMINE", "ARRANQUE DE CLIENTES COMPLETO", "AVVIO CLIENT COMPLETATO") if sync_ready else (_language_text("BOOT STATE %d OF 3", "STARTSTATUS %d VON 3", "ETAT DEMARRAGE %d SUR 3", "ESTADO DE ARRANQUE %d DE 3", "STATO AVVIO %d DI 3") % get_singlepak_sync_step()),
+		"status": ready_label if sync_ready else wait_label,
+		"ready": sync_ready,
+		"waiting": not sync_ready,
+		"locked": false,
 		"selected": _title_menu_index == 0,
 	})
 	rows.append({
-		"label": "RESULTS",
-		"value": "OPEN THE POST-MATCH RESULT EXCHANGE",
-		"status": "READY" if is_singlepak_sync_ready() else "LOCKED",
+		"label": _language_text("RESULTS", "ERGEBNISSE", "RESULTATS", "RESULTADOS", "RISULTATI"),
+		"value": _language_text("OPEN THE POST-MATCH RESULT EXCHANGE", "ERGEBNISAUSTAUSCH NACH DEM MATCH OEFFNEN", "OUVRIR LES RESULTATS APRES LE MATCH", "ABRIR RESULTADOS TRAS LA PARTIDA", "APRI LO SCAMBIO RISULTATI POST-PARTITA"),
+		"status": ready_label if sync_ready else locked_label,
+		"ready": sync_ready,
+		"waiting": false,
+		"locked": not sync_ready,
 		"selected": _title_menu_index == 1,
 	})
 	rows.append({
-		"label": "BACK",
-		"value": "WAIT FOR CLIENT BOOT TO FINISH",
-		"status": "LOCKED",
+		"label": _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO"),
+		"value": _language_text("WAIT FOR CLIENT BOOT TO FINISH", "WARTE AUF CLIENT-START", "ATTENDEZ LA FIN DU DEMARRAGE CLIENT", "ESPERA A QUE TERMINE EL ARRANQUE", "ATTENDI LA FINE DELL'AVVIO CLIENT"),
+		"status": locked_label,
+		"ready": false,
+		"waiting": false,
+		"locked": true,
 		"selected": _title_menu_index == 2,
 	})
 	return rows
 
 func get_multiplayer_comm_player_rows() -> Array:
+	_ensure_multiplayer_session_arrays()
 	var rows: Array = []
 	for i in range(_multiplayer_link_players.size()):
 		var connected := bool(_multiplayer_link_connected[i])
@@ -8196,11 +9701,34 @@ func is_multiplayer_link_ready() -> bool:
 	return _multiplayer_link_ready
 
 func get_multiplayer_link_count() -> int:
+	_ensure_multiplayer_session_arrays()
 	var count := 0
 	for connected in _multiplayer_link_connected:
 		if bool(connected):
 			count += 1
 	return count
+
+func _ensure_multiplayer_session_arrays() -> void:
+	# Link screens are also reachable after an interrupted or older save. Keep
+	# their four-player presentation total instead of indexing partial state.
+	const player_slots := 4
+	while _multiplayer_link_players.size() < player_slots:
+		_multiplayer_link_players.append("P%d" % (_multiplayer_link_players.size() + 1))
+	while _multiplayer_link_connected.size() < player_slots:
+		_multiplayer_link_connected.append(false)
+	while _multiplayer_player_characters.size() < player_slots:
+		_multiplayer_player_characters.append(0)
+	while _multiplayer_player_ranks.size() < player_slots:
+		_multiplayer_player_ranks.append(-1)
+	if _multiplayer_link_players.size() > player_slots:
+		_multiplayer_link_players.resize(player_slots)
+	if _multiplayer_link_connected.size() > player_slots:
+		_multiplayer_link_connected.resize(player_slots)
+	if _multiplayer_player_characters.size() > player_slots:
+		_multiplayer_player_characters.resize(player_slots)
+	if _multiplayer_player_ranks.size() > player_slots:
+		_multiplayer_player_ranks.resize(player_slots)
+	_multiplayer_link_connected[0] = true
 
 func _get_multiplayer_host_name() -> String:
 	var host_name := get_profile_name_text().strip_edges()
@@ -8227,6 +9755,7 @@ func _get_multiplayer_remote_name_pool() -> Array:
 	return pool
 
 func _reset_multiplayer_session_state() -> void:
+	_ensure_multiplayer_session_arrays()
 	var remote_name_pool: Array = _get_multiplayer_remote_name_pool()
 	_multiplayer_link_players = [_get_multiplayer_host_name(), "P2", "P3", "P4"]
 	for i in range(1, _multiplayer_link_players.size()):
@@ -8239,6 +9768,7 @@ func _reset_multiplayer_session_state() -> void:
 	_refresh_multiplayer_rankings()
 
 func _refresh_multiplayer_remote_characters() -> void:
+	_ensure_multiplayer_session_arrays()
 	var used: Dictionary = {_selected_character_index: true}
 	_multiplayer_player_characters[0] = _selected_character_index
 	for i in range(1, _multiplayer_player_characters.size()):
@@ -8296,27 +9826,27 @@ func get_multiplayer_intro_character_text() -> String:
 func get_time_attack_lobby_rows() -> Array:
 	var rows: Array = []
 	rows.append({
-		"name": "START",
-		"description": "BEGIN THE CURRENT TIME ATTACK RUN",
-		"status": "READY",
+		"name": _language_text("START", "START", "DEPART", "EMPEZAR", "AVVIA"),
+		"description": _language_text("BEGIN THE CURRENT TIME ATTACK RUN", "AKTUELLEN ZEITANGRIFF STARTEN", "LANCER LE CONTRE-LA-MONTRE", "INICIAR EL CONTRARRELOJ", "INIZIA L'ATTACCO A TEMPO"),
+		"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
 		"selected": _time_attack_lobby_cursor == 0,
 	})
 	rows.append({
-		"name": "CHARACTER",
-		"description": "CHANGE THE ACTIVE RUNNER",
+		"name": _language_text("CHARACTER", "CHARAKTER", "PERSONNAGE", "PERSONAJE", "PERSONAGGIO"),
+		"description": _language_text("CHANGE THE ACTIVE RUNNER", "AKTIVEN CHARAKTER WECHSELN", "CHANGER DE PERSONNAGE ACTIF", "CAMBIAR EL PERSONAJE ACTIVO", "CAMBIA IL PERSONAGGIO ATTIVO"),
 		"status": get_selected_character_name(),
 		"selected": _time_attack_lobby_cursor == 1,
 	})
 	rows.append({
-		"name": "COURSE" if not _time_attack_boss_mode else "BOSS COURSE",
-		"description": "LEFT/RIGHT OR CONFIRM TO CHANGE COURSE",
+		"name": (_language_text("COURSE", "KURS", "PARCOURS", "FASE", "CORSO") if not _time_attack_boss_mode else _language_text("BOSS COURSE", "BOSS-KURS", "PARCOURS BOSS", "FASE DEL JEFE", "CORSO BOSS")),
+		"description": _language_text("LEFT/RIGHT OR CONFIRM TO CHANGE COURSE", "LINKS/RECHTS ODER BESTAETIGEN ZUM WECHSELN", "GAUCHE/DROITE OU CONFIRMER POUR CHANGER", "IZQUIERDA/DERECHA O CONFIRMAR PARA CAMBIAR", "SINISTRA/DESTRA O CONFERMA PER CAMBIARE"),
 		"status": get_selected_level_text(),
 		"selected": _time_attack_lobby_cursor == 2,
 	})
 	rows.append({
-		"name": "TITLE",
-		"description": "RETURN TO THE TIME ATTACK MENU",
-		"status": "BACK",
+		"name": _language_text("TITLE", "TITEL", "TITRE", "TITULO", "TITOLO"),
+		"description": _language_text("RETURN TO THE TIME ATTACK MENU", "ZUR ZEITANGRIFF-MENUE ZURUECK", "RETOUR AU MENU CONTRE-LA-MONTRE", "VOLVER AL MENU CONTRARRELOJ", "TORNA AL MENU ATTACCO A TEMPO"),
+		"status": _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO"),
 		"selected": _time_attack_lobby_cursor == 3,
 	})
 	return rows
@@ -8347,27 +9877,30 @@ func get_boss_hud_state() -> Dictionary:
 	return {"active": false, "health": 0, "max_health": 0, "phase": "", "phase_index": 0}
 
 func get_time_attack_lobby_title() -> String:
-	return "BOSS TIME ATTACK" if _time_attack_boss_mode else "TIME ATTACK"
+	if _time_attack_boss_mode:
+		return _language_text("BOSS TIME ATTACK", "BOSS-ZEITANGRIFF", "ATTAQUE BOSS", "ATAQUE AL JEFE", "ATTACCO BOSS")
+	return _language_text("TIME ATTACK", "ZEITANGRIFF", "CONTRE-LA-MONTRE", "CONTRARRELOJ", "ATTACCO A TEMPO")
 
 func get_time_attack_lobby_prompt() -> String:
 	if not _title_notice_text.is_empty():
-		return _title_notice_text
-	return "TRY AGAIN"
+		return get_title_notice_text()
+	return _language_text("TRY AGAIN", "NOCH EINMAL", "REESSAYER", "INTENTAR DE NUEVO", "RIPROVA")
 
 func get_time_attack_lobby_detail() -> String:
-	return "%s SELECT   %s CONFIRM   LEFT/RIGHT COURSE   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+	return "%s SELECT   %s CONFIRM   LEFT/RIGHT %s   %s BACK" % [get_navigation_label(), get_confirm_label(), _language_text("COURSE", "KURS", "PARCOURS", "FASE", "CORSO"), get_secondary_label()]
 
 func get_time_attack_lobby_summary_text() -> String:
 	return "CHARACTER\n%s\n\nCOURSE\n%s\n\nBEST\n%s" % [get_selected_character_name(), get_selected_level_text(), get_time_attack_lobby_record_text()]
 
 func get_time_attack_lobby_character_text() -> String:
-	return "CHARACTER\n%s" % get_selected_character_name()
+	return "%s\n%s" % [_language_text("CHARACTER", "CHARAKTER", "PERSONNAGE", "PERSONAJE", "PERSONAGGIO"), get_selected_character_name()]
 
 func get_time_attack_lobby_course_text() -> String:
-	return "COURSE\n%s\n%s" % [get_selected_level_text(), get_time_attack_lobby_course_badge_text()]
+	return "%s\n%s\n%s" % [_language_text("COURSE", "KURS", "PARCOURS", "FASE", "CORSO"), get_selected_level_text(), get_time_attack_lobby_course_badge_text()]
 
 func get_time_attack_lobby_mode_text() -> String:
-	return "MODE\n%s\n%s" % [("BOSS ATTACK" if _time_attack_boss_mode else "ZONE ATTACK"), get_time_attack_lobby_focus_text()]
+	var mode_text := _language_text("BOSS ATTACK", "BOSS-ANGRIFF", "ATTAQUE BOSS", "ATAQUE AL JEFE", "ATTACCO BOSS") if _time_attack_boss_mode else _language_text("ZONE ATTACK", "ZONEN-ANGRIFF", "ATTAQUE DE ZONE", "ATAQUE DE ZONA", "ATTACCO ZONA")
+	return "%s\n%s\n%s" % [_language_text("MODE", "MODUS", "MODE", "MODO", "MODALITA"), mode_text, get_time_attack_lobby_focus_text()]
 
 func get_time_attack_lobby_record_text() -> String:
 	var record_key := _get_time_attack_record_key(_selected_character_index, _selected_level_index, 0, _time_attack_boss_mode)
@@ -8375,6 +9908,9 @@ func get_time_attack_lobby_record_text() -> String:
 	if best_time < 0.0:
 		return "NO RECORD"
 	return get_formatted_time(best_time)
+
+func get_time_attack_lobby_record_label_text() -> String:
+	return "%s\n%s" % [_language_text("BEST", "BESTE", "MEILLEUR", "MEJOR", "MIGLIORE"), get_time_attack_lobby_record_text()]
 
 func get_time_attack_lobby_course_badge_text() -> String:
 	var course_index := _selected_level_index
@@ -8386,13 +9922,13 @@ func get_time_attack_lobby_course_badge_text() -> String:
 func get_time_attack_lobby_focus_text() -> String:
 	match _time_attack_lobby_cursor:
 		0:
-			return "RUN READY"
+			return _language_text("RUN READY", "LAUF BEREIT", "COURSE PRET", "FASE LISTA", "CORSA PRONTA")
 		1:
-			return "CHANGE RUNNER"
+			return _language_text("CHANGE RUNNER", "CHARAKTER WECHSELN", "CHANGER DE PERSONNAGE", "CAMBIAR PERSONAJE", "CAMBIA PERSONAGGIO")
 		2:
-			return "CHANGE COURSE"
+			return _language_text("CHANGE COURSE", "KURS WECHSELN", "CHANGER DE PARCOURS", "CAMBIAR FASE", "CAMBIA CORSO")
 		3:
-			return "BACK TO MENU"
+			return _language_text("BACK TO MENU", "ZUM MENUE", "RETOUR AU MENU", "VOLVER AL MENU", "TORNA AL MENU")
 	return "STANDBY"
 
 func get_time_attack_lobby_character_accent_color() -> Color:
@@ -8438,35 +9974,50 @@ func _continue_multiplayer_after_course_select() -> void:
 
 func get_course_select_title() -> String:
 	if _is_multiplayer_course_select():
-		return "MULTIPLAYER COURSE"
-	return "COURSE SELECT"
+		return _language_text("MULTIPLAYER COURSE", "MULTIPLAYER-KURS", "PARCOURS MULTIJOUEUR", "FASE MULTIJUGADOR", "CORSO MULTIGIOCATORE")
+	return _language_text("COURSE SELECT", "KURSAUSWAHL", "CHOIX DU PARCOURS", "SELECCION DE FASE", "SCELTA CORSO")
 
 func get_course_select_prompt() -> String:
 	if _is_multiplayer_course_select():
 		if is_course_select_starting():
-			return "LOCKING ROOM COURSE"
+			return _language_text("LOCKING ROOM COURSE", "RAUM-KURS WIRD FESTGELEGT", "PARCOURS DE SALLE VERROUILLE", "FIJANDO FASE DE SALA", "BLOCCO CORSO STANZA")
 		if is_course_select_busy():
-			return "SHIFTING ROOM COURSE"
-		return "SELECT A VS COURSE"
+			return _language_text("SHIFTING ROOM COURSE", "RAUM-KURS WIRD VERSCHOBEN", "DEPLACEMENT DU PARCOURS", "CAMBIANDO FASE DE SALA", "SPOSTAMENTO CORSO STANZA")
+		return _language_text("SELECT A VS COURSE", "VS-KURS AUSWAEHLEN", "CHOISISSEZ UN PARCOURS VS", "ELIGE UNA FASE VS", "SCEGLI UN CORSO VS")
+	if is_course_select_unlocking():
+		match get_course_select_unlock_phase():
+			COURSE_UNLOCK_PHASE_PATH:
+				return _language_text("OPENING NEW COURSE PATH", "NEUER KURSPFAD OEFFNET SICH", "OUVERTURE D'UN NOUVEAU PARCOURS", "ABRIENDO NUEVA RUTA", "APERTURA NUOVO PERCORSO")
+			COURSE_UNLOCK_PHASE_SCROLL_BACK:
+				return _language_text("RETURNING TO COURSE MAP", "ZUR KURSKARTE ZURUECK", "RETOUR A LA CARTE", "VOLVIENDO AL MAPA", "RITORNO ALLA MAPPA")
+			COURSE_UNLOCK_PHASE_SCROLL_NEXT:
+				return _language_text("TRAVELLING TO NEW COURSE", "ZUM NEUEN KURS", "DEPLACEMENT VERS LE NOUVEAU PARCOURS", "VIAJANDO A LA NUEVA FASE", "VIAGGIO AL NUOVO CORSO")
+			COURSE_UNLOCK_PHASE_PAUSE:
+				return _language_text("NEW COURSE UNLOCKED", "NEUER KURS FREIGESCHALTET", "NOUVEAU PARCOURS DEBLOQUE", "NUEVA FASE DESBLOQUEADA", "NUOVO CORSO SBLOCCATO")
 	if is_course_select_starting():
-		return "STARTING COURSE"
+		return _language_text("STARTING COURSE", "KURS STARTET", "DEMARRAGE DU PARCOURS", "INICIANDO FASE", "AVVIO CORSO")
 	if is_course_select_busy():
-		return "LOCKING COURSE"
-	return "SELECT A COURSE"
+		return _language_text("LOCKING COURSE", "KURS WIRD FESTGELEGT", "PARCOURS VERROUILLE", "FIJANDO FASE", "BLOCCO CORSO")
+	return _language_text("SELECT A COURSE", "KURS AUSWAEHLEN", "CHOISISSEZ UN PARCOURS", "ELIGE UNA FASE", "SCEGLI UN CORSO")
 
 func get_course_select_detail() -> String:
+	var character_label := _language_text("CHARACTER", "CHARAKTER", "PERSONNAGE", "PERSONAJE", "PERSONAGGIO")
+	var mode_label := _language_text("MODE", "MODUS", "MODE", "MODO", "MODALITA")
 	var notice := get_title_notice_text()
 	if notice.is_empty():
 		if _is_multiplayer_course_select():
 			notice = "%s SELECT   %s LOCK   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 		else:
 			notice = "%s SELECT   %s START   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
-	return "%s\nCHARACTER: %s   MODE: %s" % [notice, get_selected_character_name(), get_course_select_type_label()]
+	return "%s\n%s: %s   %s: %s" % [notice, character_label, get_selected_character_name(), mode_label, get_course_select_type_label()]
 
 func get_course_select_summary_text() -> String:
+	var course_label := _language_text("ROOM COURSE", "RAUM-KURS", "PARCOURS DE SALLE", "FASE DE SALA", "CORSO STANZA")
+	var pak_label := _language_text("PAK MODE", "PAK-MODUS", "MODE PAK", "MODO PAK", "MODALITA PAK")
+	var runner_label := _language_text("RUNNER", "LAEUFER", "COUREUR", "CORREDOR", "CORRIDORE")
 	if _is_multiplayer_course_select():
-		return "ROOM COURSE\n%s\n\nPAK MODE\n%s\n\nRUNNER\n%s" % [get_course_select_banner_text(), get_multiplayer_pak_mode_name(), get_selected_character_name()]
-	return "CURRENT COURSE\n%s\n\nRECORD\n%s\n\nCHARACTER\n%s" % [get_course_select_banner_text(), get_selected_level_description(), get_selected_character_name()]
+		return "%s\n%s\n\n%s\n%s\n\n%s\n%s" % [course_label, get_course_select_banner_text(), pak_label, get_multiplayer_pak_mode_name(), runner_label, get_selected_character_name()]
+	return "%s\n%s\n\n%s\n%s\n\n%s\n%s" % [_language_text("CURRENT COURSE", "AKTUELLER KURS", "PARCOURS ACTUEL", "FASE ACTUAL", "CORSO ATTUALE"), get_course_select_banner_text(), _language_text("RECORD", "REKORD", "RECORD", "RECORD", "RECORD"), get_selected_level_description(), _language_text("CHARACTER", "CHARAKTER", "PERSONNAGE", "PERSONAJE", "PERSONAGGIO"), get_selected_character_name()]
 
 func get_course_select_banner_text() -> String:
 	if _is_multiplayer_course_select():
@@ -8477,11 +10028,20 @@ func get_course_select_banner_text() -> String:
 
 func get_course_select_rows() -> Array:
 	var rows: Array = []
-	for index in range(_level_names.size()):
+	# The original map has one moving selection, while the modern panel shows
+	# a four-course window around it. Keep the selected course in that window.
+	var window_size := mini(4, _level_names.size())
+	var first_index := clampi(_selected_level_index - 1, 0, maxi(0, _level_names.size() - window_size))
+	for index in range(first_index, first_index + window_size):
+		var cleared := index < _level_cleared_flags.size() and bool(_level_cleared_flags[index])
+		var unlocked := index <= _unlocked_level_index
 		rows.append({
+			"index": index,
 			"name": get_level_name_by_index(index),
-			"value": get_selected_level_description() if index == _selected_level_index else "BEST: %d" % get_level_best_score(index),
+			"value": get_selected_level_description() if index == _selected_level_index else "%s: %d" % [_language_text("BEST", "BESTE", "RECORD", "MEJOR", "MIGLIORE"), get_level_best_score(index)],
 			"status": get_level_status(index),
+			"cleared": cleared,
+			"unlocked": unlocked,
 			"selected": index == _selected_level_index,
 		})
 	return rows
@@ -8495,8 +10055,61 @@ func is_course_select_settling() -> bool:
 func is_course_select_unlocking() -> bool:
 	return _course_select_unlock_timer > 0.0
 
+func _start_course_select_unlock_cutscene() -> void:
+	_course_select_unlock_phase = COURSE_UNLOCK_PHASE_PATH
+	_course_select_unlock_phase_duration = float(COURSE_UNLOCK_PATH_FRAMES) / 60.0
+	_course_select_unlock_phase_timer = _course_select_unlock_phase_duration
+	_course_select_unlock_timer = _course_select_unlock_phase_timer
+	_title_notice_text = "NEW COURSE PATH UNLOCKING"
+	_status_text = get_title_prompt_text()
+
+func _advance_course_select_unlock_cutscene(delta: float) -> void:
+	_course_select_unlock_phase_timer = maxf(0.0, _course_select_unlock_phase_timer - delta)
+	if _course_select_unlock_phase_timer > 0.0:
+		_course_select_unlock_timer = _course_select_unlock_phase_timer
+		return
+	match _course_select_unlock_phase:
+		COURSE_UNLOCK_PHASE_PATH:
+			_course_select_unlock_phase = COURSE_UNLOCK_PHASE_SCROLL_BACK
+			_course_select_unlock_phase_duration = 0.35
+			_course_select_unlock_phase_timer = _course_select_unlock_phase_duration
+			_title_notice_text = "NEW COURSE PATH OPEN"
+		COURSE_UNLOCK_PHASE_SCROLL_BACK:
+			_course_select_unlock_phase = COURSE_UNLOCK_PHASE_SCROLL_NEXT
+			_course_select_unlock_phase_duration = 0.55
+			_course_select_unlock_phase_timer = _course_select_unlock_phase_duration
+			_title_notice_text = "MOVING TO NEW COURSE"
+		COURSE_UNLOCK_PHASE_SCROLL_NEXT:
+			_course_select_unlock_phase = COURSE_UNLOCK_PHASE_PAUSE
+			_course_select_unlock_phase_duration = float(COURSE_UNLOCK_PAUSE_FRAMES) / 60.0
+			_course_select_unlock_phase_timer = _course_select_unlock_phase_duration
+			_title_notice_text = "NEW COURSE READY"
+		COURSE_UNLOCK_PHASE_PAUSE:
+			_course_select_unlock_phase_timer = 0.0
+			_course_select_unlock_timer = 0.0
+			_title_notice_text = "COURSE READY: %s" % get_selected_level_text()
+	if _course_select_unlock_phase != COURSE_UNLOCK_PHASE_PAUSE:
+		_course_select_unlock_timer = _course_select_unlock_phase_timer
+	_status_text = get_title_prompt_text()
+
+func get_course_select_unlock_phase() -> int:
+	return _course_select_unlock_phase
+
+func get_course_select_unlock_progress() -> float:
+	if _course_select_unlock_phase_duration <= 0.0:
+		return 1.0
+	return clampf(1.0 - (_course_select_unlock_phase_timer / _course_select_unlock_phase_duration), 0.0, 1.0)
+
 func is_course_select_starting() -> bool:
 	return _course_select_start_timer > 0.0
+
+func is_course_select_intro() -> bool:
+	return _course_select_intro_timer > 0.0
+
+func get_course_select_intro_progress() -> float:
+	if _course_select_intro_duration <= 0.0:
+		return 1.0
+	return clampf(1.0 - (_course_select_intro_timer / _course_select_intro_duration), 0.0, 1.0)
 
 func is_course_select_busy() -> bool:
 	return is_course_select_unlocking() or is_course_select_traveling() or is_course_select_settling()
@@ -8566,22 +10179,22 @@ func get_course_select_zone_label() -> String:
 	if _is_multiplayer_course_select():
 		return "VS %d" % [_selected_level_index + 1]
 	if _selected_level_index >= _level_names.size() - 2:
-		return "FINAL"
-	return "ZONE %d" % [_selected_level_index + 1]
+		return _language_text("FINAL", "FINAL", "FINAL", "FINAL", "FINALE")
+	return "%s %d" % [_language_text("ZONE", "ZONE", "ZONE", "ZONA", "ZONA"), int(_selected_level_index / 2) + 1]
 
 func get_course_select_act_label() -> String:
 	if _is_multiplayer_course_select():
-		return "MATCH"
+		return _language_text("MATCH", "MATCH", "MATCH", "PARTIDA", "PARTITA")
 	if _time_attack_boss_mode:
-		return "BOSS"
+		return _language_text("BOSS", "BOSS", "BOSS", "JEFE", "BOSS")
 	if _selected_level_index >= _level_names.size() - 2:
-		return "SPECIAL"
-	return "ACT %d" % [(_selected_level_index % 2) + 1]
+		return _language_text("SPECIAL", "SPEZIAL", "SPECIAL", "ESPECIAL", "SPECIALE")
+	return "%s %d" % [_language_text("ACT", "AKT", "ACTE", "ACTO", "ATTO"), (_selected_level_index % 2) + 1]
 
 func get_course_select_type_label() -> String:
 	if _is_multiplayer_course_select():
-		return "MULTIPLAYER"
-	return "BOSS ATTACK" if _time_attack_boss_mode else "ZONE ATTACK"
+		return _language_text("MULTIPLAYER", "MEHRSPIELER", "MULTIJOUEUR", "MULTIJUGADOR", "MULTIGIOCATORE")
+	return _language_text("BOSS ATTACK", "BOSS-ANGRIFF", "ATTAQUE BOSS", "ATAQUE DE JEFE", "ATTACCO BOSS") if _time_attack_boss_mode else _language_text("ZONE ATTACK", "ZONEN-ANGRIFF", "ATTAQUE ZONE", "ATAQUE DE ZONA", "ATTACCO ZONA")
 
 func get_course_select_emerald_rows() -> Array:
 	var badges: Array = []
@@ -8591,7 +10204,7 @@ func get_course_select_emerald_rows() -> Array:
 		# treating stage progression as a substitute for collection progress.
 		var active := false
 		if not _is_multiplayer_course_select():
-			active = (_chaos_emerald_mask & (1 << i)) != 0
+			active = (_get_selected_chaos_emerald_mask() & (1 << i)) != 0
 		badges.append({
 			"label": "E%d" % [i + 1],
 			"active": active,
@@ -8658,7 +10271,7 @@ func _prepare_multiplayer_results_snapshot(mode: int) -> void:
 				"wins": 0,
 				"score": 0,
 				"winner": false,
-				"stat_text": "%s   LOCKED IN" % _character_names[character_index],
+				"stat_text": _language_text("%s   LOCKED IN", "%s   FESTGELEGT", "%s   VERROUILLE", "%s   FIJADO", "%s   BLOCCATO") % _character_names[character_index],
 			})
 		return
 	_commit_multiplayer_course_results()
@@ -8682,13 +10295,13 @@ func _prepare_multiplayer_results_snapshot(mode: int) -> void:
 			"wins": wins,
 			"score": score,
 			"winner": place == 0,
-			"stat_text": "%s   RINGS %d   SCORE %d" % [_character_names[character_index], rings, score],
+			"stat_text": _language_text("%s   RINGS %d   SCORE %d", "%s   RINGE %d   PUNKTE %d", "%s   ANNEAUX %d   SCORE %d", "%s   ANILLOS %d   PUNTOS %d", "%s   ANELLI %d   PUNTEGGIO %d") % [_character_names[character_index], rings, score],
 		})
 
 func get_singlepak_results_items() -> Array:
 	if _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION:
-		return ["CONTINUE", "BACK TO LOBBY"]
-	return ["REMATCH", "BACK TO MULTI PLAYER"]
+		return [_language_text("CONTINUE", "WEITER", "CONTINUER", "CONTINUAR", "CONTINUA"), _language_text("BACK TO LOBBY", "ZUR LOBBY", "RETOUR A LA SALLE", "VOLVER A LA SALA", "TORNA ALLA STANZA")]
+	return [_language_text("REMATCH", "RUECKSPIEL", "REJOUER", "REVANCHA", "RIVINCITA"), _language_text("BACK TO MULTI PLAYER", "ZUR MULTIPLAYER-AUSWAHL", "RETOUR AU MULTIJOUEUR", "VOLVER A MULTIJUGADOR", "TORNA AL MULTIPLAYER")]
 
 func get_singlepak_results_cursor() -> int:
 	return _singlepak_results_cursor
@@ -8720,14 +10333,19 @@ func _resolve_multiplayer_lobby_choice() -> void:
 		open_title_screen_at_multiplayer_menu(0, "LINK SESSION RESET")
 		return
 	if _multiplayer_lobby_cursor == 0:
-		open_character_select(CHARACTER_SELECT_CONTEXT_MULTIPLAYER)
+		open_character_select(CHARACTER_SELECT_CONTEXT_MULTIPLAYER, 0)
 		return
-	open_title_screen_and_skip_intro()
+	# The source starts Cheese's 120-frame wave/fade before destroying the
+	# multiplayer lobby task and returning to the title screen.
+	_multiplayer_lobby_waiting = true
+	_multiplayer_lobby_exit_timer = MULTIPLAYER_LOBBY_EXIT_DURATION
+	_title_notice_text = "CLOSING MULTIPLAYER ROOM"
+	_status_text = get_title_prompt_text()
 
 func get_multiplayer_results_title() -> String:
 	if _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION:
-		return "CHARACTERS SELECTED"
-	return "MULTIPLAYER RESULTS"
+		return _language_text("CHARACTERS SELECTED", "CHARAKTER GEWAEHLT", "PERSONNAGES CHOISIS", "PERSONAJES ELEGIDOS", "PERSONAGGI SCELTI")
+	return _language_text("MULTIPLAYER RESULTS", "MULTIPLAYER-ERGEBNIS", "RESULTATS MULTIJOUEUR", "RESULTADOS MULTIJUGADOR", "RISULTATI MULTIGIOCATORE")
 
 func is_multiplayer_character_selection_results() -> bool:
 	return _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION
@@ -8736,32 +10354,37 @@ func get_multiplayer_results_prompt() -> String:
 	var seconds_left := ceili(get_singlepak_results_time_remaining())
 	if _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION:
 		if _multiplayer_result_snapshot.is_empty():
-			return "CHARACTER ORDER LOCKED IN"
-		return "READY: %s ON %s   NEXT IN %d" % [str(_multiplayer_result_snapshot[0]["character"]), get_multiplayer_session_course_text(), seconds_left]
+			return _language_text("CHARACTER ORDER LOCKED IN", "CHARAKTERREIHENFOLGE FESTGELEGT", "ORDRE DES PERSONNAGES FIXE", "ORDEN DE PERSONAJES FIJADO", "ORDINE DEI PERSONAGGI FISSATO")
+		return _language_text("READY: %s ON %s   NEXT IN %d", "BEREIT: %s AUF %s   WEITER IN %d", "PRET: %s SUR %s   SUITE DANS %d", "LISTO: %s EN %s   SIGUIENTE EN %d", "PRONTO: %s SU %s   PROSSIMO TRA %d") % [str(_multiplayer_result_snapshot[0]["character"]), get_multiplayer_session_course_text(), seconds_left]
 	if _multiplayer_result_snapshot.is_empty():
-		return "COLLECT RINGS SUMMARY"
-	return "WINNER: %s   COURSE: %s   NEXT IN %d" % [str(_multiplayer_result_snapshot[0]["name"]), get_multiplayer_session_course_text(), seconds_left]
+		return _language_text("COLLECT RINGS SUMMARY", "RING-SAMMELERGEBNIS", "RESUME DES ANNEAUX", "RESUMEN DE ANILLOS", "RIEPILOGO ANELLI")
+	return _language_text("WINNER: %s   COURSE: %s   NEXT IN %d", "SIEGER: %s   KURS: %s   WEITER IN %d", "VAINQUEUR: %s   PARCOURS: %s   SUITE DANS %d", "GANADOR: %s   FASE: %s   SIGUIENTE EN %d", "VINCITORE: %s   CORSO: %s   PROSSIMO TRA %d") % [str(_multiplayer_result_snapshot[0]["name"]), get_multiplayer_session_course_text(), seconds_left]
 
 func get_multiplayer_results_detail() -> String:
 	if _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION:
-		return "AUTO ADVANCE TO COURSE SELECT   %s SKIP NOW" % [get_confirm_label()]
-	return "AUTO ADVANCE TO PLAY AGAIN?   %s SKIP NOW" % [get_confirm_label()]
+		return _language_text("AUTO ADVANCE TO COURSE SELECT   %s SKIP NOW", "AUTOMATISCH ZUR KURSWAHL   %s JETZT UEBERSPRINGEN", "PASSAGE AUTO AU CHOIX DU PARCOURS   %s PASSER", "AVANCE AUTO A SELECCION DE FASE   %s OMITIR", "AVANZAMENTO AUTO ALLA SCELTA CORSO   %s SALTA") % get_confirm_label()
+	return _language_text("AUTO ADVANCE TO PLAY AGAIN?   %s SKIP NOW", "AUTOMATISCH ERNEUT SPIELEN?   %s JETZT UEBERSPRINGEN", "REJOUER AUTOMATIQUEMENT?   %s PASSER", "JUGAR DE NUEVO AUTOMATICAMENTE?   %s OMITIR", "GIOCARE ANCORA AUTOMATICAMENTE?   %s SALTA") % get_confirm_label()
 
 func get_multiplayer_results_summary_text() -> String:
-	var mode_text := "COURSE COMPLETE" if _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_COURSE_COMPLETE else "CHARACTER SELECTION"
+	var mode_text := _language_text("COURSE COMPLETE", "KURS BEENDET", "PARCOURS TERMINE", "FASE COMPLETADA", "CORSO COMPLETATO") if _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_COURSE_COMPLETE else _language_text("CHARACTER SELECTION", "CHARAKTERWAHL", "CHOIX DU PERSONNAGE", "SELECCION DE PERSONAJE", "SCELTA PERSONAGGIO")
+	var mode_label := _language_text("MODE", "MODUS", "MODE", "MODO", "MODALITA")
+	var players_label := _language_text("PLAYERS", "SPIELER", "JOUEURS", "JUGADORES", "GIOCATORI")
 	if _multiplayer_result_snapshot.is_empty():
-		return "MODE\n%s\n\nPLAYERS\n0" % mode_text
+		return "%s\n%s\n\n%s\n0" % [mode_label, mode_text, players_label]
 	var winner: Dictionary = _multiplayer_result_snapshot[0]
 	if _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION:
-		return "MODE\n%s\n\nLEAD PICK\n%s\n\nNEXT STEP\n%s" % [
+		return "%s\n%s\n\n%s\n%s\n\n%s\n%s" % [
+			mode_label,
 			mode_text,
+			_language_text("LEAD PICK", "ERSTE WAHL", "PREMIER CHOIX", "PRIMERA ELECCION", "PRIMA SCELTA"),
 			str(winner["character"]),
-			"COURSE SELECT",
+			_language_text("NEXT STEP", "NAECHSTER SCHRITT", "ETAPE SUIVANTE", "SIGUIENTE PASO", "PROSSIMO PASSO"),
+			_language_text("COURSE SELECT", "KURSAUSWAHL", "CHOIX DU PARCOURS", "SELECCION DE FASE", "SELEZIONE CORSO"),
 		]
-	return "MODE\n%s\n\nWINNER\n%s\n\nNEXT STEP\nPLAY AGAIN?" % [mode_text, str(winner["name"])]
+	return "%s\n%s\n\n%s\n%s\n\n%s\n%s" % [mode_label, mode_text, _language_text("WINNER", "SIEGER", "VAINQUEUR", "GANADOR", "VINCITORE"), str(winner["name"]), _language_text("NEXT STEP", "NAECHSTER SCHRITT", "ETAPE SUIVANTE", "SIGUIENTE PASO", "PROSSIMO PASSO"), _language_text("PLAY AGAIN?", "NOCHMAL SPIELEN?", "REJOUER?", "JUGAR DE NUEVO?", "GIOCARE ANCORA?")]
 
 func get_multiplayer_results_badge_text() -> String:
-	return "SEL" if _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION else "VS"
+	return _language_text("SEL", "AUS", "SEL", "SEL", "SEL") if _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION else "VS"
 
 func get_multiplayer_results_chrome_colors() -> Dictionary:
 	if _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION:
@@ -8787,49 +10410,62 @@ func get_multiplayer_result_option_rows() -> Array:
 		var label := str(items[i])
 		rows.append({
 			"label": label,
-			"status": "SELECTED" if i == _singlepak_results_cursor else ("NEXT" if i == 0 else "RETURN"),
+			"status": _language_text("SELECTED", "AUSGEWAEHLT", "SELECTIONNE", "SELECCIONADO", "SELEZIONATO") if i == _singlepak_results_cursor else (_language_text("NEXT", "WEITER", "SUIVANT", "SIGUIENTE", "PROSSIMO") if i == 0 else _language_text("RETURN", "ZURUECK", "RETOUR", "VOLVER", "RITORNO")),
 			"selected": i == _singlepak_results_cursor,
 		})
 	return rows
 
 func get_multiplayer_lobby_items() -> Array:
-	return ["YES", "NO"]
+	return [
+		_language_text("YES", "JA", "OUI", "SI", "SI"),
+		_language_text("NO", "NEIN", "NON", "NO", "NO"),
+	]
 
 func get_multiplayer_lobby_cursor() -> int:
 	return _multiplayer_lobby_cursor
 
 func get_multiplayer_lobby_title() -> String:
-	return "CONTINUE?"
+	return _language_text("CONTINUE?", "WEITER?", "CONTINUER?", "CONTINUAR?", "CONTINUARE?")
 
 func get_multiplayer_lobby_prompt() -> String:
 	var notice := get_title_notice_text()
 	if not notice.is_empty():
 		return notice
 	if _multiplayer_lobby_waiting:
-		return "WAITING FOR ALL LINKED PLAYERS"
+		return _language_text("WAITING FOR ALL LINKED PLAYERS", "WARTE AUF ALLE VERBUNDENEN SPIELER", "EN ATTENTE DE TOUS LES JOUEURS", "ESPERANDO A TODOS LOS JUGADORES", "IN ATTESA DI TUTTI I GIOCATORI")
 	if _multiplayer_lobby_cursor == 0:
-		return "HOST WILL START ANOTHER MATCH ON %s" % get_multiplayer_session_course_text()
-	return "HOST WILL CLOSE THE ROOM AFTER %s" % get_multiplayer_session_course_text()
+		return _language_text("HOST WILL START ANOTHER MATCH ON %s", "HOST STARTET EIN WEITERES MATCH AUF %s", "L'HOTE RELANCERA UNE PARTIE SUR %s", "EL HOST INICIARA OTRA PARTIDA EN %s", "L'HOST AVVIERA UN'ALTRA PARTITA SU %s") % get_multiplayer_session_course_text()
+	return _language_text("HOST WILL CLOSE THE ROOM AFTER %s", "HOST SCHLIESST DEN RAUM NACH %s", "L'HOTE FERMERA LA SALLE APRES %s", "EL HOST CERRARA LA SALA TRAS %s", "L'HOST CHIUDERA LA STANZA DOPO %s") % get_multiplayer_session_course_text()
 
 func get_multiplayer_lobby_detail() -> String:
 	if _multiplayer_lobby_waiting:
-		return "COURSE: %s   SYSTEMS: %d/4   HOST: P1\nDECISION SENT   HOLD FOR LINKED PLAYERS" % [get_multiplayer_session_course_text(), get_multiplayer_link_count()]
-	return "COURSE: %s   SYSTEMS: %d/4   HOST: P1\nLEFT/RIGHT CHOICE   %s CONFIRM   %s BACK" % [get_multiplayer_session_course_text(), get_multiplayer_link_count(), get_confirm_label(), get_secondary_label()]
+		return _language_text("COURSE: %s   SYSTEMS: %d/4   HOST: P1\nDECISION SENT   HOLD FOR LINKED PLAYERS", "KURS: %s   SYSTEME: %d/4   HOST: P1\nENTSCHEIDUNG GESENDET   AUF VERBUNDENE SPIELER WARTEN", "PARCOURS: %s   SYSTEMES: %d/4   HOTE: P1\nDECISION ENVOYEE   ATTENTE DES JOUEURS", "FASE: %s   SISTEMAS: %d/4   HOST: P1\nDECISION ENVIADA   ESPERA A LOS JUGADORES", "CORSO: %s   SISTEMI: %d/4   HOST: P1\nDECISIONE INVIATA   ATTENDI I GIOCATORI") % [get_multiplayer_session_course_text(), get_multiplayer_link_count()]
+	return _language_text("COURSE: %s   SYSTEMS: %d/4   HOST: P1\nLEFT/RIGHT CHOICE   %s CONFIRM   %s BACK", "KURS: %s   SYSTEME: %d/4   HOST: P1\nLINKS/RECHTS WAHL   %s BESTAETIGEN   %s ZURUECK", "PARCOURS: %s   SYSTEMES: %d/4   HOTE: P1\nCHOIX GAUCHE/DROITE   %s CONFIRMER   %s RETOUR", "FASE: %s   SISTEMAS: %d/4   HOST: P1\nELECCION IZQ/DER   %s CONFIRMAR   %s ATRAS", "CORSO: %s   SISTEMI: %d/4   HOST: P1\nSCELTA SINISTRA/DESTRA   %s CONFERMA   %s INDIETRO") % [get_multiplayer_session_course_text(), get_multiplayer_link_count(), get_confirm_label(), get_secondary_label()]
 
 func get_multiplayer_lobby_info_text() -> String:
 	if _multiplayer_lobby_waiting:
-		return "SYNCING THE HOST DECISION WITH EVERY LINKED SYSTEM"
+		return _language_text("SYNCING THE HOST DECISION WITH EVERY LINKED SYSTEM", "HOST-ENTSCHEIDUNG WIRD MIT SYSTEMEN SYNCHRONISIERT", "SYNCHRONISATION DE LA DECISION DE L'HOTE", "SINCRONIZANDO DECISION DEL HOST", "SINCRONIZZAZIONE DECISIONE HOST")
 	if _multiplayer_lobby_cursor == 0:
-		return "SEND A CONTINUE VOTE TO EVERY LINKED SYSTEM"
-	return "SEND AN EXIT VOTE AND RETURN TO RESULTS"
+		return _language_text("SEND A CONTINUE VOTE TO EVERY LINKED SYSTEM", "FORTSETZUNGSSTIMME AN SYSTEME SENDEN", "ENVOYER UN VOTE CONTINUER AUX SYSTEMES", "ENVIAR VOTO DE CONTINUAR A LOS SISTEMAS", "INVIA VOTO CONTINUA AI SISTEMI")
+	return _language_text("SEND AN EXIT VOTE AND RETURN TO RESULTS", "AUSSTIEGSSTIMME SENDEN UND ZU ERGEBNISSEN", "ENVOYER UN VOTE DE SORTIE ET RETOURNER AUX RESULTATS", "ENVIAR VOTO DE SALIDA Y VOLVER A RESULTADOS", "INVIA VOTO USCITA E TORNA AI RISULTATI")
 
 func get_multiplayer_lobby_summary_text() -> String:
 	var partners: int = max(0, get_multiplayer_link_count() - 1)
-	var choice := "YES" if _multiplayer_lobby_cursor == 0 else "NO"
+	var choice := _language_text("YES", "JA", "OUI", "SI", "SI") if _multiplayer_lobby_cursor == 0 else _language_text("NO", "NEIN", "NON", "NO", "NO")
+	var choice_label := _language_text("CHOICE", "WAHL", "CHOIX", "ELECCION", "SCELTA")
+	var state_label := _language_text("STATE", "STATUS", "ETAT", "ESTADO", "STATO")
+	var partners_label := _language_text("PARTNERS", "PARTNER", "PARTENAIRES", "SOCIOS", "PARTNER")
 	if _multiplayer_lobby_waiting:
-		return "CHOICE\n%s\n\nSTATE\nWAITING\n\nPARTNERS\n%d" % [choice, partners]
-	var next_step := "START REMATCH" if _multiplayer_lobby_cursor == 0 else "SHOW END RESULTS"
-	return "CHOICE\n%s\n\nNEXT\n%s\n\nPARTNERS\n%d" % [choice, next_step, partners]
+		return "%s\n%s\n\n%s\n%s\n\n%s\n%d" % [choice_label, choice, state_label, _language_text("WAITING", "WARTEN", "ATTENTE", "ESPERA", "ATTESA"), partners_label, partners]
+	var next_label := _language_text("NEXT", "NAECHSTER SCHRITT", "SUIVANT", "SIGUIENTE", "PROSSIMO")
+	var next_step := _language_text("START REMATCH", "RUECKSPIEL STARTEN", "LANCER LA REVANCHE", "INICIAR REVANCHA", "AVVIA RIVINCITA") if _multiplayer_lobby_cursor == 0 else _language_text("SHOW END RESULTS", "ENDRESULTATE ZEIGEN", "AFFICHER LES RESULTATS FINAUX", "MOSTRAR RESULTADOS FINALES", "MOSTRA RISULTATI FINALI")
+	return "%s\n%s\n\n%s\n%s\n\n%s\n%d" % [choice_label, choice, next_label, next_step, partners_label, partners]
+
+func get_multiplayer_lobby_badge_text() -> String:
+	return _language_text("YES", "JA", "OUI", "SI", "SI") if _multiplayer_lobby_cursor == 0 else _language_text("NO", "NEIN", "NON", "NO", "NO")
+
+func get_multiplayer_lobby_section_text() -> String:
+	return _language_text("NEXT PACKET", "NAECHSTES PAKET", "PROCHAIN PAQUET", "SIGUIENTE PAQUETE", "PROSSIMO PACCHETTO")
 
 func get_multiplayer_lobby_chrome_colors() -> Dictionary:
 	if _multiplayer_lobby_waiting:
@@ -8856,12 +10492,13 @@ func get_multiplayer_lobby_option_rows() -> Array:
 	for i in range(items.size()):
 		rows.append({
 			"label": str(items[i]),
-			"status": ("WAIT" if i == _multiplayer_lobby_cursor else "HOLD") if _multiplayer_lobby_waiting else ("REMATCH" if i == 0 else "RESULTS"),
+			"status": (_language_text("WAIT", "WARTEN", "ATTENTE", "ESPERA", "ATTESA") if i == _multiplayer_lobby_cursor else _language_text("HOLD", "HALTEN", "MAINTIEN", "MANTENER", "MANTIENI")) if _multiplayer_lobby_waiting else (_language_text("REMATCH", "RUECKSPIEL", "REVANCHE", "REVANCHA", "RIVINCITA") if i == 0 else _language_text("RESULTS", "ERGEBNISSE", "RESULTATS", "RESULTADOS", "RISULTATI")),
 			"selected": i == _multiplayer_lobby_cursor,
 		})
 	return rows
 
 func get_multiplayer_lobby_player_rows() -> Array:
+	_ensure_multiplayer_session_arrays()
 	var rows: Array = []
 	for i in range(_multiplayer_link_connected.size()):
 		var character_name: String = str(_character_names[clampi(int(_multiplayer_player_characters[i]), 0, _character_names.size() - 1)])
@@ -8873,13 +10510,13 @@ func get_multiplayer_lobby_player_rows() -> Array:
 		var status_text := ""
 		if i == 0:
 			if _multiplayer_lobby_waiting:
-				status_text = "HOST  %s  SENDING %s%s" % [character_name, "REMATCH" if _multiplayer_lobby_cursor == 0 else "EXIT", rank_text]
+				status_text = _language_text("HOST  %s  SENDING %s%s", "HOST  %s  SENDET %s%s", "HOTE  %s  ENVOIE %s%s", "HOST  %s  ENVIANDO %s%s", "HOST  %s  INVIA %s%s") % [character_name, _language_text("REMATCH", "RUECKSPIEL", "REVANCHE", "REVANCHA", "RIVINCITA") if _multiplayer_lobby_cursor == 0 else _language_text("EXIT", "AUSSTIEG", "SORTIE", "SALIDA", "USCITA"), rank_text]
 			else:
-				status_text = "HOST  %s  SELECTING%s" % [character_name, rank_text]
+				status_text = _language_text("HOST  %s  SELECTING%s", "HOST  %s  WAEHLT%s", "HOTE  %s  CHOISIT%s", "HOST  %s  ELIGIENDO%s", "HOST  %s  SCEGLIE%s") % [character_name, rank_text]
 		elif connected:
-			status_text = "%s  READY TO %s%s" % [character_name, "REMATCH" if _multiplayer_lobby_cursor == 0 else "EXIT", rank_text] if _multiplayer_lobby_waiting else "%s  LINK OK%s" % [character_name, rank_text]
+			status_text = (_language_text("%s  READY TO %s%s", "%s  BEREIT FUER %s%s", "%s  PRET POUR %s%s", "%s  LISTO PARA %s%s", "%s  PRONTO PER %s%s") % [character_name, _language_text("REMATCH", "RUECKSPIEL", "REVANCHE", "REVANCHA", "RIVINCITA") if _multiplayer_lobby_cursor == 0 else _language_text("EXIT", "AUSSTIEG", "SORTIE", "SALIDA", "USCITA"), rank_text]) if _multiplayer_lobby_waiting else (_language_text("%s  LINK OK%s", "%s  LINK OK%s", "%s  LIAISON OK%s", "%s  ENLACE OK%s", "%s  LINK OK%s") % [character_name, rank_text])
 		else:
-			status_text = "%s  WAITING FOR LINK" % character_name
+			status_text = _language_text("%s  WAITING FOR LINK", "%s  WARTE AUF LINK", "%s  ATTENTE DE LIAISON", "%s  ESPERANDO ENLACE", "%s  IN ATTESA DEL LINK") % character_name
 		rows.append({
 			"name": get_multiplayer_link_player_name(i),
 			"status": status_text,
@@ -8901,17 +10538,30 @@ func is_tiny_chao_unlocked() -> bool:
 	return _tiny_chao_unlocked
 
 func _generate_tiny_chao_session_id() -> void:
-	var seed_value := (get_total_ported_score() + (_language_index + 1) * 137 + _selected_level_index * 29) % 10000
-	_tiny_chao_session_id = "TCG-%04d" % [seed_value]
+	# The original handoff combines two random values with the current frame
+	# count, so repeated launches must not reuse the same session token.
+	var entropy := (randi() ^ (Time.get_ticks_usec() << 8) ^ (Engine.get_process_frames() << 3)) & 0xFFFF
+	_tiny_chao_session_id = "TCG-%04X" % entropy
 
 func get_singlepak_result_rows() -> Array:
 	if _multiplayer_result_snapshot.is_empty():
 		_prepare_multiplayer_results_snapshot(MULTIPLAYER_RESULTS_MODE_COURSE_COMPLETE)
-	return _multiplayer_result_snapshot
+	var rows: Array = _multiplayer_result_snapshot.duplicate(true)
+	for row_variant in rows:
+		var row: Dictionary = row_variant
+		var character_name := str(row.get("character", "SONIC"))
+		if _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION:
+			row["stat_text"] = _language_text("%s   LOCKED IN", "%s   FESTGELEGT", "%s   VERROUILLE", "%s   FIJADO", "%s   BLOCCATO") % character_name
+		else:
+			row["stat_text"] = _language_text("%s   RINGS %d   SCORE %d", "%s   RINGE %d   PUNKTE %d", "%s   ANNEAUX %d   SCORE %d", "%s   ANILLOS %d   PUNTOS %d", "%s   ANELLI %d   PUNTEGGIO %d") % [character_name, int(row.get("rings", 0)), int(row.get("score", 0))]
+	return rows
 
-func open_character_select(context: int = CHARACTER_SELECT_CONTEXT_GAME_START) -> void:
+func open_character_select(context: int = CHARACTER_SELECT_CONTEXT_GAME_START, initial_selection: int = -1) -> void:
 	_game_state = GAME_STATE_CHARACTER_SELECT
-	_selected_character_index = _get_default_character_select_index()
+	var requested_character := _selected_character_index if initial_selection < 0 else initial_selection
+	_selected_character_index = clampi(requested_character, 0, _character_names.size() - 1)
+	if context != CHARACTER_SELECT_CONTEXT_MULTIPLAYER and not is_character_unlocked(_selected_character_index):
+		_selected_character_index = _get_default_character_select_index()
 	_character_select_context = context
 	_character_select_intro_timer = 100.0 / 60.0
 	_status_text = "CHARACTER SELECT"
@@ -8924,6 +10574,11 @@ func is_multiplayer_character_select_screen() -> bool:
 
 func is_character_select_input_ready() -> bool:
 	return _game_state == GAME_STATE_CHARACTER_SELECT and _character_select_intro_timer <= 0.0
+
+func get_character_select_intro_progress() -> float:
+	if not is_character_select():
+		return 1.0
+	return clampf(1.0 - (_character_select_intro_timer / (100.0 / 60.0)), 0.0, 1.0)
 
 func skip_character_select_intro() -> void:
 	if _game_state != GAME_STATE_CHARACTER_SELECT or is_multiplayer_character_select_screen():
@@ -9015,14 +10670,18 @@ func get_character_select_rows() -> Array:
 			"name": str(_character_names[character_index]),
 			"description": _get_character_description_text(character_index),
 			"status": get_character_select_status_text(character_index),
+			"available": is_character_select_character_available(character_index),
 			"selected": character_index == _selected_character_index,
 		})
 	return rows
 
 func get_character_select_summary_text() -> String:
-	return "RUNNER\n%s\n\nSTYLE\n%s\n\nSTATE\n%s" % [
+	return "%s\n%s\n\n%s\n%s\n\n%s\n%s" % [
+		_language_text("RUNNER", "LAEUFER", "COUREUR", "CORREDOR", "CORRIDORE"),
 		get_selected_character_name(),
+		_language_text("STYLE", "STIL", "STYLE", "ESTILO", "STILE"),
 		get_selected_character_description(),
+		_language_text("STATE", "STATUS", "ETAT", "ESTADO", "STATO"),
 		get_character_select_status_text(_selected_character_index),
 	]
 
@@ -9074,7 +10733,7 @@ func get_character_select_title_text() -> String:
 
 func get_character_select_prompt_text() -> String:
 	if not _title_notice_text.is_empty():
-		return _title_notice_text
+		return get_title_notice_text()
 	match _character_select_context:
 		CHARACTER_SELECT_CONTEXT_TIME_ATTACK_ZONE:
 			return _language_text("SELECT A RUNNER", "WAHLE EINEN LAUFER", "CHOISISSEZ UN COUREUR", "ELIGE UN CORREDOR", "SCEGLI UN CORRIDORE")
@@ -9116,10 +10775,9 @@ func _get_character_description_text(index: int) -> String:
 			return _language_text("HAMMER TECHNIQUE", "HAMMER-TECHNIK", "TECHNIQUE DU MARTEAU", "TECNICA DEL MARTILLO", "TECNICA DEL MARTELLO")
 
 func get_character_select_available_indices() -> Array:
-	var indices: Array = [0, 1, 2, 3]
-	if is_character_select_character_available(4):
-		indices.append(4)
-	return indices
+	# character_select.c keeps every roster slot in the carousel. Locked
+	# characters are rendered as silhouettes, not removed from navigation.
+	return [0, 1, 2, 3, CHARACTER_NAMES_AMY_INDEX()]
 
 func is_character_select_character_available(index: int) -> bool:
 	if index < 0 or index >= _character_unlocked.size():
@@ -9151,18 +10809,28 @@ func is_character_unlocked(index: int) -> bool:
 	return _character_unlocked[index]
 
 func get_pause_text() -> String:
-	return "TAP TO RESUME" if _is_touch_device() else "PRESS ENTER TO RESUME"
+	return _language_text("TAP TO RESUME", "ZUM FORTSETZEN TIPPEN", "TOUCHER POUR REPRENDRE", "TOCA PARA CONTINUAR", "TOCCA PER RIPRENDERE") if _is_touch_device() else _language_text("PRESS ENTER TO RESUME", "ENTER ZUM FORTSETZEN DRUECKEN", "APPUYEZ SUR ENTREE POUR REPRENDRE", "PULSA ENTER PARA CONTINUAR", "PREMI INVIO PER RIPRENDERE")
 
 func get_pause_title_text() -> String:
-	return "PAUSE"
+	return _language_text("PAUSE", "PAUSE", "PAUSE", "PAUSA", "PAUSA")
 
 func get_pause_prompt_text() -> String:
-	return "STAGE SUSPENDED"
+	return _language_text("STAGE SUSPENDED", "SPIELSTUFE ANGEHALTEN", "STAGE EN PAUSE", "FASE SUSPENDIDA", "STAGE SOSPESO")
 
 func get_pause_detail_text() -> String:
 	if _run_from_time_attack or _run_from_multiplayer:
-		return "%s SELECT   %s CONFIRM   %s RESUME" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
-	return "%s SELECT   %s CONFIRM   START RESUME" % [get_navigation_label(), get_confirm_label()]
+		return _language_text("%s SELECT   %s CONFIRM   %s RESUME", "%s AUSWAEHLEN   %s BESTAETIGEN   %s FORTSETZEN", "%s SELECTIONNER   %s CONFIRMER   %s REPRENDRE", "%s SELECCIONAR   %s CONFIRMAR   %s CONTINUAR", "%s SELEZIONA   %s CONFERMA   %s RIPRENDI") % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
+	return _language_text("%s SELECT   %s CONFIRM   START RESUME", "%s AUSWAEHLEN   %s BESTAETIGEN   START FORTSETZEN", "%s SELECTIONNER   %s CONFIRMER   START REPRENDRE", "%s SELECCIONAR   %s CONFIRMAR   START CONTINUAR", "%s SELEZIONA   %s CONFERMA   START RIPRENDI") % [get_navigation_label(), get_confirm_label()]
+
+func get_pause_summary_text() -> String:
+	var selected := _pause_menu_index
+	var rows := get_pause_menu_rows()
+	if selected > 0 and selected < rows.size():
+		return _language_text("LEAVE THE STAGE\n%s", "SPIELSTUFE VERLASSEN\n%s", "QUITTER LE STAGE\n%s", "SALIR DE LA FASE\n%s", "LASCIA LO STAGE\n%s") % str(rows[selected].get("value", ""))
+	return _language_text("RETURN TO THE CURRENT STAGE", "ZUR AKTUELLEN SPIELSTUFE", "RETOURNER AU STAGE", "VOLVER A LA FASE ACTUAL", "TORNA ALLO STAGE ATTUALE")
+
+func get_pause_badge_text() -> String:
+	return _language_text("PAUSED", "PAUSIERT", "EN PAUSE", "EN PAUSA", "IN PAUSA")
 
 func get_pause_chrome_colors() -> Dictionary:
 	return {
@@ -9341,7 +11009,7 @@ func get_options_screen_title() -> String:
 		OPTIONS_MODE_TIME_LIMIT:
 			return _language_text("TIME LIMIT", "ZEITLIMIT", "LIMITE DE TEMPS", "LIMITE DE TIEMPO", "LIMITE DI TEMPO")
 		OPTIONS_MODE_DELETE_CONFIRM, OPTIONS_MODE_DELETE_CONFIRM_FINAL:
-			return "DELETE GAME DATA"
+			return _language_text("DELETE GAME DATA", "SPIELDATEN LOESCHEN", "SUPPRIMER DONNEES", "BORRAR DATOS", "CANCELLA DATI")
 		OPTIONS_MODE_TIME_RECORDS:
 			return _language_text("TIME RECORDS", "ZEITREKORDE", "RECORDS DE TEMPS", "RECORDS DE TIEMPO", "RECORD TEMPI")
 		OPTIONS_MODE_MULTI_RECORDS:
@@ -9352,73 +11020,76 @@ func get_options_screen_title() -> String:
 
 func get_options_screen_subtitle() -> String:
 	if _save_reset_pending:
-		return "SAVE DATA WILL BE ERASED"
+		return _language_text("SAVE DATA WILL BE ERASED", "SPEICHERDATEN WERDEN GELOESCHT", "DONNEES EFFACEES", "DATOS SERAN BORRADOS", "DATI VERRANNO CANCELLATI")
 	match _options_mode:
 		OPTIONS_MODE_MAIN:
-			return "GAME SETTINGS"
+			return _language_text("GAME SETTINGS", "SPIELEINSTELLUNGEN", "PARAMETRES DE JEU", "AJUSTES DEL JUEGO", "IMPOSTAZIONI GIOCO")
 		OPTIONS_MODE_PLAYER_DATA:
-			return "PROFILE AND RECORDS"
+			return _language_text("PROFILE AND RECORDS", "PROFIL UND REKORDE", "PROFIL ET RECORDS", "PERFIL Y RECORDS", "PROFILO E RECORD")
 		OPTIONS_MODE_LANGUAGE:
-			return "SELECT DISPLAY LANGUAGE"
+			return _language_text("SELECT DISPLAY LANGUAGE", "ANZEIGESPRACHE WAEHLEN", "CHOISIR LA LANGUE", "ELEGIR IDIOMA", "SCEGLI LINGUA")
 		OPTIONS_MODE_BUTTON_CONFIG:
-			return "ASSIGN ACTION BUTTONS"
+			return _language_text("ASSIGN ACTION BUTTONS", "AKTIONSTASTEN ZUWEISEN", "ASSIGNER LES BOUTONS", "ASIGNAR BOTONES", "ASSEGNA PULSANTI")
 		OPTIONS_MODE_SOUND_TEST:
-			return "THE ORIGINAL JUKEBOX"
+			return _language_text("THE ORIGINAL JUKEBOX", "DIE ORIGINALE JUKEBOX", "LE JUKEBOX ORIGINAL", "LA JUKEBOX ORIGINAL", "IL JUKEBOX ORIGINALE")
 		OPTIONS_MODE_DIFFICULTY:
-			return "SELECT DIFFICULTY"
+			return _language_text("SELECT DIFFICULTY", "SCHWIERIGKEIT WAEHLEN", "CHOISIR LA DIFFICULTE", "ELEGIR DIFICULTAD", "SCEGLI DIFFICOLTA")
 		OPTIONS_MODE_TIME_LIMIT:
-			return "TOGGLE TIME LIMIT"
+			return _language_text("TOGGLE TIME LIMIT", "ZEITLIMIT UMSCHALTEN", "GERER LA LIMITE", "CAMBIAR LIMITE", "CAMBIA LIMITE")
 		OPTIONS_MODE_DELETE_CONFIRM:
-			return "DELETE ALL SAVE DATA?"
+			return _language_text("DELETE ALL SAVE DATA?", "ALLE SPEICHERDATEN LOESCHEN?", "EFFACER TOUTES LES DONNEES?", "BORRAR TODOS LOS DATOS?", "CANCELLARE TUTTI I DATI?")
 		OPTIONS_MODE_DELETE_CONFIRM_FINAL:
-			return "THIS CANNOT BE UNDONE"
+			return _language_text("THIS CANNOT BE UNDONE", "DIES KANN NICHT RUECKGAENGIG GEMACHT WERDEN", "ACTION IRREVERSIBLE", "NO SE PUEDE DESHACER", "AZIONE IRREVERSIBILE")
 		OPTIONS_MODE_TIME_RECORDS:
-			return "BEST CLEAR TIMES"
+			return _language_text("BEST CLEAR TIMES", "BESTE ABSCHLUSSZEITEN", "MEILLEURS TEMPS", "MEJORES TIEMPOS", "MIGLIORI TEMPI")
 		OPTIONS_MODE_MULTI_RECORDS:
-			return "VERSUS RECORD SUMMARY"
+			return _language_text("VERSUS RECORD SUMMARY", "VERSUS-REKORDUEBERSICHT", "RESUME DES RECORDS VS", "RESUMEN DE RECORDS VS", "RIEPILOGO RECORD VS")
 		OPTIONS_MODE_NAME_ENTRY:
-			return "EDIT PROFILE NAME"
-	return "GAME SETTINGS"
+			return _language_text("EDIT PROFILE NAME", "PROFILNAMEN BEARBEITEN", "MODIFIER LE NOM", "EDITAR NOMBRE", "MODIFICA NOME")
+	return _language_text("GAME SETTINGS", "SPIELEINSTELLUNGEN", "PARAMETRES DE JEU", "AJUSTES DEL JUEGO", "IMPOSTAZIONI GIOCO")
 
 func get_options_summary_text() -> String:
 	if _save_reset_pending:
 		return get_save_detail_text()
 	match _options_mode:
 		OPTIONS_MODE_MAIN:
-			return "DIFFICULTY: %s   TIME LIMIT: %s   LANGUAGE: %s" % [
+			return "%s: %s   %s: %s   %s: %s" % [
+				_language_text("DIFFICULTY", "SCHWIERIGKEIT", "DIFFICULTE", "DIFICULTAD", "DIFFICOLTA"),
 				get_difficulty_text(),
-				"ON" if _time_limit_enabled else "OFF",
+				_language_text("TIME LIMIT", "ZEITLIMIT", "LIMITE DE TEMPS", "LIMITE DE TIEMPO", "LIMITE DI TEMPO"),
+				_language_text("ON", "AN", "OUI", "SI", "SI") if _time_limit_enabled else _language_text("OFF", "AUS", "NON", "NO", "NO"),
+				_language_text("LANGUAGE", "SPRACHE", "LANGUE", "IDIOMA", "LINGUA"),
 				get_language_text(),
 			]
 		OPTIONS_MODE_PLAYER_DATA:
-			return "PROFILE: %s   SAVE SLOT: MAIN" % [get_profile_name_text()]
+			return "%s: %s   %s: MAIN" % [_language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), get_profile_name_text(), _language_text("SAVE SLOT", "SPEICHERPLATZ", "EMPLACEMENT", "RANURA", "SLOT SALVATAGGIO")]
 		OPTIONS_MODE_LANGUAGE:
-			return "CURRENT LANGUAGE: %s" % get_language_text()
+			return "%s: %s" % [_language_text("CURRENT LANGUAGE", "AKTUELLE SPRACHE", "LANGUE ACTUELLE", "IDIOMA ACTUAL", "LINGUA ATTUALE"), get_language_text()]
 		OPTIONS_MODE_BUTTON_CONFIG:
-			return "A: %s   B: %s   R: %s" % [_button_bindings[0], _button_bindings[1], _button_bindings[2]]
+			return "%s: %s   A=%s   B=%s" % [_language_text("FACE BUTTONS", "GESICHTSTASTEN", "BOUTONS", "BOTONES", "PULSANTI"), get_button_config_focus_label(), _button_bindings[0], _button_bindings[1]]
 		OPTIONS_MODE_SOUND_TEST:
 			return get_sound_test_summary_text().replace("\n", "   ")
 		OPTIONS_MODE_DIFFICULTY:
-			return "PROFILE: %s   CURRENT: %s" % [get_profile_name_text(), get_difficulty_text()]
+			return "%s: %s   %s: %s" % [_language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), get_profile_name_text(), _language_text("CURRENT", "AKTUELL", "ACTUEL", "ACTUAL", "ATTUALE"), get_difficulty_text()]
 		OPTIONS_MODE_TIME_LIMIT:
-			return "PROFILE: %s   CURRENT: %s" % [get_profile_name_text(), "ON" if _time_limit_enabled else "OFF"]
+			return "%s: %s   %s: %s" % [_language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), get_profile_name_text(), _language_text("CURRENT", "AKTUELL", "ACTUEL", "ACTUAL", "ATTUALE"), _language_text("ON", "AN", "OUI", "SI", "SI") if _time_limit_enabled else _language_text("OFF", "AUS", "NON", "NO", "NO")]
 		OPTIONS_MODE_DELETE_CONFIRM:
-			return "PROFILE: %s   DELETE ALL PROGRESS?" % [get_profile_name_text()]
+			return "%s: %s   %s" % [_language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), get_profile_name_text(), _language_text("DELETE ALL PROGRESS?", "ALLEN FORTSCHRITT LOESCHEN?", "EFFACER LA PROGRESSION?", "BORRAR PROGRESO?", "CANCELLARE PROGRESSI?")]
 		OPTIONS_MODE_DELETE_CONFIRM_FINAL:
-			return "UNLOCKS, RECORDS, AND PROFILE SETTINGS WILL RESET"
+			return _language_text("UNLOCKS, RECORDS, AND PROFILE SETTINGS WILL RESET", "FREISCHALTUNGEN, REKORDE UND PROFIL WERDEN ZURUECKGESETZT", "PROGRESSION, RECORDS ET PROFIL SERONT REINITIALISES", "DESBLOQUEOS, RECORDS Y PERFIL SE REINICIARAN", "SBLOCCHI, RECORD E PROFILO VERRANNO AZZERATI")
 		OPTIONS_MODE_TIME_RECORDS:
-			return "VIEW PERSONAL BESTS FOR EACH CHARACTER"
+			return _language_text("VIEW PERSONAL BESTS FOR EACH CHARACTER", "PERSOENLICHE BESTZEITEN ANZEIGEN", "VOIR LES RECORDS DE CHAQUE PERSONNAGE", "VER MEJORES MARCAS POR PERSONAJE", "VEDI I RECORD DI OGNI PERSONAGGIO")
 		OPTIONS_MODE_MULTI_RECORDS:
-			return "LOCAL MULTIPLAYER HISTORY"
+			return _language_text("LOCAL MULTIPLAYER HISTORY", "LOKALE MEHRSPIELER-HISTORIE", "HISTORIQUE MULTIJOUEUR LOCAL", "HISTORIAL MULTIJUGADOR LOCAL", "CRONOLOGIA MULTIGIOCATORE LOCALE")
 		OPTIONS_MODE_NAME_ENTRY:
-			return "CURRENT NAME: %s" % [get_profile_name_text()]
+			return "%s: %s" % [_language_text("CURRENT NAME", "AKTUELLER NAME", "NOM ACTUEL", "NOMBRE ACTUAL", "NOME ATTUALE"), get_profile_name_text()]
 	return ""
 
 func get_options_main_title_text() -> String:
-	return "OPTIONS"
+	return _language_text("OPTIONS", "OPTIONEN", "OPTIONS", "OPCIONES", "OPZIONI")
 
 func get_options_main_prompt_text() -> String:
-	return "SELECT AN OPTION"
+	return _language_text("SELECT AN OPTION", "OPTION WAEHLEN", "CHOISIR UNE OPTION", "ELIGE UNA OPCION", "SCEGLI UN'OPZIONE")
 
 func get_options_main_detail_text() -> String:
 	return "%s SELECT   %s OPEN   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
@@ -9427,45 +11098,45 @@ func get_player_data_title_text() -> String:
 	return _language_text("PLAYER DATA", "SPIELERDATEN", "DONNEES JOUEUR", "DATOS DEL JUGADOR", "DATI GIOCATORE")
 
 func get_player_data_prompt_text() -> String:
-	return "SELECT PLAYER DATA"
+	return _language_text("SELECT PLAYER DATA", "SPIELERDATEN WAEHLEN", "CHOISIR LES DONNEES", "ELIGE DATOS", "SCEGLI DATI GIOCATORE")
 
 func get_player_data_detail_text() -> String:
 	return "%s SELECT   %s CONFIRM   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 
 func get_player_data_header_text() -> String:
-	return "PROFILE NAME  %s" % get_profile_name_text()
+	return "%s  %s" % [_language_text("PROFILE NAME", "PROFILNAME", "NOM DU PROFIL", "NOMBRE DEL PERFIL", "NOME PROFILO"), get_profile_name_text()]
 
 func get_player_data_slot_text() -> String:
-	return "SAVE SLOT: MAIN"
+	return "%s: MAIN" % _language_text("SAVE SLOT", "SPEICHERPLATZ", "EMPLACEMENT", "RANURA", "SLOT SALVATAGGIO")
 
 func get_player_data_summary_text() -> String:
 	var total_best := 0
 	for score in _best_scores:
 		total_best += int(score)
-	return "PLAYER DATA\nLANGUAGE: %s\nBEST TOTAL: %d" % [get_language_text(), total_best]
+	return "%s\n%s: %s\n%s: %d" % [_language_text("PLAYER DATA", "SPIELERDATEN", "DONNEES JOUEUR", "DATOS DEL JUGADOR", "DATI GIOCATORE"), _language_text("LANGUAGE", "SPRACHE", "LANGUE", "IDIOMA", "LINGUA"), get_language_text(), _language_text("BEST TOTAL", "BESTSUMME", "TOTAL RECORD", "TOTAL MEJORES", "TOTALE RECORD"), total_best]
 
 func get_difficulty_title_text() -> String:
 	return _language_text("DIFFICULTY", "SCHWIERIGKEIT", "DIFFICULTE", "DIFICULTAD", "DIFFICOLTA")
 
 func get_difficulty_prompt_text() -> String:
-	return "LEFT/RIGHT CHANGE, ENTER CONFIRM, X BACK"
+	return _language_text("LEFT/RIGHT CHANGE, ENTER CONFIRM, X BACK", "LINKS/RECHTS AENDERN, ENTER BESTAETIGEN, X ZURUECK", "GAUCHE/DROITE CHANGER, ENTREE VALIDER, X RETOUR", "IZQ/DER CAMBIAR, ENTER CONFIRMAR, X ATRAS", "SINISTRA/DESTRA CAMBIA, INVIO CONFERMA, X INDIETRO")
 
 func get_difficulty_summary_text() -> String:
-	return "PROFILE\n%s\n\nCURRENT\n%s" % [get_profile_name_text(), get_difficulty_text()]
+	return "%s\n%s\n\n%s\n%s" % [_language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), get_profile_name_text(), _language_text("CURRENT", "AKTUELL", "ACTUEL", "ACTUAL", "ATTUALE"), get_difficulty_text()]
 
 func get_difficulty_detail_text() -> String:
-	return "LEFT/RIGHT = CHANGE   %s = CONFIRM   %s = BACK" % [get_confirm_label(), get_secondary_label()]
+	return "%s   %s = %s   %s = %s" % [_language_text("LEFT/RIGHT = CHANGE", "LINKS/RECHTS = AENDERN", "GAUCHE/DROITE = CHANGER", "IZQ/DER = CAMBIAR", "SINISTRA/DESTRA = CAMBIA"), get_confirm_label(), _language_text("CONFIRM", "BESTAETIGEN", "VALIDER", "CONFIRMAR", "CONFERMA"), get_secondary_label(), _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")]
 
 func get_difficulty_rows() -> Array:
 	return [
 		{
 			"label": _language_text("NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMALE"),
-			"status": "STANDARD RUN",
+			"status": _language_text("STANDARD RUN", "STANDARDLAUF", "COURSE STANDARD", "CARRERA ESTANDAR", "CORSA STANDARD"),
 			"selected": _difficulty_index == 0,
 		},
 		{
 			"label": _language_text("EASY", "EINFACH", "FACILE", "FACIL", "FACILE"),
-			"status": "LOWER ENEMY PRESSURE",
+			"status": _language_text("LOWER ENEMY PRESSURE", "WENIGER GEGNERDRUCK", "MOINS D'ENNEMIS", "MENOS ENEMIGOS", "MENO NEMICI"),
 			"selected": _difficulty_index == 1,
 		},
 	]
@@ -9480,25 +11151,25 @@ func get_time_limit_title_text() -> String:
 	return _language_text("TIME LIMIT", "ZEITLIMIT", "LIMITE DE TEMPS", "LIMITE DE TIEMPO", "LIMITE DI TEMPO")
 
 func get_time_limit_prompt_text() -> String:
-	return "LEFT/RIGHT CHANGE, ENTER CONFIRM, X BACK"
+	return get_difficulty_prompt_text()
 
 func get_time_limit_summary_text() -> String:
 	var value := _language_text("ON", "AN", "OUI", "SI", "SI") if _time_limit_enabled else _language_text("OFF", "AUS", "NON", "NO", "NO")
-	return "PROFILE\n%s\n\nCURRENT\n%s" % [get_profile_name_text(), value]
+	return "%s\n%s\n\n%s\n%s" % [_language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), get_profile_name_text(), _language_text("CURRENT", "AKTUELL", "ACTUEL", "ACTUAL", "ATTUALE"), value]
 
 func get_time_limit_detail_text() -> String:
-	return "LEFT/RIGHT = CHANGE   %s = CONFIRM   %s = BACK" % [get_confirm_label(), get_secondary_label()]
+	return get_difficulty_detail_text()
 
 func get_time_limit_rows() -> Array:
 	return [
 		{
 			"label": _language_text("ON", "AN", "OUI", "SI", "SI"),
-			"status": "CLASSIC COUNTDOWN",
+			"status": _language_text("CLASSIC COUNTDOWN", "KLASSISCHER COUNTDOWN", "COMPTE A REBOURS CLASSIQUE", "CUENTA ATRAS CLASICA", "CONTO ALLA ROVESCIA CLASSICO"),
 			"selected": _time_limit_enabled,
 		},
 		{
 			"label": _language_text("OFF", "AUS", "NON", "NO", "NO"),
-			"status": "FREE RUN MODE",
+			"status": _language_text("FREE RUN MODE", "FREIER LAUF", "MODE LIBRE", "MODO LIBRE", "MODALITA LIBERA"),
 			"selected": not _time_limit_enabled,
 		},
 	]
@@ -9510,31 +11181,31 @@ func get_time_limit_chrome_colors() -> Dictionary:
 	}
 
 func get_delete_confirm_title_text() -> String:
-	return "DELETE GAME DATA"
+	return _language_text("DELETE GAME DATA", "SPIELDATEN LOESCHEN", "SUPPRIMER DONNEES", "BORRAR DATOS", "CANCELLA DATI")
 
 func get_delete_confirm_prompt_text() -> String:
 	if _options_mode == OPTIONS_MODE_DELETE_CONFIRM_FINAL:
-		return "LEFT/RIGHT CHOOSE, ENTER ERASE, X BACK"
-	return "LEFT/RIGHT CHOOSE, ENTER CONTINUE, X BACK"
+		return _language_text("LEFT/RIGHT CHOOSE, ENTER ERASE, X BACK", "LINKS/RECHTS WAEHLEN, ENTER LOESCHEN, X ZURUECK", "GAUCHE/DROITE CHOISIR, ENTREE EFFACER, X RETOUR", "IZQ/DER ELEGIR, ENTER BORRAR, X ATRAS", "SINISTRA/DESTRA SCEGLI, INVIO CANCELLA, X INDIETRO")
+	return _language_text("LEFT/RIGHT CHOOSE, ENTER CONTINUE, X BACK", "LINKS/RECHTS WAEHLEN, ENTER FORTFAHREN, X ZURUECK", "GAUCHE/DROITE CHOISIR, ENTREE CONTINUER, X RETOUR", "IZQ/DER ELEGIR, ENTER CONTINUAR, X ATRAS", "SINISTRA/DESTRA SCEGLI, INVIO CONTINUA, X INDIETRO")
 
 func get_delete_confirm_summary_text() -> String:
 	if _options_mode == OPTIONS_MODE_DELETE_CONFIRM_FINAL:
-		return "FINAL CHECK\nALL RECORDS RESET\n\nPROFILE\n%s" % [get_profile_name_text()]
-	return "ERASE PROFILE\n%s\n\nUNLOCKS\n%02d CLEARED" % [get_profile_name_text(), _unlocked_level_index + 1]
+		return "%s\n%s\n\n%s\n%s" % [_language_text("FINAL CHECK", "LETZTE PRUEFUNG", "VERIFICATION FINALE", "COMPROBACION FINAL", "CONTROLLO FINALE"), _language_text("ALL RECORDS RESET", "ALLE REKORDE ZURUECKGESETZT", "TOUS LES RECORDS EFFACES", "TODOS LOS RECORDS BORRADOS", "TUTTI I RECORD AZZERATI"), _language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), get_profile_name_text()]
+	return "%s\n%s\n\n%s\n%02d %s" % [_language_text("ERASE PROFILE", "PROFIL LOESCHEN", "EFFACER LE PROFIL", "BORRAR PERFIL", "CANCELLA PROFILO"), get_profile_name_text(), _language_text("UNLOCKS", "FREISCHALTUNGEN", "DEBLOCAGES", "DESBLOQUEOS", "SBLOCCHI"), _unlocked_level_index + 1, _language_text("CLEARED", "GESCHAFFT", "TERMINE", "COMPLETADOS", "COMPLETATI")]
 
 func get_delete_confirm_detail_text() -> String:
-	return "LEFT/RIGHT = CHOOSE   %s = CONFIRM   %s = BACK" % [get_confirm_label(), get_secondary_label()]
+	return "%s   %s = %s   %s = %s" % [_language_text("LEFT/RIGHT = CHOOSE", "LINKS/RECHTS = WAEHLEN", "GAUCHE/DROITE = CHOISIR", "IZQ/DER = ELEGIR", "SINISTRA/DESTRA = SCEGLI"), get_confirm_label(), _language_text("CONFIRM", "BESTAETIGEN", "VALIDER", "CONFIRMAR", "CONFERMA"), get_secondary_label(), _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")]
 
 func get_delete_confirm_rows() -> Array:
 	return [
 		{
-			"label": "YES",
-			"status": "ERASE SAVE DATA",
+			"label": _language_text("YES", "JA", "OUI", "SI", "SI"),
+			"status": _language_text("ERASE SAVE DATA", "SPEICHERDATEN LOESCHEN", "EFFACER LES DONNEES", "BORRAR DATOS", "CANCELLA DATI"),
 			"selected": _delete_confirm_index == 0,
 		},
 		{
-			"label": "NO",
-			"status": "KEEP CURRENT DATA",
+			"label": _language_text("NO", "NEIN", "NON", "NO", "NO"),
+			"status": _language_text("KEEP CURRENT DATA", "AKTUELLE DATEN BEHALTEN", "GARDER LES DONNEES", "CONSERVAR DATOS", "MANTIENI DATI"),
 			"selected": _delete_confirm_index == 1,
 		},
 	]
@@ -9556,27 +11227,27 @@ func get_time_records_summary_text() -> String:
 	var character_rows := get_time_records_character_rows()
 	var character_name: String = str(character_rows[clampi(_time_records_character_index, 0, character_rows.size() - 1)]) if not character_rows.is_empty() else "SONIC"
 	if _time_records_context == TIME_RECORDS_CONTEXT_TIME_ATTACK:
-		return "MODE: %s\nCHARACTER: %s\nCOURSE: %s" % [("BOSS ATTACK" if _time_records_boss_mode else "ZONE ATTACK"), character_name, get_time_records_course_title_text()]
+		return "%s: %s\n%s: %s\n%s: %s" % [_language_text("MODE", "MODUS", "MODE", "MODO", "MODALITA"), _language_text("BOSS ATTACK", "BOSS-ANGRIFF", "ATTAQUE BOSS", "ATAQUE BOSS", "ATTACCO BOSS") if _time_records_boss_mode else _language_text("ZONE ATTACK", "ZONEN-ANGRIFF", "ATTAQUE ZONE", "ATAQUE ZONA", "ATTACCO ZONA"), _language_text("CHARACTER", "CHARAKTER", "PERSONNAGE", "PERSONAJE", "PERSONAGGIO"), character_name, _language_text("COURSE", "KURS", "PARCOURS", "FASE", "CORSO"), get_time_records_course_title_text()]
 	if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-		return "PROFILE: %s\nSELECT RECORD MODE\nCURRENT: %s" % [get_profile_name_text(), "BOSS" if _time_records_boss_mode else "ZONE"]
-	return "CHARACTER: %s\nCOURSE: %s\nTYPE: %s" % [character_name, get_time_records_course_title_text(), "BOSS" if _time_records_boss_mode else "ACT"]
+		return "%s: %s\n%s\n%s: %s" % [_language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), get_profile_name_text(), _language_text("SELECT RECORD MODE", "REKORDMODUS WAEHLEN", "CHOISIR LE MODE", "ELEGIR MODO", "SCEGLI MODALITA RECORD"), _language_text("CURRENT", "AKTUELL", "ACTUEL", "ACTUAL", "ATTUALE"), _language_text("BOSS", "BOSS", "BOSS", "JEFE", "BOSS") if _time_records_boss_mode else _language_text("ZONE", "ZONE", "ZONE", "ZONA", "ZONA")]
+	return "%s: %s\n%s: %s\n%s: %s" % [_language_text("CHARACTER", "CHARAKTER", "PERSONNAGE", "PERSONAJE", "PERSONAGGIO"), character_name, _language_text("COURSE", "KURS", "PARCOURS", "FASE", "CORSO"), get_time_records_course_title_text(), _language_text("TYPE", "TYP", "TYPE", "TIPO", "TIPO"), _language_text("BOSS", "BOSS", "BOSS", "JEFE", "BOSS") if _time_records_boss_mode else _language_text("ACT", "AKT", "ACTE", "ACTO", "ATTO")]
 
 func get_time_records_title_text() -> String:
 	return _language_text("TIME RECORDS", "ZEITREKORDE", "RECORDS DE TEMPS", "RECORDS DE TIEMPO", "RECORD TEMPI")
 
 func get_time_records_prompt_text() -> String:
 	if _time_records_context == TIME_RECORDS_CONTEXT_TIME_ATTACK:
-		return "LEFT/RIGHT COURSE, ENTER START, X BACK"
+		return _language_text("LEFT/RIGHT COURSE, ENTER START, X BACK", "LINKS/RECHTS KURS, ENTER START, X ZURUECK", "GAUCHE/DROITE PARCOURS, ENTREE DEMARRER, X RETOUR", "IZQ/DER FASE, ENTER INICIAR, X ATRAS", "SINISTRA/DESTRA CORSO, INVIO AVVIA, X INDIETRO")
 	if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-		return "LEFT/RIGHT MODE, ENTER OPEN, X BACK"
-	return "UP/DOWN CHARACTER, LEFT/RIGHT COURSE, X BACK"
+		return _language_text("LEFT/RIGHT MODE, ENTER OPEN, X BACK", "LINKS/RECHTS MODUS, ENTER OEFFNEN, X ZURUECK", "GAUCHE/DROITE MODE, ENTREE OUVRIR, X RETOUR", "IZQ/DER MODO, ENTER ABRIR, X ATRAS", "SINISTRA/DESTRA MODALITA, INVIO APRI, X INDIETRO")
+	return _language_text("UP/DOWN CHARACTER, LEFT/RIGHT COURSE, X BACK", "HOCH/RUNTER CHARAKTER, LINKS/RECHTS KURS, X ZURUECK", "HAUT/BAS PERSONNAGE, GAUCHE/DROITE PARCOURS, X RETOUR", "ARRIBA/ABAJO PERSONAJE, IZQ/DER FASE, X ATRAS", "SU/GIU PERSONAGGIO, SINISTRA/DESTRA CORSO, X INDIETRO")
 
 func get_time_records_detail_text() -> String:
 	if _time_records_context == TIME_RECORDS_CONTEXT_TIME_ATTACK:
-		return "LEFT/RIGHT = COURSE   %s = START   %s = BACK" % [get_confirm_label(), get_secondary_label()]
+		return "%s   %s = %s   %s = %s" % [_language_text("LEFT/RIGHT = COURSE", "LINKS/RECHTS = KURS", "GAUCHE/DROITE = PARCOURS", "IZQ/DER = FASE", "SINISTRA/DESTRA = CORSO"), get_confirm_label(), _language_text("START", "START", "DEMARRER", "INICIAR", "AVVIA"), get_secondary_label(), _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")]
 	if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-		return "LEFT/RIGHT = MODE   %s = OPEN   %s = BACK" % [get_confirm_label(), get_secondary_label()]
-	return "UP/DOWN = CHARACTER   LEFT/RIGHT = COURSE   %s = BACK" % [get_secondary_label()]
+		return "%s   %s = %s   %s = %s" % [_language_text("LEFT/RIGHT = MODE", "LINKS/RECHTS = MODUS", "GAUCHE/DROITE = MODE", "IZQ/DER = MODO", "SINISTRA/DESTRA = MODALITA"), get_confirm_label(), _language_text("OPEN", "OEFFNEN", "OUVRIR", "ABRIR", "APRI"), get_secondary_label(), _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")]
+	return "%s   %s   %s = %s" % [_language_text("UP/DOWN = CHARACTER", "HOCH/RUNTER = CHARAKTER", "HAUT/BAS = PERSONNAGE", "ARRIBA/ABAJO = PERSONAJE", "SU/GIU = PERSONAGGIO"), _language_text("LEFT/RIGHT = COURSE", "LINKS/RECHTS = KURS", "GAUCHE/DROITE = PARCOURS", "IZQ/DER = FASE", "SINISTRA/DESTRA = CORSO"), get_secondary_label(), _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")]
 
 func get_time_records_chrome_colors() -> Dictionary:
 	if _time_records_context == TIME_RECORDS_CONTEXT_TIME_ATTACK:
@@ -9605,32 +11276,43 @@ func get_time_records_character_text() -> String:
 
 func get_time_records_course_heading_text() -> String:
 	if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-		return "MODE SELECT"
+		return _language_text("MODE SELECT", "MODUS WAEHLEN", "CHOIX DU MODE", "ELEGIR MODO", "SCELTA MODALITA")
 	var zone_number := _time_records_course_index + 1
 	if _time_records_boss_mode:
-		return "ZONE %d   BOSS" % zone_number
-	return "ZONE %d   ACT %d" % [zone_number, _time_records_act_index + 1]
+		return "%s %d   %s" % [_language_text("ZONE", "ZONE", "ZONE", "ZONA", "ZONA"), zone_number, _language_text("BOSS", "BOSS", "BOSS", "JEFE", "BOSS")]
+	return "%s %d   %s %d" % [_language_text("ZONE", "ZONE", "ZONE", "ZONA", "ZONA"), zone_number, _language_text("ACT", "AKT", "ACTE", "ACTO", "ATTO"), _time_records_act_index + 1]
 
 func get_time_records_course_subtitle_text() -> String:
 	if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-		return "CHOOSE ZONE OR BOSS RECORDS"
+		return _language_text("CHOOSE ZONE OR BOSS RECORDS", "ZONEN- ODER BOSS-REKORDE WAEHLEN", "CHOISIR RECORDS ZONE OU BOSS", "ELEGIR RECORDS DE ZONA O JEFE", "SCEGLI RECORD ZONA O BOSS")
 	var course_name := get_level_name_by_index(_get_time_records_level_index())
 	if _time_records_boss_mode:
-		return "%s BOSS ROUTE" % course_name
+		return "%s %s" % [course_name, _language_text("BOSS ROUTE", "BOSS-ROUTE", "PARCOURS BOSS", "RUTA DE JEFE", "PERCORSO BOSS")]
 	return course_name
+
+func get_time_records_best_label_text(index: int) -> String:
+	return "%s %d" % [_language_text("BEST", "BESTE", "MEILLEUR", "MEJOR", "MIGLIORE"), index + 1]
 
 func get_multiplayer_records_summary_text() -> String:
 	var totals := get_multiplayer_records_player_totals()
-	return "PROFILE: %s\nVERSUS TOTALS\nW %02d  L %02d  D %02d" % [get_profile_name_text(), totals["wins"], totals["losses"], totals["draws"]]
+	var columns := get_multiplayer_records_column_header_text()
+	return "%s: %s\n%s\n%s %02d  %s %02d  %s %02d" % [_language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), get_profile_name_text(), _language_text("VERSUS TOTALS", "VERSUS-SUMME", "TOTAUX VS", "TOTALES VS", "TOTALI VS"), columns[0], totals["wins"], columns[1], totals["losses"], columns[2], totals["draws"]]
+
+func get_multiplayer_records_column_header_text() -> Array:
+	return [
+		_language_text("W", "S", "V", "G", "V"),
+		_language_text("L", "N", "D", "P", "S"),
+		_language_text("D", "U", "N", "E", "P"),
+	]
 
 func get_multiplayer_records_title_text() -> String:
 	return _language_text("VS RECORDS", "VS-REKORDE", "RECORDS VS", "RECORDS VS", "RECORD VS")
 
 func get_multiplayer_records_prompt_text() -> String:
-	return "UP/DOWN SCROLL TABLE, X BACK"
+	return _language_text("UP/DOWN SCROLL TABLE, X BACK", "HOCH/RUNTER TABELLE, X ZURUECK", "HAUT/BAS DEFILER, X RETOUR", "ARRIBA/ABAJO TABLA, X ATRAS", "SU/GIU SCORRI TABELLA, X INDIETRO")
 
 func get_multiplayer_records_detail_text() -> String:
-	return "UP/DOWN = SCROLL TABLE   %s = BACK" % [get_secondary_label()]
+	return "%s   %s = %s" % [_language_text("UP/DOWN = SCROLL TABLE", "HOCH/RUNTER = TABELLE", "HAUT/BAS = DEFILER", "ARRIBA/ABAJO = TABLA", "SU/GIU = SCORRI TABELLA"), get_secondary_label(), _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")]
 
 func get_multiplayer_records_chrome_colors() -> Dictionary:
 	return {
@@ -9673,23 +11355,43 @@ func can_multiplayer_records_scroll_up() -> bool:
 func can_multiplayer_records_scroll_down() -> bool:
 	return _multi_records_menu_index < get_multiplayer_records_scroll_max()
 
+func get_multiplayer_records_scroll_hint_text() -> String:
+	if get_multiplayer_records_visible_rows().is_empty():
+		return _language_text("NO DATA", "KEINE DATEN", "AUCUNE DONNEE", "SIN DATOS", "NESSUN DATO")
+	if can_multiplayer_records_scroll_up() and can_multiplayer_records_scroll_down():
+		return _language_text("UP/DOWN", "HOCH/RUNTER", "HAUT/BAS", "ARRIBA/ABAJO", "SU/GIU")
+	if can_multiplayer_records_scroll_up():
+		return _language_text("UP", "HOCH", "HAUT", "ARRIBA", "SU")
+	if can_multiplayer_records_scroll_down():
+		return _language_text("DOWN", "RUNTER", "BAS", "ABAJO", "GIU")
+	return ""
+
 func get_name_entry_summary_text() -> String:
 	if _is_name_entry_control_cursor():
-		return "CONTROL\n%s\n\nNAME\n%s" % [get_name_entry_control_label(), get_profile_name_text()]
-	return "LETTER %d ACTIVE\n%s\n\nCHARACTER\n%s" % [
+		return "%s\n%s\n\n%s\n%s" % [_language_text("CONTROL", "STEUERUNG", "CONTROLE", "CONTROL", "CONTROLLO"), get_name_entry_control_label(), _language_text("NAME", "NAME", "NOM", "NOMBRE", "NOME"), get_profile_name_text()]
+	return "%s %d %s\n%s\n\n%s\n%s" % [
+		_language_text("LETTER", "BUCHSTABE", "LETTRE", "LETRA", "LETTERA"),
 		_name_entry_menu_index + 1,
+		_language_text("ACTIVE", "AKTIV", "ACTIVE", "ACTIVA", "ATTIVA"),
 		get_profile_name_text(),
+		_language_text("CHARACTER", "CHARAKTER", "PERSONNAGE", "PERSONAJE", "PERSONAGGIO"),
 		get_name_entry_selected_character(),
 	]
 
 func get_name_entry_detail_text() -> String:
-	return "Q/E SLOT   %s PICK   %s DELETE   DEL CANCEL" % [get_confirm_label(), get_secondary_label()]
+	return "Q/E %s   %s %s   %s %s   DEL %s" % [_language_text("SLOT", "PLATZ", "EMPLACEMENT", "RANURA", "SLOT"), get_confirm_label(), _language_text("PICK", "WAEHLEN", "CHOISIR", "ELEGIR", "SCEGLI"), get_secondary_label(), _language_text("DELETE", "LOESCHEN", "EFFACER", "BORRAR", "CANCELLA"), _language_text("CANCEL", "ABBRECHEN", "ANNULER", "CANCELAR", "ANNULLA")]
 
 func get_name_entry_title_text() -> String:
 	return _language_text("NAME ENTRY", "NAMEN EINGEBEN", "SAISIE DU NOM", "NOMBRE", "INSERISCI NOME")
 
 func get_name_entry_prompt_text() -> String:
-	return "UP/DOWN/LEFT/RIGHT MOVE   %s PICK   %s DELETE" % [get_confirm_label(), get_secondary_label()]
+	return "%s   %s %s   %s %s" % [_language_text("UP/DOWN/LEFT/RIGHT MOVE", "HOCH/RUNTER/LINKS/RECHTS BEWEGEN", "HAUT/BAS/GAUCHE/DROITE DEPLACER", "ARRIBA/ABAJO/IZQ/DER MOVER", "SU/GIU/SINISTRA/DESTRA MUOVI"), get_confirm_label(), _language_text("PICK", "WAEHLEN", "CHOISIR", "ELEGIR", "SCEGLI"), get_secondary_label(), _language_text("DELETE", "LOESCHEN", "EFFACER", "BORRAR", "CANCELLA")]
+
+func get_name_entry_guide_text() -> String:
+	return _language_text("CHARACTER BOARD   Q/E MOVE SLOT", "CHARAKTERTAFEL   Q/E SLOT WECHSELN", "TABLEAU PERSONNAGE   Q/E CHANGER SLOT", "TABLERO PERSONA   Q/E CAMBIAR SLOT", "TAVOLA PERSONAGGIO   Q/E CAMBIA SLOT")
+
+func get_name_entry_preview_title_text() -> String:
+	return _language_text("LIVE NAME PREVIEW", "NAMENSVORSCHAU", "APERCU DU NOM", "VISTA PREVIA DEL NOMBRE", "ANTEPRIMA NOME")
 
 func is_returning_to_multiplayer_from_name_entry() -> bool:
 	return _return_to_multiplayer_after_name_entry
@@ -9720,15 +11422,19 @@ func is_name_entry_control_cursor() -> bool:
 func get_name_entry_control_label() -> String:
 	match _name_entry_cursor_row:
 		NAME_ENTRY_CONTROL_ROW_BACK:
-			return "BACK"
+			return _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")
 		NAME_ENTRY_CONTROL_ROW_FORWARD:
-			return "FORWARD"
+			return _language_text("FORWARD", "VOR", "AVANCER", "AVANZAR", "AVANTI")
 		NAME_ENTRY_CONTROL_ROW_END:
-			return "END"
-	return "BOARD"
+			return _language_text("END", "ENDE", "FIN", "FIN", "FINE")
+	return _language_text("BOARD", "TAFEL", "TABLEAU", "TABLERO", "TAVOLA")
 
 func get_name_entry_control_rows() -> Array:
-	return ["BACK", "FORWARD", "END"]
+	return [
+		_language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO"),
+		_language_text("FORWARD", "VOR", "AVANCER", "AVANZAR", "AVANTI"),
+		_language_text("END", "ENDE", "FIN", "FIN", "FINE"),
+	]
 
 func get_name_entry_matrix_rows() -> Array:
 	var rows: Array = []
@@ -9759,13 +11465,13 @@ func get_name_entry_selected_character() -> String:
 	return str(row[_name_entry_cursor_col])
 
 func get_language_summary_text() -> String:
-	return "CURRENT LANGUAGE\n%s\n\nSUPPORTED\n%d OPTIONS" % [get_language_text(), get_language_items().size()]
+	return "%s\n%s\n\n%s\n%d %s" % [_language_text("CURRENT LANGUAGE", "AKTUELLE SPRACHE", "LANGUE ACTUELLE", "IDIOMA ACTUAL", "LINGUA ATTUALE"), get_language_text(), _language_text("SUPPORTED", "VERFUEGBAR", "DISPONIBEL", "DISPONIBLES", "DISPONIBILI"), get_language_items().size(), _language_text("OPTIONS", "OPTIONEN", "OPTIONS", "OPCIONES", "OPZIONI")]
 
 func get_language_title_text() -> String:
-	return "LANGUAGE"
+	return _language_text("LANGUAGE", "SPRACHE", "LANGUE", "IDIOMA", "LINGUA")
 
 func get_language_prompt_text() -> String:
-	return "SELECT A LANGUAGE"
+	return _language_text("SELECT A LANGUAGE", "SPRACHE AUSWAEHLEN", "CHOISIR UNE LANGUE", "SELECCIONA UN IDIOMA", "SCEGLI UNA LINGUA")
 
 func get_language_detail_text() -> String:
 	return "%s CHANGE   %s ACCEPT   %s BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
@@ -9777,19 +11483,23 @@ func get_language_chrome_colors() -> Dictionary:
 	}
 
 func get_button_config_summary_text() -> String:
-	return "SELECT EACH BUTTON AND ASSIGN AN ACTION\n\nA  %s\nB  %s\nR  %s" % [_button_bindings[0], _button_bindings[1], _button_bindings[2]]
+	return "%s\n\nA  %s\nB  %s\nR  %s" % [_language_text("ASSIGN EACH ACTION", "JEDE AKTION ZUWEISEN", "ASSIGNER CHAQUE ACTION", "ASIGNAR CADA ACCION", "ASSEGNA OGNI AZIONE"), _button_bindings[0], _button_bindings[1], _button_bindings[2]]
 
 func get_button_config_title_text() -> String:
 	return _language_text("BUTTON CONFIG", "TASTENBELEGUNG", "CONFIG BOUTONS", "CONFIG BOTONES", "CONFIG TASTI")
 
 func get_button_config_prompt_text() -> String:
-	return "LEFT/RIGHT CHANGE, ENTER ADVANCE, X BACK, SELECT DEFAULTS"
+	return _language_text("LEFT/RIGHT SWITCH, ENTER ACCEPT, X BACK", "LINKS/RECHTS WECHSELN, ENTER ANNEHMEN, X ZURUECK", "GAUCHE/DROITE CHANGER, ENTREE ACCEPTER, X RETOUR", "IZQ/DER CAMBIAR, ENTER ACEPTAR, X ATRAS", "SINISTRA/DESTRA CAMBIA, INVIO ACCETTA, X INDIETRO")
 
 func get_button_config_detail_text() -> String:
-	return "EDITING %s   LEFT/RIGHT = CHANGE   %s = ADVANCE   %s = BACK" % [
+	return "%s %s   %s   %s = %s   %s = %s" % [
+		_language_text("LAYOUT", "LAYOUT", "CONFIGURATION", "CONFIGURACION", "LAYOUT"),
 		get_button_config_focus_label(),
+		_language_text("LEFT/RIGHT = SWITCH", "LINKS/RECHTS = WECHSELN", "GAUCHE/DROITE = CHANGER", "IZQ/DER = CAMBIAR", "SINISTRA/DESTRA = CAMBIA"),
 		get_confirm_label(),
+		_language_text("ACCEPT", "ANNEHMEN", "ACCEPTER", "ACEPTAR", "ACCETTA"),
 		get_secondary_label(),
+		_language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO"),
 	]
 
 func get_button_config_chrome_colors() -> Dictionary:
@@ -9799,8 +11509,10 @@ func get_button_config_chrome_colors() -> Dictionary:
 	}
 
 func get_button_config_focus_label() -> String:
-	var focus_labels := ["A BUTTON", "B BUTTON", "R BUTTON"]
-	return focus_labels[clampi(_button_config_index, 0, focus_labels.size() - 1)]
+	return ["A", "B", "R"][_button_config_index] + ": " + str(_button_bindings[_button_config_index])
+
+func get_button_config_badge_text() -> String:
+	return _language_text("INPUT", "EINGABE", "ENTREE", "ENTRADA", "INPUT")
 
 func translate_gameplay_input(raw_input: int) -> int:
 	var translated := raw_input & ~(A_BUTTON | B_BUTTON | R_BUTTON)
@@ -9816,26 +11528,21 @@ func _get_button_config_action_order() -> Array:
 	return ["JUMP", "ATTACK", "TRICK"]
 
 func _cycle_button_config_binding(direction: int) -> void:
-	var action_order := _get_button_config_action_order()
-	if _button_config_index < 0 or _button_config_index >= _button_bindings.size():
+	if direction == 0:
 		return
-	# The original R-shoulder stage is confirmation-only.
 	if _button_config_index >= 2:
+		# The original R-stage has no D-pad branch.
 		return
-	var current_action := str(_button_bindings[_button_config_index])
-	var current_index := action_order.find(current_action)
+	var action_order := _get_button_config_action_order()
+	var slot := _button_config_index
+	var current_index := action_order.find(str(_button_bindings[slot]))
 	if current_index < 0:
-		current_index = _button_config_index
-	if _button_config_index == 0:
-		current_index = wrapi(current_index + direction, 0, action_order.size())
-		_button_bindings[0] = action_order[current_index]
-		return
-	var blocked_action := str(_button_bindings[_button_config_index - 1])
+		current_index = 0
 	for _step in range(action_order.size()):
-		current_index = wrapi(current_index + direction, 0, action_order.size())
+		current_index = wrapi(current_index + (1 if direction > 0 else -1), 0, action_order.size())
 		var candidate := str(action_order[current_index])
-		if candidate != blocked_action:
-			_button_bindings[_button_config_index] = candidate
+		if slot == 0 or candidate != str(_button_bindings[0]):
+			_button_bindings[slot] = candidate
 			return
 
 func _advance_button_config_conflict(slot_index: int, blocked_actions: Array) -> void:
@@ -9913,20 +11620,23 @@ func get_sound_test_current_entry() -> Dictionary:
 
 func get_sound_test_summary_text() -> String:
 	var entry := get_sound_test_current_entry()
-	var bonus_state := "ALL TRACKS" if _has_completed_sound_test_bonus() else "STANDARD LIST"
-	return "TRACK NO.\n%02d\n\nMODE\n%s\n\nLIST\n%s" % [int(entry["number"]), get_sound_test_playback_label(), bonus_state]
+	var bonus_state := _language_text("ALL TRACKS", "ALLE TITEL", "TOUS LES MORCEAUX", "TODAS LAS PISTAS", "TUTTI I BRANI") if _has_completed_sound_test_bonus() else _language_text("STANDARD LIST", "STANDARDLISTE", "LISTE STANDARD", "LISTA ESTANDAR", "LISTA STANDARD")
+	return "%s\n%02d\n\n%s\n%s\n\n%s\n%s" % [_language_text("TRACK NO.", "TITEL NR.", "NO. PISTE", "NO. PISTA", "N. BRANO"), int(entry["number"]), _language_text("MODE", "MODUS", "MODE", "MODO", "MODALITA"), get_sound_test_playback_label(), _language_text("LIST", "LISTE", "LISTE", "LISTA", "LISTA"), bonus_state]
 
 func get_sound_test_title_text() -> String:
 	return _language_text("SOUND TEST", "MUSIKTEST", "TEST SON", "PRUEBA DE SONIDO", "TEST AUDIO")
 
 func get_sound_test_prompt_text() -> String:
-	return "LEFT/RIGHT CHANGE 1, UP/DOWN CHANGE 10, ENTER PLAY, X STOP/BACK"
+	return _language_text("LEFT/RIGHT CHANGE 1, UP/DOWN CHANGE 10, ENTER PLAY, X STOP/BACK", "LINKS/RECHTS 1 AENDERN, HOCH/RUNTER 10, ENTER ABSPIELEN, X STOPP/ZURUECK", "GAUCHE/DROITE +/-1, HAUT/BAS +/-10, ENTREE JOUER, X STOP/RETOUR", "IZQ/DER +/-1, ARRIBA/ABAJO +/-10, ENTER REPRODUCIR, X PARAR/ATRAS", "SINISTRA/DESTRA +/-1, SU/GIU +/-10, INVIO RIPRODUCI, X STOP/INDIETRO")
 
 func get_sound_test_detail_text() -> String:
-	return "LEFT/RIGHT = TRACK +/-1   UP/DOWN = TRACK +/-10   %s = PLAY   %s = %s" % [
+	return "%s   %s   %s = %s   %s = %s" % [
+		_language_text("LEFT/RIGHT = TRACK +/-1", "LINKS/RECHTS = TITEL +/-1", "GAUCHE/DROITE = PISTE +/-1", "IZQ/DER = PISTA +/-1", "SINISTRA/DESTRA = BRANO +/-1"),
+		_language_text("UP/DOWN = TRACK +/-10", "HOCH/RUNTER = TITEL +/-10", "HAUT/BAS = PISTE +/-10", "ARRIBA/ABAJO = PISTA +/-10", "SU/GIU = BRANO +/-10"),
 		get_confirm_label(),
+		_language_text("PLAY", "ABSPIELEN", "JOUER", "REPRODUCIR", "RIPRODUCI"),
 		get_secondary_label(),
-		"STOP" if _sound_test_state == SOUND_TEST_STATE_PLAYING else "BACK",
+		_language_text("STOP", "STOPP", "STOP", "PARAR", "STOP") if _sound_test_state == SOUND_TEST_STATE_PLAYING else _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO"),
 	]
 
 func get_sound_test_chrome_colors() -> Dictionary:
@@ -9943,13 +11653,13 @@ func get_sound_test_chrome_colors() -> Dictionary:
 func get_sound_test_status_text() -> String:
 	var entry := get_sound_test_current_entry()
 	if _sound_test_state == SOUND_TEST_STATE_PLAYING:
-		return "NOW PLAYING %02d %s" % [int(entry["number"]), str(entry["name"])]
-	return "SELECT TRACK %02d" % int(entry["number"])
+		return "%s %02d %s" % [_language_text("NOW PLAYING", "LAEUFT GERADE", "LECTURE", "REPRODUCIENDO", "IN RIPRODUZIONE"), int(entry["number"]), str(entry["name"])]
+	return "%s %02d" % [_language_text("SELECT TRACK", "TITEL WAEHLEN", "CHOISIR LA PISTE", "ELEGIR PISTA", "SCEGLI BRANO"), int(entry["number"])]
 
 func get_sound_test_playback_label() -> String:
 	if _sound_test_state == SOUND_TEST_STATE_PLAYING:
-		return "PLAYING"
-	return "STOPPED"
+		return _language_text("PLAYING", "LAEUFT", "LECTURE", "REPRODUCIENDO", "IN RIPRODUZIONE")
+	return _language_text("STOPPED", "GESTOPPT", "ARRETE", "DETENIDO", "FERMO")
 
 func is_sound_test_playing() -> bool:
 	return _sound_test_state == SOUND_TEST_STATE_PLAYING
@@ -9959,7 +11669,7 @@ func _has_completed_sound_test_bonus() -> bool:
 
 func get_options_active_items() -> Array:
 	if _save_reset_pending:
-		return ["CONFIRM RESET", "CANCEL"]
+		return [_language_text("CONFIRM RESET", "RESET BESTAETIGEN", "CONFIRMER RESET", "CONFIRMAR REINICIO", "CONFERMA RESET"), _language_text("CANCEL", "ABBRECHEN", "ANNULER", "CANCELAR", "ANNULLA")]
 	match _options_mode:
 		OPTIONS_MODE_MAIN:
 			return get_options_display_items()
@@ -9968,134 +11678,134 @@ func get_options_active_items() -> Array:
 		OPTIONS_MODE_LANGUAGE:
 			return get_language_items()
 		OPTIONS_MODE_BUTTON_CONFIG:
-			return ["A BUTTON", "B BUTTON", "R BUTTON"]
+			return [_language_text("FACE BUTTONS", "GESICHTSTASTEN", "BOUTONS", "BOTONES", "PULSANTI")]
 		OPTIONS_MODE_SOUND_TEST:
-			return ["TRACK"]
+			return [_language_text("TRACK", "TITEL", "PISTE", "PISTA", "BRANO")]
 		OPTIONS_MODE_DIFFICULTY:
-			return ["NORMAL", "EASY"]
+			return [_language_text("NORMAL", "NORMAL", "NORMAL", "NORMAL", "NORMALE"), _language_text("EASY", "EINFACH", "FACILE", "FACIL", "FACILE")]
 		OPTIONS_MODE_TIME_LIMIT:
-			return ["ON", "OFF"]
+			return [_language_text("ON", "AN", "OUI", "SI", "SI"), _language_text("OFF", "AUS", "NON", "NO", "NO")]
 		OPTIONS_MODE_DELETE_CONFIRM, OPTIONS_MODE_DELETE_CONFIRM_FINAL:
-			return ["YES", "NO"]
+			return [_language_text("YES", "JA", "OUI", "SI", "SI"), _language_text("NO", "NEIN", "NON", "NO", "NO")]
 		OPTIONS_MODE_TIME_RECORDS:
 			if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-				return ["ZONE", "BOSS"]
-			return ["COURSE VIEW"]
+				return [_language_text("ZONE", "ZONE", "ZONE", "ZONA", "ZONA"), _language_text("BOSS", "BOSS", "BOSS", "JEFE", "BOSS")]
+			return [_language_text("COURSE VIEW", "KURSANSICHT", "VUE PARCOURS", "VISTA DE FASE", "VISTA CORSO")]
 		OPTIONS_MODE_MULTI_RECORDS:
-			return ["RECORDS"]
+			return [_language_text("RECORDS", "REKORDE", "RECORDS", "RECORDS", "RECORD")]
 		OPTIONS_MODE_NAME_ENTRY:
-			return ["LETTER 1", "LETTER 2", "LETTER 3", "LETTER 4", "CONFIRM", "BACK"]
+			return ["%s 1" % _language_text("LETTER", "BUCHSTABE", "LETTRE", "LETRA", "LETTERA"), "%s 2" % _language_text("LETTER", "BUCHSTABE", "LETTRE", "LETRA", "LETTERA"), "%s 3" % _language_text("LETTER", "BUCHSTABE", "LETTRE", "LETRA", "LETTERA"), "%s 4" % _language_text("LETTER", "BUCHSTABE", "LETTRE", "LETRA", "LETTERA"), _language_text("CONFIRM", "BESTAETIGEN", "VALIDER", "CONFIRMAR", "CONFERMA"), _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")]
 	return []
 
 func get_options_item_meta(index: int) -> String:
 	if _save_reset_pending:
-		return "YES" if index == 0 else "NO"
+		return _language_text("YES", "JA", "OUI", "SI", "SI") if index == 0 else _language_text("NO", "NEIN", "NON", "NO", "NO")
 	match _options_mode:
 		OPTIONS_MODE_PLAYER_DATA:
 			match index:
 				0:
 					return get_profile_name_text()
 				1:
-					return "BEST TIMES AND STATS"
+					return _language_text("BEST TIMES AND STATS", "BESTZEITEN UND STATISTIK", "MEILLEURS TEMPS ET STATS", "MEJORES TIEMPOS Y ESTADISTICAS", "MIGLIORI TEMPI E STATISTICHE")
 				2:
-					return "VERSUS RECORDS"
+					return _language_text("VERSUS RECORDS", "VERSUS-REKORDE", "RECORDS VS", "RECORDS VS", "RECORD VS")
 				3:
-					return "RETURN TO OPTIONS"
+					return _language_text("RETURN TO OPTIONS", "ZURUECK ZU OPTIONEN", "RETOUR AUX OPTIONS", "VOLVER A OPCIONES", "TORNA ALLE OPZIONI")
 		OPTIONS_MODE_MAIN:
 			match index:
 				0:
-					return "OPEN PLAYER-DATA SUBMENU"
+					return _language_text("OPEN PLAYER-DATA SUBMENU", "SPIELERDATEN OEFFNEN", "OUVRIR DONNEES JOUEUR", "ABRIR DATOS", "APRI DATI GIOCATORE")
 				1:
 					return get_difficulty_text()
 				2:
-					return "ON" if _time_limit_enabled else "OFF"
+					return _language_text("ON", "AN", "OUI", "SI", "SI") if _time_limit_enabled else _language_text("OFF", "AUS", "NON", "NO", "NO")
 				3:
 					return get_language_text()
 				4:
-					return "EDIT ACTION BUTTONS"
+					return _language_text("EDIT ACTION BUTTONS", "AKTIONSTASTEN BEARBEITEN", "MODIFIER LES BOUTONS", "EDITAR BOTONES", "MODIFICA PULSANTI")
 				5:
-					return "TRACK %02d" % [get_sound_test_track_number()]
+					return "%s %02d" % [_language_text("TRACK", "TITEL", "PISTE", "PISTA", "BRANO"), get_sound_test_track_number()]
 				6:
-					return "ERASE ALL PROGRESS"
+					return _language_text("ERASE ALL PROGRESS", "ALLEN FORTSCHRITT LOESCHEN", "EFFACER TOUTE LA PROGRESSION", "BORRAR TODO EL PROGRESO", "CANCELLA TUTTI I PROGRESSI")
 				7:
-					return "RETURN TO TITLE"
+					return _language_text("RETURN TO TITLE", "ZURUECK ZUM TITEL", "RETOUR AU TITRE", "VOLVER AL TITULO", "TORNA AL TITOLO")
 		OPTIONS_MODE_LANGUAGE:
-			return "CURRENT" if index == _language_index else "AVAILABLE"
+			return _language_text("CURRENT", "AKTUELL", "ACTUEL", "ACTUAL", "ATTUALE") if index == _language_index else _language_text("AVAILABLE", "VERFUEGBAR", "DISPONIBLE", "DISPONIBLE", "DISPONIBILE")
 		OPTIONS_MODE_BUTTON_CONFIG:
-			return _button_bindings[index] if index >= 0 and index < _button_bindings.size() else ""
+			return get_button_config_focus_label() if index == 0 else ""
 		OPTIONS_MODE_SOUND_TEST:
 			var entry := get_sound_test_current_entry()
 			match index:
 				0:
 					return str(entry["name"])
 				1:
-					return "PLAY TRACK %02d" % [int(entry["number"])]
+					return "%s %02d" % [_language_text("PLAY TRACK", "TITEL ABSPIELEN", "JOUER LA PISTE", "REPRODUCIR PISTA", "RIPRODUCI BRANO"), int(entry["number"])]
 				2:
 					return get_sound_test_playback_label()
 				3:
-					return "RETURN TO OPTIONS"
+					return _language_text("RETURN TO OPTIONS", "ZURUECK ZU OPTIONEN", "RETOUR AUX OPTIONS", "VOLVER A OPCIONES", "TORNA ALLE OPZIONI")
 		OPTIONS_MODE_DIFFICULTY:
 			if index == 0:
-				return "STANDARD RUN"
-			return "LOWER ENEMY PRESSURE"
+				return _language_text("STANDARD RUN", "STANDARDLAUF", "COURSE STANDARD", "CARRERA ESTANDAR", "CORSA STANDARD")
+			return _language_text("LOWER ENEMY PRESSURE", "WENIGER GEGNERDRUCK", "MOINS D'ENNEMIS", "MENOS ENEMIGOS", "MENO NEMICI")
 		OPTIONS_MODE_TIME_LIMIT:
 			if index == 0:
-				return "CLASSIC COUNTDOWN"
-			return "FREE RUN MODE"
+				return _language_text("CLASSIC COUNTDOWN", "KLASSISCHER COUNTDOWN", "COMPTE A REBOURS CLASSIQUE", "CUENTA ATRAS CLASICA", "CONTO ALLA ROVESCIA CLASSICO")
+			return _language_text("FREE RUN MODE", "FREIER LAUF", "MODE LIBRE", "MODO LIBRE", "MODALITA LIBERA")
 		OPTIONS_MODE_DELETE_CONFIRM, OPTIONS_MODE_DELETE_CONFIRM_FINAL:
 			if index == 0:
-				return "ERASE SAVE DATA"
-			return "KEEP CURRENT DATA"
+				return _language_text("ERASE SAVE DATA", "SPEICHERDATEN LOESCHEN", "EFFACER LES DONNEES", "BORRAR DATOS", "CANCELLA DATI")
+			return _language_text("KEEP CURRENT DATA", "AKTUELLE DATEN BEHALTEN", "GARDER LES DONNEES", "CONSERVAR DATOS", "MANTIENI DATI")
 		OPTIONS_MODE_TIME_RECORDS:
 			if index < _time_record_rows.size():
 				return _time_record_rows[index][1]
 			return "RETURN TO PLAYER DATA"
 		OPTIONS_MODE_MULTI_RECORDS:
-			return "BROWSE WINS, LOSSES, AND DRAWS"
+			return _language_text("BROWSE WINS, LOSSES, AND DRAWS", "SIEGE, NIEDERLAGEN UND REMIS", "PARCOURIR VICTOIRES, DEFAITES ET NULS", "VER VICTORIAS, DERROTAS Y EMPATES", "VEDI VITTORIE, SCONFITTE E PAREGGI")
 		OPTIONS_MODE_NAME_ENTRY:
 			if index < _player_profile_name.size():
 				return _player_profile_name[index]
 			if index == _player_profile_name.size():
 				return get_profile_name_text()
-			return "CANCEL EDIT"
+			return _language_text("CANCEL EDIT", "BEARBEITUNG ABBRECHEN", "ANNULER MODIFICATION", "CANCELAR EDICION", "ANNULLA MODIFICA")
 	return ""
 
 func get_options_item_status(index: int) -> String:
 	if _save_reset_pending:
-		return "READY"
+		return _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
 	match _options_mode:
 		OPTIONS_MODE_MAIN:
-			return "READY"
+			return _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
 		OPTIONS_MODE_PLAYER_DATA:
-			return "PROFILE" if index == 0 else "READY"
+			return _language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO") if index == 0 else _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
 		OPTIONS_MODE_LANGUAGE:
-			return "SELECTED" if index == _language_index else "READY"
+			return _language_text("SELECTED", "GEWAEHLT", "SELECTIONNE", "SELECCIONADO", "SELEZIONATO") if index == _language_index else _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
 		OPTIONS_MODE_BUTTON_CONFIG:
-			return "ACTIVE" if index == _button_config_index else "WAIT"
+			return _language_text("ACTIVE", "AKTIV", "ACTIF", "ACTIVO", "ATTIVO") if index == _button_config_index else _language_text("WAIT", "WARTEN", "ATTENTE", "ESPERA", "ATTESA")
 		OPTIONS_MODE_SOUND_TEST:
 			match index:
 				0:
-					return "SCROLL"
+					return _language_text("SCROLL", "BLENDEN", "DEFILER", "DESPLAZAR", "SCORRI")
 				1:
-					return "PLAYING" if _sound_test_state == SOUND_TEST_STATE_PLAYING else "READY"
+					return _language_text("PLAYING", "LAEUFT", "LECTURE", "REPRODUCIENDO", "IN RIPRODUZIONE") if _sound_test_state == SOUND_TEST_STATE_PLAYING else _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
 				2:
-					return "STOP" if _sound_test_state == SOUND_TEST_STATE_PLAYING else "READY"
-			return "READY"
+					return _language_text("STOP", "STOPP", "STOP", "PARAR", "STOP") if _sound_test_state == SOUND_TEST_STATE_PLAYING else _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
+			return _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
 		OPTIONS_MODE_DIFFICULTY:
-			return "READY"
+			return _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
 		OPTIONS_MODE_TIME_LIMIT:
-			return "READY"
+			return _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
 		OPTIONS_MODE_DELETE_CONFIRM, OPTIONS_MODE_DELETE_CONFIRM_FINAL:
-			return "READY"
+			return _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
 		OPTIONS_MODE_TIME_RECORDS:
-			return "BEST"
+			return _language_text("BEST", "BESTE", "MEILLEUR", "MEJOR", "MIGLIORE")
 		OPTIONS_MODE_MULTI_RECORDS:
-			return "BROWSE"
+			return _language_text("BROWSE", "DURCHSUCHEN", "PARCOURIR", "EXPLORAR", "SFOGLIA")
 		OPTIONS_MODE_NAME_ENTRY:
 			if index < _player_profile_name.size():
-				return "EDIT"
-			return "READY"
-	return "READY"
+				return _language_text("EDIT", "BEARBEITEN", "MODIFIER", "EDITAR", "MODIFICA")
+			return _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
+	return _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
 
 func get_time_record_rows() -> Array:
 	if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
@@ -10105,7 +11815,7 @@ func get_time_record_rows() -> Array:
 	var record_level_index := _get_time_records_level_index()
 	for i in range(course_times.size()):
 		rows.append({
-			"name": "RANK %d" % [i + 1],
+			"name": "%s %d" % [_language_text("RANK", "RANG", "RANG", "RANGO", "POSIZIONE"), i + 1],
 			"time": str(course_times[i]),
 			"recorded": i == 0 and _has_time_attack_best_time(_get_time_attack_record_key(_time_records_character_index, record_level_index, 0, _time_records_boss_mode)),
 			"selected": false,
@@ -10127,20 +11837,23 @@ func get_multiplayer_record_rows() -> Array:
 
 func get_name_entry_rows() -> Array:
 	var rows: Array = []
+	var letter_label := _language_text("LETTER", "BUCHSTABE", "LETTRE", "LETRA", "LETTERA")
+	var confirm_label := _language_text("CONFIRM", "BESTATIGEN", "VALIDER", "CONFIRMAR", "CONFERMA")
+	var back_label := _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")
 	for i in range(_player_profile_name.size()):
 		rows.append({
-			"label": "LETTER %d" % [i + 1],
+			"label": "%s %d" % [letter_label, i + 1],
 			"value": str(_player_profile_name[i]),
 			"selected": i == _name_entry_menu_index,
 		})
 	rows.append({
-		"label": "CONFIRM",
+		"label": confirm_label,
 		"value": get_profile_name_text(),
 		"selected": _name_entry_menu_index == _player_profile_name.size(),
 	})
 	rows.append({
-		"label": "BACK",
-		"value": "CANCEL EDIT",
+		"label": back_label,
+		"value": _language_text("CANCEL EDIT", "BEARBEITUNG ABBRECHEN", "ANNULER MODIFICATION", "CANCELAR EDICION", "ANNULLA MODIFICA"),
 		"selected": _name_entry_menu_index == _player_profile_name.size() + 1,
 	})
 	return rows
@@ -10237,8 +11950,12 @@ func get_time_records_course_count() -> int:
 	return 7
 
 func get_time_records_available_course_count() -> int:
+	# The original options screen browses every zone, including locked records.
+	# Time Attack keeps the progression-limited course list.
+	if _time_records_context == TIME_RECORDS_CONTEXT_OPTIONS and not _time_records_boss_mode:
+		return get_time_records_course_count()
 	var level_limit := _unlocked_level_index
-	if _time_records_context == TIME_RECORDS_CONTEXT_OPTIONS and not _character_unlocked_level_indices.is_empty():
+	if _time_records_context in [TIME_RECORDS_CONTEXT_OPTIONS, TIME_RECORDS_CONTEXT_TIME_ATTACK] and not _character_unlocked_level_indices.is_empty():
 		var character_index := clampi(_time_records_character_index, 0, _character_unlocked_level_indices.size() - 1)
 		level_limit = int(_character_unlocked_level_indices[character_index])
 	return mini(get_time_records_course_count(), maxi(1, (level_limit / 2) + 1))
@@ -10246,8 +11963,10 @@ func get_time_records_available_course_count() -> int:
 func _get_time_records_max_act_for_course(_course_index: int) -> int:
 	if _time_records_boss_mode:
 		return 0
+	if _time_records_context == TIME_RECORDS_CONTEXT_OPTIONS:
+		return 1
 	var level_limit := _unlocked_level_index
-	if _time_records_context == TIME_RECORDS_CONTEXT_OPTIONS and not _character_unlocked_level_indices.is_empty():
+	if _time_records_context in [TIME_RECORDS_CONTEXT_OPTIONS, TIME_RECORDS_CONTEXT_TIME_ATTACK] and not _character_unlocked_level_indices.is_empty():
 		var character_index := clampi(_time_records_character_index, 0, _character_unlocked_level_indices.size() - 1)
 		level_limit = int(_character_unlocked_level_indices[character_index])
 	return clampi(level_limit - (_course_index * 2), 0, 1)
@@ -10260,6 +11979,22 @@ func _advance_time_records_course(direction: int) -> void:
 	if _time_records_boss_mode:
 		_time_records_course_index = wrapi(_time_records_course_index + direction, 0, available_courses)
 		_time_records_act_index = 0
+		return
+	if _time_records_context == TIME_RECORDS_CONTEXT_OPTIONS:
+		# Task_TimeRecordsScreenCoursesViewMain toggles acts before changing
+		# zones and wraps across all seven zones in the normal records menu.
+		if direction < 0:
+			if _time_records_act_index == 0:
+				_time_records_act_index = 1
+				_time_records_course_index = wrapi(_time_records_course_index - 1, 0, available_courses)
+			else:
+				_time_records_act_index = 0
+		else:
+			if _time_records_act_index > 0:
+				_time_records_act_index = 0
+				_time_records_course_index = wrapi(_time_records_course_index + 1, 0, available_courses)
+			else:
+				_time_records_act_index = 1
 		return
 	var next_act := _time_records_act_index + direction
 	var current_max_act := _get_time_records_max_act_for_course(_time_records_course_index)
@@ -10345,111 +12080,138 @@ func get_language_rows() -> Array:
 	for i in range(languages.size()):
 		rows.append({
 			"label": str(languages[i]),
-			"status": "CURRENT" if i == _language_index else "AVAILABLE",
+			"status": _language_text("CURRENT", "AKTUELL", "ACTUEL", "ACTUAL", "ATTUALE") if i == _language_index else _language_text("AVAILABLE", "VERFUEGBAR", "DISPONIBLE", "DISPONIBLE", "DISPONIBILE"),
+			"current": i == _language_index,
 			"selected": i == _language_index,
 		})
 	return rows
 
 func get_button_config_rows() -> Array:
 	var rows: Array = []
-	rows.append({
-		"label": "A BUTTON",
-		"value": _button_bindings[0],
-		"status": "ACTIVE" if _button_config_index == 0 else "WAIT",
-		"selected": _button_config_index == 0,
-	})
-	rows.append({
-		"label": "B BUTTON",
-		"value": _button_bindings[1],
-		"status": "ACTIVE" if _button_config_index == 1 else "WAIT",
-		"selected": _button_config_index == 1,
-	})
-	rows.append({
-		"label": "R BUTTON",
-		"value": _button_bindings[2],
-		"status": "ACTIVE" if _button_config_index == 2 else "WAIT",
-		"selected": _button_config_index == 2,
-	})
+	var labels := [
+		_language_text("A BUTTON", "A-TASTE", "BOUTON A", "BOTON A", "PULSANTE A"),
+		_language_text("B BUTTON", "B-TASTE", "BOUTON B", "BOTON B", "PULSANTE B"),
+		_language_text("R SHOULDER", "R-SCHULTER", "GACHETTE R", "HOMBRO R", "SPALLA R"),
+	]
+	for i in range(3):
+		rows.append({
+			"label": labels[i],
+			"value": str(_button_bindings[i]),
+			"status": _language_text("ACTIVE", "AKTIV", "ACTIF", "ACTIVO", "ATTIVO") if _button_config_index == i else _language_text("WAIT", "WARTEN", "ATTENTE", "ESPERA", "ATTESA"),
+			"active": _button_config_index == i,
+			"selected": _button_config_index == i,
+		})
 	return rows
 
 func get_player_data_rows() -> Array:
 	var rows: Array = []
+	var labels := get_player_data_menu_items()
 	rows.append({
-		"label": "NAME ENTRY",
+		"label": labels[0],
 		"value": get_profile_name_text(),
-		"status": "PROFILE",
+		"status": _language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"),
+		"profile": true,
 		"selected": _player_data_menu_index == 0,
 	})
 	rows.append({
-		"label": "TIME RECORDS",
-		"value": "BEST TIMES AND STATS",
-		"status": "READY",
+		"label": labels[1],
+		"value": _language_text("BEST TIMES AND STATS", "BESTZEITEN UND STATISTIK", "MEILLEURS TEMPS ET STATS", "MEJORES TIEMPOS Y ESTADISTICAS", "MIGLIORI TEMPI E STATISTICHE"),
+		"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
 		"selected": _player_data_menu_index == 1,
 	})
 	rows.append({
-		"label": "MULTI-PAK RECORDS",
-		"value": "VERSUS HISTORY",
-		"status": "READY",
+		"label": labels[2],
+		"value": _language_text("VERSUS HISTORY", "VERSUS-HISTORIE", "HISTORIQUE VS", "HISTORIAL VS", "CRONOLOGIA VS"),
+		"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
 		"selected": _player_data_menu_index == 2,
 	})
 	rows.append({
-		"label": "BACK",
-		"value": "RETURN TO OPTIONS",
-		"status": "READY",
+		"label": labels[3],
+		"value": _language_text("RETURN TO OPTIONS", "ZURUECK ZU OPTIONEN", "RETOUR AUX OPTIONS", "VOLVER A OPCIONES", "TORNA ALLE OPZIONI"),
+		"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
 		"selected": _player_data_menu_index == 3,
 	})
 	return rows
 
 func get_options_main_rows() -> Array:
 	var rows: Array = []
+	var labels := get_options_display_items()
 	rows.append({
-		"label": "PLAYER DATA",
-		"value": "PROFILE / RECORDS",
-		"status": "READY",
+		"label": labels[0],
+		"value": _language_text("PROFILE / RECORDS", "PROFIL / REKORDE", "PROFIL / RECORDS", "PERFIL / RECORDS", "PROFILO / RECORD"),
+		"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
+		"visual": "profile",
 	})
 	rows.append({
-		"label": "DIFFICULTY",
+		"label": labels[1],
 		"value": get_difficulty_text(),
-		"status": "OPEN",
+		"status": _language_text("OPEN", "OEFFNEN", "OUVRIR", "ABRIR", "APRI"),
+		"action": "open",
 	})
 	rows.append({
-		"label": "TIME LIMIT",
-		"value": "ON" if _time_limit_enabled else "OFF",
-		"status": "OPEN",
+		"label": labels[2],
+		"value": _language_text("ON", "AN", "OUI", "SI", "SI") if _time_limit_enabled else _language_text("OFF", "AUS", "NON", "NO", "NO"),
+		"status": _language_text("OPEN", "OEFFNEN", "OUVRIR", "ABRIR", "APRI"),
+		"action": "open",
 	})
 	rows.append({
-		"label": "LANGUAGE",
+		"label": labels[3],
 		"value": get_language_text(),
-		"status": "READY",
+		"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
 	})
 	rows.append({
-		"label": "BUTTON CONFIG",
-		"value": "EDIT BINDINGS",
-		"status": "READY",
+		"label": labels[4],
+		"value": _language_text("EDIT BINDINGS", "BELEGUNG AENDERN", "MODIFIER LES TOUCHES", "EDITAR ASIGNACIONES", "MODIFICA COMANDI"),
+		"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
 	})
 	if _sound_test_unlocked:
 		rows.append({
-			"label": "SOUND TEST",
-			"value": "TRACK %02d" % [get_sound_test_track_number()],
-			"status": "READY",
+			"label": labels[5],
+			"value": "%s %02d" % [_language_text("TRACK", "TITEL", "PISTE", "PISTA", "BRANO"), get_sound_test_track_number()],
+			"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
 		})
 	rows.append({
-		"label": "DELETE GAME DATA",
-		"value": "ERASE PROGRESS",
-		"status": "ERASE",
+		"label": labels[6 if _sound_test_unlocked else 5],
+		"value": _language_text("ERASE PROGRESS", "FORTSCHRITT LOESCHEN", "EFFACER LA PROGRESSION", "BORRAR PROGRESO", "CANCELLA PROGRESSI"),
+		"status": _language_text("ERASE", "LOESCHEN", "EFFACER", "BORRAR", "CANCELLA"),
+		"action": "erase",
+		"visual": "erase",
 	})
 	rows.append({
-		"label": "EXIT",
-		"value": "RETURN TO TITLE",
-		"status": "READY",
+		"label": labels[7 if _sound_test_unlocked else 6],
+		"value": _language_text("RETURN TO TITLE", "ZURUECK ZUM TITEL", "RETOUR AU TITRE", "VOLVER AL TITULO", "TORNA AL TITOLO"),
+		"status": _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO"),
 	})
 	return rows
+
+func get_options_item_visual(index: int) -> String:
+	if _options_mode != OPTIONS_MODE_MAIN:
+		return ""
+	var rows := get_options_main_rows()
+	if index >= 0 and index < rows.size():
+		return str(rows[index].get("visual", ""))
+	return ""
+
+func get_options_badge_text() -> String:
+	return _language_text("OPTIONS", "OPTIONEN", "OPTIONS", "OPCIONES", "OPZIONI")
+
+func get_switch_option_badge_text(screen_id: String) -> String:
+	match screen_id:
+		"difficulty":
+			return _language_text("LEVEL", "STUFE", "NIVEAU", "NIVEL", "LIVELLO")
+		"time_limit":
+			return _language_text("CLOCK", "UHR", "HORLOGE", "RELOJ", "OROLOGIO")
+		"delete_final":
+			return _language_text("FINAL", "FINAL", "FINAL", "FINAL", "FINALE")
+		"delete_confirm":
+			return _language_text("WARN", "WARNUNG", "AVERTISSEMENT", "AVISO", "AVVISO")
+	return _language_text("SET", "SETUP", "REGLAGE", "AJUSTE", "IMPOSTA")
 
 func get_sound_test_rows() -> Array:
 	var rows: Array = []
 	var entry := get_sound_test_current_entry()
 	rows.append({
-		"label": "TRACK",
+		"label": _language_text("TRACK", "TITEL", "PISTE", "PISTA", "BRANO"),
 		"value": "NO. %02d" % [int(entry["number"])],
 		"status": "SCROLL",
 		"selected": true,
@@ -10458,6 +12220,9 @@ func get_sound_test_rows() -> Array:
 
 func get_sound_test_track_number() -> int:
 	return int(get_sound_test_current_entry()["number"])
+
+func get_sound_test_track_number_text() -> String:
+	return "%s %02d" % [_language_text("NO.", "NR.", "NO.", "N.", "N."), get_sound_test_track_number()]
 
 func get_sound_test_track_name() -> String:
 	return str(get_sound_test_current_entry()["name"])
@@ -10549,7 +12314,7 @@ func get_save_detail_text() -> String:
 	if _options_mode == OPTIONS_MODE_LANGUAGE:
 		return "%s = CHANGE   %s = ACCEPT   %s = BACK" % [get_navigation_label(), get_confirm_label(), get_secondary_label()]
 	if _options_mode == OPTIONS_MODE_BUTTON_CONFIG:
-		return "LEFT/RIGHT = CHANGE   %s = SELECT   %s = BACK" % [get_confirm_label(), get_secondary_label()]
+		return "LEFT/RIGHT = SWITCH   %s = ACCEPT   %s = BACK" % [get_confirm_label(), get_secondary_label()]
 	if _options_mode == OPTIONS_MODE_SOUND_TEST:
 		return get_sound_test_detail_text()
 	if _options_mode == OPTIONS_MODE_DIFFICULTY:
@@ -10574,9 +12339,10 @@ func update_save_menu_status() -> void:
 	_status_text = get_options_screen_title()
 
 func get_selected_level_description() -> String:
+	var best_label := _language_text("BEST", "BESTE", "MEILLEUR", "MEJOR", "MIGLIORE")
 	if _selected_level_index >= 0 and _selected_level_index < _best_scores.size():
-		return "BEST: %d" % _best_scores[_selected_level_index]
-	return "BEST: 0"
+		return "%s: %d" % [best_label, _best_scores[_selected_level_index]]
+	return "%s: 0" % best_label
 
 func get_level_name_by_index(level_index: int) -> String:
 	if level_index < 0 or level_index >= _level_names.size():
@@ -10592,10 +12358,10 @@ func get_level_status(level_index: int) -> String:
 	if level_index < 0 or level_index >= _level_names.size():
 		return ""
 	if level_index < _level_cleared_flags.size() and _level_cleared_flags[level_index]:
-		return "CLEARED"
+		return _language_text("CLEARED", "GESCHAFFT", "TERMINE", "COMPLETADO", "COMPLETATO")
 	if level_index <= _unlocked_level_index:
-		return "READY"
-	return "LOCKED"
+		return _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
+	return _language_text("LOCKED", "GESPERRT", "VERROUILLE", "BLOQUEADO", "BLOCCATO")
 
 func get_level_menu_entry_text(level_index: int) -> String:
 	if level_index < 0 or level_index >= _level_names.size():
@@ -10711,7 +12477,7 @@ func get_intro_stage_badges() -> Array:
 	return badges
 
 func get_intro_countdown_text() -> String:
-	if is_final_intro_screen():
+	if is_final_intro_screen() or _is_boss_intro():
 		return ""
 	if _intro_timer <= INTRO_GO_TIME:
 		return "GO!"
@@ -10723,9 +12489,18 @@ func get_intro_countdown_text() -> String:
 		return "3"
 	return ""
 
+func get_intro_stage_frame() -> float:
+	if not is_intro_screen():
+		return 200.0
+	var total_duration := STAGE_INTRO_DURATION if _is_boss_intro() else INTRO_TOTAL_TIME
+	var elapsed := maxf(0.0, total_duration - _intro_timer)
+	return clampf(elapsed * 60.0, 0.0, 200.0)
+
 func get_intro_prompt_text() -> String:
 	if is_final_intro_screen():
 		return "VANILLA RESCUED"
+	if _is_boss_intro():
+		return "BOSS READY"
 	if _run_from_multiplayer and _intro_timer > INTRO_COUNTDOWN_START:
 		return "VERSUS START"
 	if _intro_timer <= INTRO_GO_TIME:
@@ -10734,9 +12509,38 @@ func get_intro_prompt_text() -> String:
 		return get_intro_countdown_text()
 	return "READY!"
 
+func is_intro_go_phase() -> bool:
+	return not is_final_intro_screen() and not _is_boss_intro() and _intro_timer <= INTRO_GO_TIME
+
+func get_menu_badge_text(kind: String) -> String:
+	match kind:
+		"START":
+			return _language_text("START", "START", "DEPART", "INICIO", "AVVIO")
+		"SETUP":
+			return _language_text("SETUP", "EINSTELLUNG", "CONFIG", "AJUSTES", "IMPOSTA")
+		"PROFILE":
+			return _language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO")
+		"AUDIO":
+			return _language_text("AUDIO", "AUDIO", "AUDIO", "AUDIO", "AUDIO")
+		"VERSUS":
+			return _language_text("VERSUS", "VERSUS", "VERSUS", "VERSUS", "VERSUS")
+		"TEXT":
+			return _language_text("TEXT", "TEXT", "TEXTE", "TEXTO", "TESTO")
+		"NAME":
+			return _language_text("NAME", "NAME", "NOM", "NOMBRE", "NOME")
+		"RECORD":
+			return _language_text("RECORD", "REKORD", "RECORD", "RECORD", "RECORD")
+		"TA":
+			return _language_text("TA", "ZA", "TA", "TA", "TA")
+		"ST":
+			return _language_text("ST", "ST", "ST", "ST", "ST")
+	return kind
+
 func get_intro_detail_text() -> String:
 	if is_final_intro_screen():
 		return "TRUE AREA 53   START TO SKIP   SONIC AWAKENS"
+	if _is_boss_intro():
+		return "BOSS ENCOUNTER   START SEQUENCE LOCKED"
 	if _run_from_multiplayer:
 		if _intro_timer <= INTRO_GO_TIME:
 			return "OUTRUN %d RIVALS" % max(1, get_multiplayer_link_count() - 1)
@@ -10759,41 +12563,51 @@ func get_race_start_message_progress() -> float:
 
 func get_clear_title_text() -> String:
 	if _run_from_time_attack:
-		return "TIME ATTACK"
-	return "STAGE CLEAR"
+		return _language_text("TIME ATTACK", "TIME ATTACK", "TIME ATTACK", "TIME ATTACK", "TIME ATTACK")
+	if is_boss_course_result():
+		return _language_text("BOSS DESTROYED", "BOSS BESIEGT", "BOSS DETRUIT", "JEFE DESTRUIDO", "BOSS DISTRUTTO")
+	return _language_text("STAGE CLEAR", "STUFE GESCHAFFT", "STAGE TERMINE", "FASE COMPLETADA", "STAGE COMPLETATO")
+
+func is_clear_time_attack_mode() -> bool:
+	return _run_from_time_attack
+
+func is_boss_course_result() -> bool:
+	if _run_from_time_attack or _run_from_multiplayer:
+		return false
+	return _selected_level_index % 2 == 1
 
 func get_clear_prompt_text() -> String:
 	if _run_from_time_attack:
 		if not is_clear_input_ready():
-			return "RESULT DISPLAY"
-		return "%s  %s" % [get_clear_result_heading_text(), get_formatted_time(_clear_time_snapshot)]
-	return "TIME: %s" % get_formatted_time(_clear_time_snapshot)
+			return _language_text("RESULT DISPLAY", "ERGEBNISANZEIGE", "AFFICHAGE DU RESULTAT", "PRESENTACION DEL RESULTADO", "VISUALIZZAZIONE RISULTATO")
+		return _language_text("%s  %s", "%s  %s", "%s  %s", "%s  %s", "%s  %s") % [get_clear_result_heading_text(), get_formatted_time(_clear_time_snapshot)]
+	return _language_text("TIME: %s", "ZEIT: %s", "TEMPS: %s", "TIEMPO: %s", "TEMPO: %s") % get_formatted_time(_clear_time_snapshot)
 
 func get_clear_detail_text() -> String:
 	if _run_from_time_attack:
 		if not is_clear_input_ready():
-			return "TIME ATTACK RESULT   PLEASE WAIT"
+			return _language_text("TIME ATTACK RESULT   PLEASE WAIT", "TIME ATTACK ERGEBNIS   BITTE WARTEN", "RESULTAT TIME ATTACK   PATIENTEZ", "RESULTADO TIME ATTACK   ESPERA", "RISULTATO TIME ATTACK   ATTENDI")
 		var record_text := _get_time_attack_record_text()
-		return "TIME: %s   RANK: %s\n%s\n%s = LOBBY" % [get_formatted_time(_clear_time_snapshot), _clear_rank_text, record_text, get_confirm_label()]
+		return _language_text("TIME: %s   RANK: %s\n%s\n%s = LOBBY", "ZEIT: %s   RANG: %s\n%s\n%s = LOBBY", "TEMPS: %s   RANG: %s\n%s\n%s = SALLE", "TIEMPO: %s   RANGO: %s\n%s\n%s = SALA", "TEMPO: %s   RANGO: %s\n%s\n%s = STANZA") % [get_formatted_time(_clear_time_snapshot), _clear_rank_text, record_text, get_confirm_label()]
 	if not is_clear_input_ready():
-		return "BONUS COUNTING\n%s TO FINISH COUNT" % get_confirm_label()
+		return _language_text("BONUS COUNTING\n%s TO FINISH COUNT", "BONUS WIRD GEZAEHLT\n%s ZUM ABSCHLIESSEN", "COMPTE DES BONUS\n%s POUR TERMINER", "CONTANDO BONOS\n%s PARA TERMINAR", "CONTEGGIO BONUS\n%s PER TERMINARE") % get_confirm_label()
 	if _selected_level_index < _level_names.size() - 1:
-		return "SCORE: %d   RANK: %s\nNEXT COURSE: %s" % [_clear_total_display_score, _clear_rank_text, _level_names[_selected_level_index + 1]]
-	return "SCORE: %d   RANK: %s\nCOURSE COMPLETE" % [_clear_total_display_score, _clear_rank_text]
+		return _language_text("SCORE: %d   RANK: %s\nNEXT COURSE: %s", "PUNKTZAHL: %d   RANG: %s\nNAECHSTER KURS: %s", "SCORE: %d   RANG: %s\nPROCHAIN PARCOURS: %s", "PUNTOS: %d   RANGO: %s\nSIGUIENTE FASE: %s", "PUNTEGGIO: %d   RANGO: %s\nPROSSIMA ZONA: %s") % [_clear_total_display_score, _clear_rank_text, _level_names[_selected_level_index + 1]]
+	return _language_text("SCORE: %d   RANK: %s\nCOURSE COMPLETE", "PUNKTZAHL: %d   RANG: %s\nKURS KOMPLETT", "SCORE: %d   RANG: %s\nPARCOURS TERMINE", "PUNTOS: %d   RANGO: %s\nFASE COMPLETA", "PUNTEGGIO: %d   RANGO: %s\nZONA COMPLETATA") % [_clear_total_display_score, _clear_rank_text]
 
 func get_clear_footer_text() -> String:
 	if not is_clear_input_ready():
 		if _run_from_time_attack:
-			return "RESULT ANIMATION"
-		return "%s = FAST COUNT" % get_confirm_label()
+			return _language_text("RESULT ANIMATION", "ERGEBNISANIMATION", "ANIMATION DU RESULTAT", "ANIMACION DEL RESULTADO", "ANIMAZIONE RISULTATO")
+		return _language_text("%s = FAST COUNT", "%s = SCHNELL ZAEHLEN", "%s = COMPTE RAPIDE", "%s = CUENTA RAPIDA", "%s = CONTEGGIO RAPIDO") % get_confirm_label()
 	if _run_from_time_attack:
-		return "%s = LOBBY   AUTO RETURN IN 10 SEC" % get_confirm_label()
-	return "AUTO COURSE SELECT"
+		return _language_text("%s = LOBBY   AUTO RETURN IN 10 SEC", "%s = LOBBY   AUTOMATISCH ZURUECK IN 10 SEK", "%s = SALLE   RETOUR AUTO DANS 10 S", "%s = SALA   VUELTA AUTO EN 10 S", "%s = STANZA   RITORNO AUTO IN 10 S") % get_confirm_label()
+	return _language_text("AUTO COURSE SELECT", "AUTOMATISCHE KURSAUSWAHL", "SELECTION AUTO DU PARCOURS", "SELECCION AUTOMATICA DE FASE", "SELEZIONE AUTOMATICA ZONA")
 
 func get_clear_result_heading_text() -> String:
 	if not _run_from_time_attack:
-		return "RESULT"
-	return "NEW RECORD" if _clear_new_best_time else "RESULT"
+		return _language_text("RESULT", "ERGEBNIS", "RESULTAT", "RESULTADO", "RISULTATO")
+	return _language_text("NEW RECORD", "NEUER REKORD", "NOUVEAU RECORD", "NUEVO RECORD", "NUOVO RECORD") if _clear_new_best_time else _language_text("RESULT", "ERGEBNIS", "RESULTAT", "RESULTADO", "RISULTATO")
 
 func get_clear_result_badge_text() -> String:
 	if _run_from_time_attack:
@@ -10803,13 +12617,19 @@ func get_clear_result_badge_text() -> String:
 func get_clear_time_attack_medal_text() -> String:
 	match _clear_time_attack_record_rank:
 		1:
-			return "GOLD"
+			return _language_text("GOLD", "GOLD", "OR", "ORO", "ORO")
 		2:
-			return "SILVER"
+			return _language_text("SILVER", "SILBER", "ARGENT", "PLATA", "ARGENTO")
 		3:
-			return "BRONZE"
+			return _language_text("BRONZE", "BRONZE", "BRONZE", "BRONCE", "BRONZO")
 		_:
-			return "TRY"
+			return _language_text("TRY", "VERSUCH", "ESSAI", "INTENTO", "TENTATIVO")
+
+func get_clear_time_attack_medal_rank() -> int:
+	return _clear_time_attack_record_rank
+
+func get_clear_counting_text() -> String:
+	return _language_text("COUNTING", "ZAEHLEN", "COMPTE", "CONTANDO", "CONTEGGIO")
 
 func get_clear_rank_text_value() -> String:
 	return _clear_rank_text
@@ -10821,6 +12641,13 @@ func get_clear_chrome_colors() -> Dictionary:
 			"header": Color(0.10, 0.20, 0.34, 0.98),
 			"score": Color(0.08, 0.16, 0.28, 0.98),
 			"badge": Color(0.82, 0.88, 0.96, 0.98),
+		}
+	if is_boss_course_result():
+		return {
+			"accent": Color(1.0, 0.38, 0.22, 0.98),
+			"header": Color(0.30, 0.08, 0.04, 0.98),
+			"score": Color(0.20, 0.06, 0.03, 0.98),
+			"badge": Color(0.86, 0.24, 0.12, 0.98),
 		}
 	return {
 		"accent": Color(0.96, 0.76, 0.20, 0.98),
@@ -10862,67 +12689,67 @@ func get_clear_rows() -> Array:
 	if _run_from_time_attack:
 		return [
 			{
-				"label": "TIME",
+				"label": _language_text("TIME", "ZEIT", "TEMPS", "TIEMPO", "TEMPO"),
 				"value": get_formatted_time(_clear_time_snapshot),
 			},
 			{
-				"label": "MEDAL",
+				"label": _language_text("MEDAL", "MEDAILLE", "MEDAILLE", "MEDALLA", "MEDAGLIA"),
 				"value": get_clear_time_attack_medal_text(),
 			},
 			{
-				"label": "BEST",
+				"label": _language_text("BEST", "BESTE", "MEILLEUR", "MEJOR", "MIGLIORE"),
 				"value": get_clear_time_attack_best_text(),
 			},
 			{
-				"label": "RECORD",
+				"label": _language_text("RECORD", "REKORD", "RECORD", "RECORD", "RECORD"),
 				"value": get_clear_time_attack_record_status_text(),
 			},
 		]
 	var rows: Array = [
 		{
-			"label": "TIME BONUS",
+			"label": _language_text("TIME BONUS", "ZEITBONUS", "BONUS TEMPS", "BONUS DE TIEMPO", "BONUS TEMPO"),
 			"value": str(_clear_time_bonus_remaining),
 		},
 		{
-			"label": "RING BONUS",
+			"label": _language_text("RING BONUS", "RING-BONUS", "BONUS ANNEAUX", "BONUS DE ANILLOS", "BONUS ANELLI"),
 			"value": str(_clear_ring_bonus_remaining),
 		},
 	]
 	if _selected_level_index < _level_names.size() - 2:
 		rows.append({
-			"label": "SP RING BONUS",
+			"label": _language_text("SP RING BONUS", "SP-RING-BONUS", "BONUS ANNEAUX SP", "BONUS ANILLOS SP", "BONUS ANELLI SP"),
 			"value": str(_clear_special_ring_bonus_remaining),
 		})
 	rows.append({
-			"label": "TOTAL SCORE",
+		"label": _language_text("TOTAL SCORE", "GESAMTPUNKTZAHL", "SCORE TOTAL", "PUNTOS TOTALES", "PUNTEGGIO TOTALE"),
 			"value": str(_clear_total_display_score),
 	})
 	return rows
 
 func get_clear_stage_label() -> String:
 	if _run_from_time_attack and _time_attack_boss_mode:
-		return "%s BOSS" % get_level_name_by_index(_selected_level_index)
+		return _language_text("%s BOSS", "%s BOSS", "%s BOSS", "%s JEFE", "%s BOSS") % get_level_name_by_index(_selected_level_index)
 	if _selected_level_index >= 0 and _selected_level_index < _level_names.size():
 		return _level_names[_selected_level_index]
-	return "STAGE"
+	return _language_text("STAGE", "STUFE", "STAGE", "FASE", "STAGE")
 
 func _get_time_attack_record_text() -> String:
 	if _clear_new_best_time:
-		return "NEW RECORD"
+		return _language_text("NEW RECORD", "NEUER REKORD", "NOUVEAU RECORD", "NUEVO RECORD", "NUOVO RECORD")
 	if _clear_rank_text == "A":
-		return "GREAT RUN"
+		return _language_text("GREAT RUN", "TOLLER LAUF", "SUPER COURSE", "GRAN CARRERA", "GRANDE CORSA")
 	if _clear_rank_text == "B":
-		return "GOOD TIME"
-	return "TRY AGAIN"
+		return _language_text("GOOD TIME", "GUTE ZEIT", "BON TEMPS", "BUEN TIEMPO", "BUON TEMPO")
+	return _language_text("TRY AGAIN", "NOCH EINMAL", "REESSAYER", "INTENTAR DE NUEVO", "RIPROVA")
 
 func get_clear_time_attack_record_status_text() -> String:
 	if not _run_from_time_attack:
 		return ""
 	if _clear_new_best_time:
-		return "RECORD UPDATED"
+		return _language_text("RECORD UPDATED", "REKORD AKTUALISIERT", "RECORD MIS A JOUR", "RECORD ACTUALIZADO", "RECORD AGGIORNATO")
 	if _clear_previous_best_time >= 0.0:
-		return "BEST STANDS"
-	return "FIRST CLEAR"
+		return _language_text("BEST STANDS", "BESTE ZEIT BLEIBT", "MEILLEUR TEMPS CONSERVE", "MEJOR TIEMPO SE MANTIENE", "MIGLIOR TEMPO INVARIATO")
+	return _language_text("FIRST CLEAR", "ERSTER ABSCHLUSS", "PREMIER PARCOURS", "PRIMERA VICTORIA", "PRIMO COMPLETAMENTO")
 
 func get_clear_time_attack_best_text() -> String:
 	if not _run_from_time_attack:
@@ -10930,23 +12757,29 @@ func get_clear_time_attack_best_text() -> String:
 	var best_time := _get_time_attack_best_time(_get_current_time_attack_record_key())
 	if best_time >= 0.0:
 		return get_formatted_time(best_time)
-	return "NO DATA"
+	return _language_text("NO DATA", "KEINE DATEN", "AUCUNE DONNEE", "SIN DATOS", "NESSUN DATO")
 
 func get_game_over_title_text() -> String:
-	return "TIME OVER" if _game_over_time_over else "GAME OVER"
+	return _language_text("TIME OVER", "ZEIT ABGELAUFEN", "TEMPS ECOULE", "TIEMPO AGOTADO", "TEMPO SCADUTO") if _game_over_time_over else _language_text("GAME OVER", "GAME OVER", "GAME OVER", "FIN DE LA PARTIDA", "GAME OVER")
 
 func get_game_over_primary_word() -> String:
-	return "TIME" if _game_over_time_over else "GAME"
+	return _language_text("TIME", "ZEIT", "TEMPS", "TIEMPO", "TEMPO") if _game_over_time_over else _language_text("GAME", "SPIEL", "JEU", "PARTIDA", "GIOCO")
 
 func get_game_over_secondary_word() -> String:
-	return "OVER"
+	return _language_text("OVER", "VORBEI", "TERMINE", "FIN", "FINE")
+
+func is_game_over_time_over() -> bool:
+	return _game_over_time_over
+
+func get_game_over_badge_text() -> String:
+	return _language_text("TIME", "ZEIT", "TEMPS", "TIEMPO", "TEMPO") if _game_over_time_over else _language_text("OVER", "VORBEI", "TERMINE", "FIN", "FINE")
 
 func get_game_over_prompt_text() -> String:
 	if _game_over_time_over:
-		return "TIME LIMIT REACHED"
-	if _run_from_time_attack:
-		return "RETRY THE ATTACK"
-	return "ALL LIVES LOST"
+		if _run_from_time_attack:
+			return _language_text("RETRY THE ATTACK", "ANGRIFF WIEDERHOLEN", "REESSAYER L'ATTAQUE", "REPETIR EL ATAQUE", "RIPROVA L'ATTACCO")
+		return _language_text("TIME LIMIT REACHED", "ZEITLIMIT ERREICHT", "LIMITE DE TEMPS ATTEINTE", "LIMITE DE TIEMPO ALCANZADO", "LIMITE DI TEMPO RAGGIUNTO")
+	return _language_text("ALL LIVES LOST", "ALLE LEBEN VERLOREN", "TOUTES LES VIES PERDUES", "TODAS LAS VIDAS PERDIDAS", "TUTTE LE VITE PERSE")
 
 func get_game_over_detail_text() -> String:
 	# The original Game Over task is an automatic cutscene; it does not expose
@@ -10956,19 +12789,19 @@ func get_game_over_detail_text() -> String:
 func get_game_over_status_text() -> String:
 	if not is_game_over_input_ready():
 		return ""
-	if _run_from_time_attack:
-		return "TIME ATTACK STANDBY"
-	return "RESTARTING STAGE" if _game_over_time_over else "RETURNING TO TITLE"
+	if _run_from_time_attack and _game_over_time_over:
+		return _language_text("TIME ATTACK STANDBY", "TIME ATTACK BEREIT", "TIME ATTACK EN ATTENTE", "TIME ATTACK EN ESPERA", "TIME ATTACK IN ATTESA")
+	return _language_text("RESTARTING STAGE", "SPIELSTUFE WIRD NEUGESTARTET", "REDEMARRAGE DU STAGE", "REINICIANDO LA FASE", "RIAVVIO DELLO STAGE") if _game_over_time_over else _language_text("RETURNING TO TITLE", "ZURUECK ZUM TITEL", "RETOUR AU TITRE", "VOLVIENDO AL TITULO", "RITORNO AL TITOLO")
 
 func get_game_over_progress() -> float:
-	var total_time: float = 3.6 if _run_from_time_attack else 4.6
+	var total_time: float = TIME_OVER_DURATION_SECONDS if _game_over_time_over else GAME_OVER_DURATION_SECONDS
 	if total_time <= 0.0:
 		return 1.0
 	return clampf(1.0 - (_game_over_timer / total_time), 0.0, 1.0)
 
 func get_game_over_slide_offset() -> float:
 	var progress := get_game_over_progress()
-	if _run_from_time_attack:
+	if _game_over_time_over:
 		if progress < 0.38:
 			return lerpf(420.0, 0.0, progress / 0.38)
 		if progress < 0.72:
@@ -11031,113 +12864,109 @@ func is_special_stage_results_screen() -> bool:
 	return is_special_stage_screen() and _special_stage_phase == 2
 
 func get_chaos_emeralds_title_text() -> String:
-	return "GET THE CHAOS EMERALDS!"
+	return _language_text("GET THE CHAOS EMERALDS!", "HOL DIR DIE CHAOS-EMERALDE!", "OBTENEZ LES EMERAUDES CHAOS!", "CONSIGUE LAS ESMERALDAS DEL CAOS!", "OTTIENI I CHAOS EMERALD!")
 
 func get_chaos_emeralds_prompt_text() -> String:
-	return "ALL COURSES CLEARED"
+	return _language_text("ALL COURSES CLEARED", "ALLE KURSE GESCHAFFT", "TOUS LES PARCOURS TERMINES", "TODAS LAS FASES COMPLETADAS", "TUTTI I CORSI COMPLETATI")
 
 func get_chaos_emeralds_detail_text() -> String:
-	return "EGGMAN WON'T GET AWAY NEXT TIME\n%s CONTINUE   %s SKIP" % [get_confirm_label(), get_secondary_label()]
+	return _language_text("EGGMAN WON'T GET AWAY NEXT TIME\n%s CONTINUE   %s SKIP", "EGGMAN ENTKOMMT DAS NAECHSTE MAL NICHT\n%s WEITER   %s UEBERSPRINGEN", "EGGMAN NE S'ECHAPPERA PAS LA PROCHAINE FOIS\n%s CONTINUER   %s PASSER", "EGGMAN NO ESCAPARA LA PROXIMA VEZ\n%s CONTINUAR   %s OMITIR", "EGGMAN NON SCAPPERA LA PROSSIMA VOLTA\n%s CONTINUA   %s SALTA") % [get_confirm_label(), get_secondary_label()]
 
 func get_chaos_emeralds_summary_text() -> String:
-	return "EMERALDS\nALL FOUND\n\nPROFILE\n%s\n\nNEXT\nTITLE SCREEN" % get_profile_name_text()
+	return _language_text("EMERALDS\nALL FOUND\n\nPROFILE\n%s\n\nNEXT\nTITLE SCREEN", "EMERALDE\nALLE GEFUNDEN\n\nPROFIL\n%s\n\nNAECHSTER SCHRITT\nTITELBILDSCHIRM", "EMERAUDES\nTOUTES TROUVEES\n\nPROFIL\n%s\n\nSUIVANT\nECRAN TITRE", "ESMERALDAS\nTODAS ENCONTRADAS\n\nPERFIL\n%s\n\nSIGUIENTE\nPANTALLA DE TITULO", "EMERALD\nTUTTI TROVATI\n\nPROFILO\n%s\n\nPROSSIMO\nSCHERMATA TITOLO") % get_profile_name_text()
 
 func get_missing_emeralds_title_text() -> String:
-	return "COLLECT ALL CHAOS EMERALDS"
+	return _language_text("COLLECT ALL CHAOS EMERALDS", "SAMMLE ALLE CHAOS-EMERALDE", "COLLECTEZ TOUTES LES EMERAUDES CHAOS", "RECOGE TODAS LAS ESMERALDAS DEL CAOS", "RACCOGLI TUTTI I CHAOS EMERALD")
 
 func get_missing_emeralds_prompt_text() -> String:
-	return "A NEW ADVENTURE AWAITS"
+	return _language_text("A NEW ADVENTURE AWAITS", "EIN NEUES ABENTEUER WARTET", "UNE NOUVELLE AVENTURE VOUS ATTEND", "UNA NUEVA AVENTURA TE ESPERA", "UNA NUOVA AVVENTURA TI ATTENDE")
 
 func get_missing_emeralds_detail_text() -> String:
-	return "%s CONTINUE   %s SKIP" % [get_confirm_label(), get_secondary_label()]
+	return _language_text("%s CONTINUE   %s SKIP", "%s WEITER   %s UEBERSPRINGEN", "%s CONTINUER   %s PASSER", "%s CONTINUAR   %s OMITIR", "%s CONTINUA   %s SALTA") % [get_confirm_label(), get_secondary_label()]
+
+func get_missing_emerald_found_label() -> String:
+	return _language_text("OK", "OK", "OK", "OK", "OK")
+
+func get_missing_emerald_unknown_label() -> String:
+	return "?"
 
 func get_missing_emeralds_count() -> int:
 	return get_chaos_emerald_count()
 
 func get_chaos_emeralds_rows() -> Array:
 	return [
-		{"label": "GREEN", "active": true},
-		{"label": "YELLOW", "active": true},
-		{"label": "BLUE", "active": true},
-		{"label": "RED", "active": true},
-		{"label": "PURPLE", "active": true},
-		{"label": "CYAN", "active": true},
-		{"label": "WHITE", "active": true},
+		{"label": _language_text("GREEN", "GRUEN", "VERT", "VERDE", "VERDE"), "active": true},
+		{"label": _language_text("YELLOW", "GELB", "JAUNE", "AMARILLO", "GIALLO"), "active": true},
+		{"label": _language_text("BLUE", "BLAU", "BLEU", "AZUL", "BLU"), "active": true},
+		{"label": _language_text("RED", "ROT", "ROUGE", "ROJO", "ROSSO"), "active": true},
+		{"label": _language_text("PURPLE", "VIOLETT", "VIOLET", "MORADO", "VIOLA"), "active": true},
+		{"label": _language_text("CYAN", "CYAN", "CYAN", "CIAN", "CIANO"), "active": true},
+		{"label": _language_text("WHITE", "WEISS", "BLANC", "BLANCO", "BIANCO"), "active": true},
 	]
 
 func get_to_be_continued_title_text() -> String:
-	return "TO BE CONTINUED"
+	return _language_text("TO BE CONTINUED", "FORTSETZUNG FOLGT", "A SUIVRE", "CONTINUARA", "CONTINUA")
 
 func get_to_be_continued_prompt_text() -> String:
-	return "NEXT STORY CHAPTER AHEAD"
+	return _language_text("NEXT STORY CHAPTER AHEAD", "NAECHSTES STORY-KAPITEL FOLGT", "PROCHAIN CHAPITRE A VENIR", "SIGUIENTE CAPITULO DE HISTORIA", "PROSSIMO CAPITOLO DELLA STORIA")
 
 func get_to_be_continued_detail_text() -> String:
-	return "%s CONTINUE   %s SKIP" % [get_confirm_label(), get_secondary_label()]
+	return _language_text("%s CONTINUE   %s SKIP", "%s WEITER   %s UEBERSPRINGEN", "%s CONTINUER   %s PASSER", "%s CONTINUAR   %s OMITIR", "%s CONTINUA   %s SALTA") % [get_confirm_label(), get_secondary_label()]
 
 func get_sega_logo_title_text() -> String:
 	return "SEGA"
 
 func get_sega_logo_prompt_text() -> String:
-	return "PRESENTED BY SEGA"
+	return _language_text("PRESENTED BY SEGA", "PRAESENTIERT VON SEGA", "PRESENTE PAR SEGA", "PRESENTADO POR SEGA", "PRESENTATO DA SEGA")
 
 func get_sega_logo_detail_text() -> String:
-	return "%s SKIP" % get_confirm_label()
+	return _language_text("%s SKIP", "%s UEBERSPRINGEN", "%s PASSER", "%s OMITIR", "%s SALTA") % get_confirm_label()
 
 func get_sonic_team_logo_title_text() -> String:
 	return "SONIC TEAM"
 
 func get_sonic_team_logo_prompt_text() -> String:
-	return "CREATED BY SONIC TEAM"
+	return _language_text("CREATED BY SONIC TEAM", "ERSTELLT VON SONIC TEAM", "CREE PAR SONIC TEAM", "CREADO POR SONIC TEAM", "CREATO DA SONIC TEAM")
 
 func get_sonic_team_logo_detail_text() -> String:
-	return "%s SKIP   AUTO TITLE" % get_confirm_label()
+	return _language_text("%s SKIP   AUTO TITLE", "%s UEBERSPRINGEN   AUTO-TITEL", "%s PASSER   TITRE AUTO", "%s OMITIR   TITULO AUTO", "%s SALTA   TITOLO AUTO") % get_confirm_label()
 
 func get_credits_title_text() -> String:
 	return "SONIC ADVANCE 2   %s" % get_ending_variant_label()
 
 func get_credits_page_text() -> String:
-	var pages := [
-		"CREDITS SLIDE 01\nSONIC ADVANCE 2",
-		"CREDITS SLIDE 02\nSONIC TEAM",
-		"CREDITS SLIDE 03\nORIGINAL GAME DESIGN",
-		"CREDITS SLIDE 04\nPROGRAMMING",
-		"CREDITS SLIDE 05\nART AND ANIMATION",
-		"CREDITS SLIDE 06\nMUSIC AND SOUND",
-		"CREDITS SLIDE 07\nSPECIAL THANKS",
-		"CREDITS SLIDE 08\nSONIC TEAM",
-		"CREDITS SLIDE 09\nCHARACTER ART",
-		"CREDITS SLIDE 10\nSTAGE ART",
-		"CREDITS SLIDE 11\nANIMATION",
-		"CREDITS SLIDE 12\nPROGRAMMING",
-		"CREDITS SLIDE 13\nTOOLS AND TECHNOLOGY",
-		"CREDITS SLIDE 14\nMUSIC",
-		"CREDITS SLIDE 15\nSOUND EFFECTS",
-		"CREDITS SLIDE 16\nVOICE AND LOCALIZATION",
-		"CREDITS SLIDE 17\nQUALITY ASSURANCE",
-		"CREDITS SLIDE 18\nSPECIAL THANKS",
-		"CREDITS SLIDE 19\nTHE SONIC COMMUNITY",
-		"CREDITS SLIDE 20\nSAT-R DEVELOPMENT",
-		"CREDITS SLIDE 21\nORIGINAL GAME DESIGN",
-		"CREDITS SLIDE 22\nSONIC TEAM",
-		"CREDITS SLIDE 23\nTHANK YOU",
-		"CREDITS SLIDE 24\nSONIC ADVANCE 2",
-		"CREDITS SLIDE 25\nSONIC ADVANCE RECLAIMED",
-	]
-	var page_text: String = str(pages[clampi(_credits_page, 0, pages.size() - 1)])
+	var page_text := _language_text("SOURCE TILEMAP %s", "QUELL-TILEMAP %s", "TILEMAP SOURCE %s", "TILEMAP FUENTE %s", "TILEMAP SORGENTE %s") % get_credits_source_tilemap()
 	if _ending_variant == ENDING_VARIANT_EXTRA and _credits_page == 0:
-		return "EXTRA ENDING\n" + page_text
+		return _language_text("EXTRA ENDING", "EXTRA-ENDE", "FIN EXTRA", "FINAL EXTRA", "FINALE EXTRA") + "\n" + page_text
 	if _ending_variant == ENDING_VARIANT_FINAL and _credits_page == 0:
-		return "FINAL ENDING\n" + page_text
+		return _language_text("FINAL ENDING", "FINALES ENDE", "FINALE", "FINAL", "FINALE") + "\n" + page_text
 	return page_text
 
+func get_credits_source_tilemap() -> String:
+	return CREDITS_SOURCE_TILES[clampi(_credits_page, 0, CREDITS_SOURCE_TILES.size() - 1)]
+
+func get_credits_source_group_text() -> String:
+	return _language_text("SOURCE GROUP %d / %d", "QUELLGRUPPE %d / %d", "GROUPE SOURCE %d / %d", "GRUPO FUENTE %d / %d", "GRUPPO SORGENTE %d / %d") % [get_credits_slide_group() + 1, CREDITS_SLIDE_GROUPS.size()]
+
 func get_credits_detail_text() -> String:
-	return "%s NEXT   %s SKIP" % [get_confirm_label(), get_secondary_label()]
+	return _language_text("AUTO ADVANCE   START SKIP", "AUTO-WEITER   START UEBERSPRINGEN", "AVANCE AUTO   START PASSER", "AVANCE AUTO   START OMITIR", "AVANZAMENTO AUTO   START SALTA")
+
+func get_credits_page_index_text() -> String:
+	return _language_text("PAGE %02d / %02d", "SEITE %02d / %02d", "PAGE %02d / %02d", "PAGINA %02d / %02d", "PAGINA %02d / %02d") % [_credits_page + 1, _credits_page_count]
 
 func get_credits_page_index() -> int:
 	return _credits_page
 
 func get_credits_page_count() -> int:
 	return _credits_page_count
+
+func get_credits_slide_group() -> int:
+	var page_start := 0
+	for group_index in range(CREDITS_SLIDE_GROUPS.size()):
+		page_start += int(CREDITS_SLIDE_GROUPS[group_index])
+		if _credits_page < page_start:
+			return group_index
+	return CREDITS_SLIDE_GROUPS.size() - 1
 
 func can_skip_credits() -> bool:
 	if _game_state != GAME_STATE_CREDITS:
@@ -11166,7 +12995,7 @@ func toggle_special_stage_pause() -> void:
 		return
 	_special_stage_paused = not _special_stage_paused
 	_special_stage_pause_cursor = 0
-	_status_text = "SPECIAL STAGE PAUSED" if _special_stage_paused else "SPECIAL STAGE RUN"
+	_status_text = get_special_stage_title_text() if _special_stage_paused else get_special_stage_title_text()
 
 func move_special_stage_pause_selection(direction: int) -> void:
 	if not _special_stage_paused:
@@ -11178,14 +13007,14 @@ func confirm_special_stage_pause_selection() -> void:
 		return
 	if _special_stage_pause_cursor == 0:
 		_special_stage_paused = false
-		_status_text = "SPECIAL STAGE RUN"
+		_status_text = get_special_stage_title_text()
 	else:
 		open_title_screen_and_skip_intro()
 
 func get_special_stage_pause_text() -> String:
 	var resume_prefix := "> " if _special_stage_pause_cursor == 0 else "  "
 	var quit_prefix := "> " if _special_stage_pause_cursor == 1 else "  "
-	return "PAUSED\n%sRESUME\n%sQUIT TO TITLE" % [resume_prefix, quit_prefix]
+	return _language_text("PAUSED\n%sRESUME\n%sQUIT TO TITLE", "PAUSIERT\n%sFORTSETZEN\n%sZUM TITEL", "EN PAUSE\n%sREPRENDRE\n%sQUITTER VERS LE TITRE", "EN PAUSA\n%sCONTINUAR\n%sSALIR AL TITULO", "IN PAUSA\n%sRIPRENDI\n%sTORNA AL TITOLO") % [resume_prefix, quit_prefix]
 
 func is_special_stage_paused() -> bool:
 	return _special_stage_paused
@@ -11195,30 +13024,44 @@ func is_special_stage_running_screen() -> bool:
 
 func get_special_stage_title_text() -> String:
 	if _special_stage_phase == 0:
-		return "SPECIAL STAGE"
+		return _language_text("SPECIAL STAGE", "SPECIAL STAGE", "SPECIAL STAGE", "SPECIAL STAGE", "SPECIAL STAGE")
 	if _special_stage_phase == 1:
-		return "SPECIAL STAGE RUN"
-	return "SPECIAL STAGE RESULTS"
+		return _language_text("SPECIAL STAGE RUN", "SPECIAL-STAGE-LAUF", "COURSE SPECIAL", "RECORRIDO ESPECIAL", "CORSA SPECIALE")
+	return _language_text("SPECIAL STAGE RESULTS", "SPECIAL-STAGE-ERGEBNIS", "RESULTAT SPECIAL", "RESULTADO ESPECIAL", "RISULTATO SPECIALE")
 
 func get_special_stage_prompt_text() -> String:
 	if _special_stage_paused:
-		return "SPECIAL STAGE PAUSED"
+		return _language_text("SPECIAL STAGE PAUSED", "SPECIAL STAGE PAUSIERT", "SPECIAL STAGE EN PAUSE", "SPECIAL STAGE EN PAUSA", "SPECIAL STAGE IN PAUSA")
 	if _special_stage_phase == 0:
-		return "CHAOS EMERALD CHALLENGE READY"
+		return _language_text("CHAOS EMERALD CHALLENGE READY", "CHAOS-EMERALD-HERAUSFORDERUNG BEREIT", "DEFI EMERAUDE CHAOS PRET", "DESAFIO DE ESMERALDA DEL CAOS LISTO", "SFIDA CHAOS EMERALD PRONTA")
 	if _special_stage_phase == 1:
-		return "COLLECT RINGS   LANE %d / 3" % (_special_stage_lane + 1)
+		return _language_text("COLLECT RINGS   LANE %d / 3", "RINGE SAMMELN   SPUR %d / 3", "COLLECTEZ LES ANNEAUX   VOIE %d / 3", "RECOGE ANILLOS   CARRIL %d / 3", "RACCOGLI ANELLI   CORSIA %d / 3") % (_special_stage_lane + 1)
 	if _special_stage_target_reached:
-		return "TARGET REACHED   EMERALD %02d" % (_special_stage_emerald_index + 1)
-	return "TARGET MISSED   TRY AGAIN"
+		return _language_text("TARGET REACHED   EMERALD %02d", "ZIEL ERREICHT   EMERALD %02d", "CIBLE ATTEINTE   EMERAUDE %02d", "OBJETIVO ALCANZADO   ESMERALDA %02d", "OBIETTIVO RAGGIUNTO   SMERALDO %02d") % (_special_stage_emerald_index + 1)
+	return _language_text("TARGET MISSED   TRY AGAIN", "ZIEL VERFEHLT   NOCH EINMAL", "CIBLE MANQUEE   REESSAYEZ", "OBJETIVO FALLIDO   INTENTA DE NUEVO", "OBIETTIVO MANCATO   RIPROVA")
 
 func get_special_stage_detail_text() -> String:
 	if _special_stage_paused:
-		return "%s RESUME   %s RESUME" % [get_confirm_label(), get_secondary_label()]
+		return _language_text("%s RESUME   %s RESUME", "%s FORTSETZEN   %s FORTSETZEN", "%s REPRENDRE   %s REPRENDRE", "%s CONTINUAR   %s CONTINUAR", "%s RIPRENDI   %s RIPRENDI") % [get_confirm_label(), get_secondary_label()]
 	if _special_stage_phase == 0:
-		return "7 SPECIAL RINGS FOUND\n%s ENTER   %s SKIP" % [get_confirm_label(), get_secondary_label()]
+		return _language_text("7 SPECIAL RINGS FOUND\n%s ENTER   %s SKIP", "7 SPEZIALRINGE GEFUNDEN\n%s EINGABE   %s UEBERSPRINGEN", "7 ANNEAUX SPECIAUX TROUVES\n%s ENTRER   %s PASSER", "7 ANILLOS ESPECIALES ENCONTRADOS\n%s ENTRAR   %s OMITIR", "7 ANELLI SPECIALI TROVATI\n%s INVIO   %s SALTA") % [get_confirm_label(), get_secondary_label()]
 	if _special_stage_phase == 1:
-		return "TIME %03d   RINGS %03d / %03d   %02d%% COMPLETE\nLEFT/RIGHT CHANGE LANES" % [ceili(_special_stage_timer), _special_stage_ring_count, _special_stage_run_target, int(_special_stage_progress * 100.0)]
-	return "RINGS %03d   POINTS %05d\n%s CONTINUE   %s SKIP" % [_special_stage_ring_count, _special_stage_score, get_confirm_label(), get_secondary_label()]
+		return _language_text("TIME %03d   RINGS %03d / %03d   %02d%% COMPLETE\nLEFT/RIGHT CHANGE LANES", "ZEIT %03d   RINGE %03d / %03d   %02d%% FERTIG\nLINKS/RECHTS SPUR WECHSELN", "TEMPS %03d   ANNEAUX %03d / %03d   %02d%% TERMINE\nGAUCHE/DROITE CHANGER DE VOIE", "TIEMPO %03d   ANILLOS %03d / %03d   %02d%% COMPLETO\nIZQ/DER CAMBIAR CARRIL", "TEMPO %03d   ANELLI %03d / %03d   %02d%% COMPLETO\nSINISTRA/DESTRA CAMBIA CORSIA") % [ceili(_special_stage_timer), _special_stage_ring_count, _special_stage_run_target, int(_special_stage_progress * 100.0)]
+	return _language_text("RINGS %03d   POINTS %05d\n%s CONTINUE   %s SKIP", "RINGE %03d   PUNKTE %05d\n%s WEITER   %s UEBERSPRINGEN", "ANNEAUX %03d   POINTS %05d\n%s CONTINUER   %s PASSER", "ANILLOS %03d   PUNTOS %05d\n%s CONTINUAR   %s OMITIR", "ANELLI %03d   PUNTI %05d\n%s CONTINUA   %s SALTA") % [_special_stage_ring_count, _special_stage_score, get_confirm_label(), get_secondary_label()]
+
+func get_special_stage_run_display_text(motion_label: String, robo_progress: int) -> String:
+	return _language_text("TIME %03d     RINGS %03d / %03d     CHAIN x%d     PROGRESS %02d%%     ROBO %02d%%     %s", "ZEIT %03d     RINGE %03d / %03d     KETTE x%d     FORTSCHRITT %02d%%     ROBO %02d%%     %s", "TEMPS %03d     ANNEAUX %03d / %03d     CHAINE x%d     PROGRES %02d%%     ROBO %02d%%     %s", "TIEMPO %03d     ANILLOS %03d / %03d     CADENA x%d     PROGRESO %02d%%     ROBO %02d%%     %s", "TEMPO %03d     ANELLI %03d / %03d     CATENA x%d     PROGRESSO %02d%%     ROBO %02d%%     %s") % [ceili(_special_stage_timer), _special_stage_ring_count, _special_stage_run_target, _special_stage_multiplier, int(_special_stage_progress * 100.0), robo_progress, motion_label]
+
+func get_special_stage_result_display_text() -> String:
+	return _language_text("RINGS %03d    SCORE %05d", "RINGE %03d    PUNKTE %05d", "ANNEAUX %03d    SCORE %05d", "ANILLOS %03d    PUNTOS %05d", "ANELLI %03d    PUNTEGGIO %05d") % [_special_stage_ring_count, _special_stage_score]
+
+func get_special_stage_motion_text() -> String:
+	if is_special_stage_jumping():
+		return _language_text("JUMP", "SPRUNG", "SAUT", "SALTO", "SALTO")
+	return _language_text("SPD %.1f", "GESCHW %.1f", "VIT %.1f", "VEL %.1f", "VEL %.1f") % get_special_stage_speed()
+
+func get_special_stage_new_label() -> String:
+	return _language_text("NEW", "NEU", "NOUVEAU", "NUEVO", "NUOVO")
 
 func get_special_stage_emerald_index() -> int:
 	return _special_stage_emerald_index
@@ -11231,6 +13074,12 @@ func get_special_stage_ring_count() -> int:
 
 func get_special_stage_timer() -> float:
 	return _special_stage_timer
+
+func get_special_stage_speed() -> float:
+	return _special_stage_speed
+
+func is_special_stage_jumping() -> bool:
+	return _special_stage_jump_timer > 0.0
 
 func get_special_stage_multiplier() -> int:
 	return _special_stage_multiplier
@@ -11266,35 +13115,35 @@ func get_copyright_prompt_text() -> String:
 	return "COPYRIGHT 2002 SEGA"
 
 func get_copyright_detail_text() -> String:
-	return "SONIC TEAM   ALL RIGHTS RESERVED\n%s CONTINUE   %s SKIP" % [get_confirm_label(), get_secondary_label()]
+	return _language_text("SONIC TEAM   ALL RIGHTS RESERVED\n%s CONTINUE   %s SKIP", "SONIC TEAM   ALLE RECHTE VORBEHALTEN\n%s WEITER   %s UEBERSPRINGEN", "SONIC TEAM   TOUS DROITS RESERVES\n%s CONTINUER   %s PASSER", "SONIC TEAM   TODOS LOS DERECHOS RESERVADOS\n%s CONTINUAR   %s OMITIR", "SONIC TEAM   TUTTI I DIRITTI RISERVATI\n%s CONTINUA   %s SALTA") % [get_confirm_label(), get_secondary_label()]
 
 func get_credits_end_title_text() -> String:
 	return "SONIC ADVANCE 2\n%s" % get_ending_variant_label()
 
 func get_credits_end_prompt_text() -> String:
 	if _ending_variant == ENDING_VARIANT_EXTRA:
-		return "TRUE AREA 53 COMPLETE"
+		return _language_text("TRUE AREA 53 COMPLETE", "TRUE AREA 53 KOMPLETT", "TRUE AREA 53 TERMINE", "TRUE AREA 53 COMPLETA", "TRUE AREA 53 COMPLETATA")
 	if _ending_variant == ENDING_VARIANT_FINAL:
-		return "FINAL ZONE COMPLETE"
-	return "CONGRATULATIONS" if get_chaos_emerald_count() >= 7 else "ADVENTURE COMPLETE"
+		return _language_text("FINAL ZONE COMPLETE", "FINALE ZONE KOMPLETT", "ZONE FINALE TERMINEE", "ZONA FINAL COMPLETA", "ZONA FINALE COMPLETATA")
+	return _language_text("CONGRATULATIONS", "GLUECKWUNSCH", "FELICITATIONS", "FELICIDADES", "CONGRATULAZIONI") if get_chaos_emerald_count() >= 7 else _language_text("ADVENTURE COMPLETE", "ABENTEUER KOMPLETT", "AVENTURE TERMINEE", "AVENTURA COMPLETA", "AVVENTURA COMPLETATA")
 
 func get_credits_end_detail_text() -> String:
-	var emerald_text := "ALL CHAOS EMERALDS COLLECTED" if get_chaos_emerald_count() >= 7 else "CHAOS EMERALDS: %d/7" % get_chaos_emerald_count()
-	return "%s\n%s\n%s CONTINUE   %s SKIP" % [get_ending_variant_label(), emerald_text, get_confirm_label(), get_secondary_label()]
+	var emerald_text := _language_text("ALL CHAOS EMERALDS COLLECTED", "ALLE CHAOS-EMERALDE GESAMMELT", "TOUS LES EMERAUDES CHAOS COLLECTEES", "TODAS LAS ESMERALDAS DEL CAOS RECOGIDAS", "TUTTI I CHAOS EMERALD RACCOLTI") if get_chaos_emerald_count() >= 7 else _language_text("CHAOS EMERALDS: %d/7", "CHAOS-EMERALDE: %d/7", "EMERAUDES CHAOS: %d/7", "ESMERALDAS DEL CAOS: %d/7", "CHAOS EMERALD: %d/7") % get_chaos_emerald_count()
+	return _language_text("%s\n%s\n%s CONTINUE   %s SKIP", "%s\n%s\n%s WEITER   %s UEBERSPRINGEN", "%s\n%s\n%s CONTINUER   %s PASSER", "%s\n%s\n%s CONTINUAR   %s OMITIR", "%s\n%s\n%s CONTINUA   %s SALTA") % [get_ending_variant_label(), emerald_text, get_confirm_label(), get_secondary_label()]
 
 func get_character_unlock_title_text() -> String:
-	return "NEW CHARACTER"
+	return _language_text("NEW CHARACTER", "NEUER CHARAKTER", "NOUVEAU PERSONNAGE", "NUEVO PERSONAJE", "NUOVO PERSONAGGIO")
 
 func get_character_unlock_prompt_text() -> String:
 	if _character_unlock_pending < 0:
-		return "CHARACTER UNLOCKED"
-	return "%s UNLOCKED" % _character_names[_character_unlock_pending]
+		return _language_text("CHARACTER UNLOCKED", "CHARAKTER FREIGESCHALTET", "PERSONNAGE DEVERROUILLE", "PERSONAJE DESBLOQUEADO", "PERSONAGGIO SBLOCCATO")
+	return _language_text("%s UNLOCKED", "%s FREIGESCHALTET", "%s DEVERROUILLE", "%s DESBLOQUEADO", "%s SBLOCCATO") % _character_names[_character_unlock_pending]
 
 func get_character_unlock_detail_text() -> String:
 	if _character_unlock_pending < 0:
-		return "%s CONTINUE   %s SKIP" % [get_confirm_label(), get_secondary_label()]
+		return _language_text("%s CONTINUE   %s SKIP", "%s WEITER   %s UEBERSPRINGEN", "%s CONTINUER   %s PASSER", "%s CONTINUAR   %s OMITIR", "%s CONTINUA   %s SALTA") % [get_confirm_label(), get_secondary_label()]
 	var description: String = str(_character_descriptions[_character_unlock_pending])
-	return "%s\n%s CONTINUE   %s SKIP" % [description, get_confirm_label(), get_secondary_label()]
+	return _language_text("%s\n%s CONTINUE   %s SKIP", "%s\n%s WEITER   %s UEBERSPRINGEN", "%s\n%s CONTINUER   %s PASSER", "%s\n%s CONTINUAR   %s OMITIR", "%s\n%s CONTINUA   %s SALTA") % [description, get_confirm_label(), get_secondary_label()]
 
 func skip_sonic_team_logo() -> void:
 	if _game_state != GAME_STATE_SONIC_TEAM:
@@ -11313,11 +13162,31 @@ func is_clear_input_ready() -> bool:
 	if _game_state != GAME_STATE_CLEAR:
 		return false
 	if _run_from_time_attack:
-		return _clear_input_lock_timer <= 0.0
+		return _clear_input_lock_timer <= 0.0 and _time_attack_exit_timer <= 0.0
 	return _clear_counting_done and _clear_input_lock_timer <= 0.0
 
 func is_time_attack_clear_screen() -> bool:
 	return is_clear_screen() and _run_from_time_attack
+
+func get_time_attack_results_progress() -> float:
+	if not is_time_attack_clear_screen():
+		return 0.0
+	return clampf(1.0 - (_clear_input_lock_timer / 2.666), 0.0, 1.0)
+
+func get_time_attack_results_title_text() -> String:
+	return _language_text("TIME ATTACK RESULTS", "TIME ATTACK ERGEBNIS", "RESULTAT TIME ATTACK", "RESULTADOS TIME ATTACK", "RISULTATI TIME ATTACK")
+
+func get_time_attack_results_time_text() -> String:
+	return get_formatted_time(_clear_time_snapshot)
+
+func get_time_attack_results_medal_text() -> String:
+	return get_clear_time_attack_medal_text()
+
+func get_time_attack_results_record_text() -> String:
+	return get_clear_time_attack_record_status_text()
+
+func get_time_attack_results_prompt_text() -> String:
+	return get_clear_footer_text()
 
 func is_title_screen() -> bool:
 	return _game_state == GAME_STATE_TITLE
@@ -11356,6 +13225,9 @@ func get_total_ported_score() -> int:
 	for score in _best_scores:
 		total += int(score)
 	return total
+
+func get_profile_score() -> int:
+	return _profile_score
 
 func restart_level() -> void:
 	_init_restart()
@@ -11431,6 +13303,9 @@ func get_platforms() -> Array:
 	return _level_state.platforms
 
 func _update_progress_for_clear() -> void:
+	# stage_results.c, time_attack_results.c, and the SA2 multiplayer finish
+	# path all add the collected ring count to SaveGame.score at clear time.
+	_profile_score = maxi(0, _profile_score + _player_state.rings)
 	var is_final_or_extra_stage := _selected_level_index >= _level_names.size() - 2
 	_special_stage_pending = _clear_from_goal and _clear_special_ring_snapshot >= 7 and not _run_from_time_attack and not _run_from_multiplayer and not is_final_or_extra_stage
 	if not _run_from_time_attack and not _run_from_multiplayer and _selected_character_index == 0:
@@ -11441,9 +13316,9 @@ func _update_progress_for_clear() -> void:
 	if _selected_level_index < _level_cleared_flags.size():
 		_level_cleared_flags[_selected_level_index] = true
 	if not _run_from_time_attack and not _run_from_multiplayer and _selected_level_index == _level_names.size() - 2:
-		# stage_results.c grants the next ending stage when Final Zone is cleared.
-		_unlocked_level_index = maxi(_unlocked_level_index, _level_names.size() - 1)
-		_true_area_unlocked = true
+		# The source only records Final Zone completion here. True Area is
+		# granted later by credits_end.c after the route and emerald checks.
+		_extra_zone_status = maxi(_extra_zone_status, 1)
 	_try_register_completed_character_route()
 	var can_unlock_true_area := _true_area_unlocked or _selected_level_index < _level_names.size() - 2
 	if _selected_character_index != 0 and _selected_level_index >= _level_names.size() - 2:
@@ -11469,6 +13344,7 @@ func _sync_active_character_level_progress() -> void:
 	if _character_unlocked_level_indices.is_empty():
 		return
 	var active_character := clampi(_selected_character_index, 0, _character_unlocked_level_indices.size() - 1)
+	_chaos_emerald_mask = _get_selected_chaos_emerald_mask()
 	_unlocked_level_index = clampi(int(_character_unlocked_level_indices[active_character]), 0, _level_names.size() - 1)
 	_selected_level_index = clampi(_selected_level_index, 0, _unlocked_level_index)
 
@@ -11476,7 +13352,7 @@ func _collect_chaos_emerald_for_clear() -> void:
 	# This is called after the special-stage target is reached. Its ring total
 	# is separate from the seven special rings collected in the course.
 	var emerald_index := _get_selected_zone_index()
-	_chaos_emerald_mask |= 1 << emerald_index
+	_set_selected_chaos_emerald_mask(_get_selected_chaos_emerald_mask() | (1 << emerald_index))
 	_try_register_completed_character_route()
 
 func _get_selected_zone_index() -> int:
@@ -11493,9 +13369,18 @@ func _try_register_completed_character_route() -> void:
 	if bool(_completed_character_routes[character_index]):
 		return
 	_completed_character_routes[character_index] = true
+	if _selected_level_index >= _level_names.size() - 2 and character_index != CHARACTER_NAMES_AMY_INDEX():
+		_credits_end_show_missing_emeralds = true
+	_refresh_story_unlocks()
+	_save_save_data()
+
+func _refresh_story_unlocks() -> void:
+	# credits_end.c unlocks extras after completed main-character routes, not
+	# merely after reaching Final Zone. True Area also requires Sonic's seven
+	# emeralds and all four main routes to be complete.
 	var completed_count := 0
-	for completed in _completed_character_routes:
-		if bool(completed):
+	for i in range(mini(4, _completed_character_routes.size())):
+		if bool(_completed_character_routes[i]):
 			completed_count += 1
 	if completed_count >= 1:
 		_tiny_chao_unlocked = true
@@ -11505,15 +13390,33 @@ func _try_register_completed_character_route() -> void:
 		_boss_time_attack_unlocked = true
 	if completed_count >= 4:
 		_character_unlocked[4] = true
+	var sonic_has_all_emeralds := not _chaos_emerald_masks.is_empty() and int(_chaos_emerald_masks[0]) == 127
+	if completed_count >= 4 and sonic_has_all_emeralds:
 		_true_area_unlocked = true
-	_save_save_data()
+		_extra_zone_status = maxi(_extra_zone_status, 1)
+		_unlocked_level_index = maxi(_unlocked_level_index, _level_names.size() - 1)
 
 func get_chaos_emerald_count() -> int:
+	var mask := _get_selected_chaos_emerald_mask()
 	var count := 0
 	for i in range(7):
-		if (_chaos_emerald_mask & (1 << i)) != 0:
+		if (mask & (1 << i)) != 0:
 			count += 1
 	return count
+
+func _get_selected_chaos_emerald_mask() -> int:
+	if _chaos_emerald_masks.is_empty():
+		_chaos_emerald_masks = [0, 0, 0, 0, 0]
+	var character_index := clampi(_selected_character_index, 0, _chaos_emerald_masks.size() - 1)
+	return clampi(int(_chaos_emerald_masks[character_index]), 0, 127)
+
+func _set_selected_chaos_emerald_mask(mask: int) -> void:
+	if _chaos_emerald_masks.is_empty():
+		_chaos_emerald_masks = [0, 0, 0, 0, 0]
+	var character_index := clampi(_selected_character_index, 0, _chaos_emerald_masks.size() - 1)
+	var sanitized := clampi(mask, 0, 127)
+	_chaos_emerald_masks[character_index] = sanitized
+	_chaos_emerald_mask = sanitized
 
 func _save_best_score(level_index: int, score: int) -> void:
 	if level_index < 0 or level_index >= _best_scores.size():
@@ -11560,14 +13463,16 @@ func _sanitize_button_bindings(raw_bindings: Variant) -> Array:
 	if raw_bindings is not Array:
 		return defaults
 	var source: Array = raw_bindings
+	var valid := ["JUMP", "ATTACK", "TRICK"]
 	var sanitized: Array = []
-	for i in range(defaults.size()):
-		if i < source.size():
-			var action_name := str(source[i]).strip_edges().to_upper()
-			sanitized.append(action_name if not action_name.is_empty() else defaults[i])
-		else:
-			sanitized.append(defaults[i])
-	return sanitized
+	for value in source:
+		var action := str(value).strip_edges().to_upper()
+		if valid.has(action) and not sanitized.has(action):
+			sanitized.append(action)
+	for action in valid:
+		if not sanitized.has(action):
+			sanitized.append(action)
+	return sanitized.slice(0, 3)
 
 func _sanitize_multiplayer_record_rows(raw_rows: Variant) -> Array:
 	if raw_rows is not Array:
@@ -11578,12 +13483,19 @@ func _sanitize_multiplayer_record_rows(raw_rows: Variant) -> Array:
 		if entry is not Dictionary:
 			continue
 		var row: Dictionary = entry
-		var name_text := str(row.get("name", "PLAYER")).strip_edges().to_upper()
+		# save.c stores six-character names and leaves empty table slots unused.
+		var name_text := str(row.get("name", "")).strip_edges().to_upper().substr(0, 6)
+		if name_text.is_empty():
+			continue
+		var player_id := maxi(0, int(row.get("player_id", 0)))
+		if player_id == 0:
+			player_id = _multiplayer_record_identity(name_text)
 		sanitized.append({
-			"name": name_text if not name_text.is_empty() else "PLAYER",
-			"wins": maxi(0, int(row.get("wins", 0))),
-			"losses": maxi(0, int(row.get("losses", 0))),
-			"draws": maxi(0, int(row.get("draws", 0))),
+			"player_id": player_id,
+			"name": name_text,
+			"wins": clampi(int(row.get("wins", 0)), 0, 99),
+			"losses": clampi(int(row.get("losses", 0)), 0, 99),
+			"draws": clampi(int(row.get("draws", 0)), 0, 99),
 		})
 		if sanitized.size() >= 10:
 			break
@@ -11591,29 +13503,39 @@ func _sanitize_multiplayer_record_rows(raw_rows: Variant) -> Array:
 		return _get_default_multiplayer_record_rows()
 	return sanitized
 
+func _multiplayer_record_identity(name: String) -> int:
+	var normalized := name.strip_edges().to_upper().substr(0, 6)
+	return posmod(normalized.hash(), 2147483646) + 1
+
 func _sanitize_multiplayer_record_totals(raw_totals: Variant) -> Dictionary:
 	if raw_totals is not Dictionary:
 		return _get_default_multiplayer_record_totals()
 	var totals: Dictionary = raw_totals
 	return {
-		"wins": maxi(0, int(totals.get("wins", 0))),
-		"losses": maxi(0, int(totals.get("losses", 0))),
-		"draws": maxi(0, int(totals.get("draws", 0))),
+		"wins": clampi(int(totals.get("wins", 0)), 0, 99),
+		"losses": clampi(int(totals.get("losses", 0)), 0, 99),
+		"draws": clampi(int(totals.get("draws", 0)), 0, 99),
 	}
 
-func _insert_or_promote_multiplayer_record(name: String) -> int:
-	var normalized_name := name.strip_edges().to_upper()
+func _insert_or_promote_multiplayer_record(name: String, player_id: int = 0) -> int:
+	var normalized_name := name.strip_edges().to_upper().substr(0, 6)
 	if normalized_name.is_empty():
 		normalized_name = "PLAYER"
+	var identity := maxi(0, player_id)
+	if identity == 0:
+		identity = _multiplayer_record_identity(normalized_name)
 	for i in range(_multi_record_rows.size()):
 		var row: Dictionary = _multi_record_rows[i] as Dictionary
-		if str(row.get("name", "")).to_upper() == normalized_name:
+		var row_id := maxi(0, int(row.get("player_id", 0)))
+		var same_identity := row_id == identity or (row_id == 0 and str(row.get("name", "")).to_upper() == normalized_name)
+		if same_identity and str(row.get("name", "")).to_upper() == normalized_name:
 			if i > 0:
 				var existing := row.duplicate(true)
 				_multi_record_rows.remove_at(i)
 				_multi_record_rows.insert(0, existing)
 			return 0
 	_multi_record_rows.insert(0, {
+		"player_id": identity,
 		"name": normalized_name,
 		"wins": 0,
 		"losses": 0,
@@ -11632,10 +13554,10 @@ func _record_own_multiplayer_result(result_key: String) -> void:
 		"DRAW":
 			_multiplayer_record_totals["draws"] = mini(99, int(_multiplayer_record_totals.get("draws", 0)) + 1)
 
-func _record_multiplayer_result(name: String, result_key: String) -> void:
+func _record_multiplayer_result(name: String, result_key: String, player_id: int = 0) -> void:
 	if name.strip_edges().is_empty():
 		return
-	var row_index := _insert_or_promote_multiplayer_record(name)
+	var row_index := _insert_or_promote_multiplayer_record(name, player_id)
 	var row: Dictionary = (_multi_record_rows[row_index] as Dictionary).duplicate(true)
 	match result_key:
 		"WIN":
@@ -11734,14 +13656,18 @@ func _sanitize_tiny_chao_roster(raw_value: Variant) -> Array:
 	return sanitized
 
 func _load_save_data() -> void:
+	_save_id = 0
 	_unlocked_level_index = 0
 	_character_unlocked_level_indices = [0, 0, 0, 0, 0]
 	_best_scores = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	_profile_score = 0
 	_level_cleared_flags = [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
 	_time_attack_best_times = {}
 	_time_attack_record_tables = {}
 	_difficulty_index = 0
+	_difficulty_before_edit = _difficulty_index
 	_time_limit_enabled = true
+	_time_limit_before_edit = _time_limit_enabled
 	_language_index = 1
 	_language_index_before_edit = _language_index
 	_button_bindings = ["JUMP", "ATTACK", "TRICK"]
@@ -11756,19 +13682,22 @@ func _load_save_data() -> void:
 	_selected_character_index = 0
 	_chaos_emeralds_message_seen = false
 	_chaos_emerald_mask = 0
+	_chaos_emerald_masks = [0, 0, 0, 0, 0]
 	_character_unlocked = [true, false, false, false, false]
 	_completed_character_routes = [false, false, false, false, false]
 	_extra_ending_credits_played = false
 	_tiny_chao_roster = _get_default_tiny_chao_roster()
 	_true_area_unlocked = false
-	if not FileAccess.file_exists(_save_path):
-		return
-	var file := FileAccess.open(_save_path, FileAccess.READ)
-	if file == null:
-		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	_extra_zone_status = 0
+	var parsed = _read_save_dictionary(_save_path)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		# save.c keeps older flash sectors available when the newest sector is
+		# corrupt. The backup provides the same recovery property for JSON saves.
+		parsed = _read_save_dictionary(_save_path + ".bak")
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
+	if parsed.has("save_id"):
+		_save_id = maxi(0, int(parsed["save_id"]))
 	if parsed.has("unlocked_level_index"):
 		_unlocked_level_index = clamp(int(parsed["unlocked_level_index"]), 0, _level_names.size() - 1)
 	if parsed.has("character_unlocked_level_indices") and parsed["character_unlocked_level_indices"] is Array:
@@ -11781,12 +13710,18 @@ func _load_save_data() -> void:
 		_true_area_unlocked = bool(parsed["true_area_unlocked"])
 	elif parsed.has("unlocked_level_index"):
 		_true_area_unlocked = int(parsed["unlocked_level_index"]) >= _level_names.size() - 1
+	if parsed.has("extra_zone_status"):
+		_extra_zone_status = clampi(int(parsed["extra_zone_status"]), 0, 2)
+	else:
+		_extra_zone_status = 2 if _true_area_unlocked else 0
 	if parsed.has("selected_level_index"):
 		_selected_level_index = clamp(int(parsed["selected_level_index"]), 0, _unlocked_level_index)
 	if parsed.has("best_scores") and parsed["best_scores"] is Array:
 		var scores: Array = parsed["best_scores"]
 		for i in range(min(scores.size(), _best_scores.size())):
 			_best_scores[i] = int(scores[i])
+	if parsed.has("profile_score"):
+		_profile_score = maxi(0, int(parsed["profile_score"]))
 	if parsed.has("level_cleared_flags") and parsed["level_cleared_flags"] is Array:
 		var flags: Array = parsed["level_cleared_flags"]
 		for i in range(min(flags.size(), _level_cleared_flags.size())):
@@ -11843,22 +13778,35 @@ func _load_save_data() -> void:
 		_extra_ending_credits_played = bool(parsed["extra_ending_credits_played"])
 	if parsed.has("chaos_emeralds_message_seen"):
 		_chaos_emeralds_message_seen = bool(parsed["chaos_emeralds_message_seen"])
-	if parsed.has("chaos_emerald_mask"):
-		_chaos_emerald_mask = clampi(int(parsed["chaos_emerald_mask"]), 0, 127)
+	if parsed.has("chaos_emerald_masks") and parsed["chaos_emerald_masks"] is Array:
+		var emerald_masks: Array = parsed["chaos_emerald_masks"]
+		for i in range(min(emerald_masks.size(), _chaos_emerald_masks.size())):
+			_chaos_emerald_masks[i] = clampi(int(emerald_masks[i]), 0, 127)
+	elif parsed.has("chaos_emerald_mask"):
+		# Older Godot saves had one global mask; preserve it for Sonic.
+		_chaos_emerald_masks[0] = clampi(int(parsed["chaos_emerald_mask"]), 0, 127)
+	_chaos_emerald_mask = _get_selected_chaos_emerald_mask()
 	_sync_active_character_level_progress()
 
 func _save_save_data() -> void:
+	if _save_id == 0:
+		_save_id = randi()
+		if _save_id == 0:
+			_save_id = 1
 	var payload := {
+		"save_id": _save_id,
 		"unlocked_level_index": _unlocked_level_index,
 		"character_unlocked_level_indices": _character_unlocked_level_indices,
 		"selected_level_index": _selected_level_index,
 		"best_scores": _best_scores,
+		"profile_score": _profile_score,
 		"level_cleared_flags": _level_cleared_flags,
 		"time_attack_best_times": _time_attack_best_times,
 		"time_attack_record_tables": _time_attack_record_tables,
 		"tiny_chao_unlocked": _tiny_chao_unlocked,
 		"tiny_chao_roster": _tiny_chao_roster,
 		"true_area_unlocked": _true_area_unlocked,
+		"extra_zone_status": _extra_zone_status,
 		"difficulty_index": _difficulty_index,
 		"time_limit_enabled": _time_limit_enabled,
 		"language_index": _language_index,
@@ -11875,26 +13823,52 @@ func _save_save_data() -> void:
 		"extra_ending_credits_played": _extra_ending_credits_played,
 		"chaos_emeralds_message_seen": _chaos_emeralds_message_seen,
 		"chaos_emerald_mask": _chaos_emerald_mask,
+		"chaos_emerald_masks": _chaos_emerald_masks,
 	}
+	var serialized := JSON.stringify(payload)
+	var previous := FileAccess.open(_save_path, FileAccess.READ)
+	if previous:
+		var previous_text := previous.get_as_text()
+		previous.close()
+		var backup := FileAccess.open(_save_path + ".bak", FileAccess.WRITE)
+		if backup:
+			backup.store_string(previous_text)
+			backup.close()
 	var file := FileAccess.open(_save_path, FileAccess.WRITE)
 	if file == null:
 		return
-	file.store_string(JSON.stringify(payload))
+	file.store_string(serialized)
+	file.close()
+
+func _read_save_dictionary(path: String) -> Variant:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return null
+	var parser := JSON.new()
+	if parser.parse(file.get_as_text()) != OK:
+		return null
+	return parser.data
 
 func _reset_progress() -> void:
+	# save.c preserves the selected language when it creates a fresh save.
+	var preserved_language := clampi(_language_index, 0, get_language_items().size() - 1)
 	_unlocked_level_index = 0
 	_character_unlocked_level_indices = [0, 0, 0, 0, 0]
 	_selected_level_index = 0
 	_best_scores = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	_profile_score = 0
 	_level_cleared_flags = [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
 	_time_attack_best_times = {}
 	_time_attack_record_tables = {}
 	_tiny_chao_unlocked = false
 	_tiny_chao_roster = _get_default_tiny_chao_roster()
 	_true_area_unlocked = false
+	_extra_zone_status = 0
 	_difficulty_index = 0
+	_difficulty_before_edit = _difficulty_index
 	_time_limit_enabled = true
-	_language_index = 1
+	_time_limit_before_edit = _time_limit_enabled
+	_language_index = preserved_language
 	_button_bindings = ["JUMP", "ATTACK", "TRICK"]
 	_button_bindings_before_edit = _button_bindings.duplicate()
 	_sound_test_track_index = 0
@@ -11910,7 +13884,36 @@ func _reset_progress() -> void:
 	_extra_ending_credits_played = false
 	_chaos_emeralds_message_seen = false
 	_chaos_emerald_mask = 0
+	_chaos_emerald_masks = [0, 0, 0, 0, 0]
 	_save_reset_pending = false
+	_save_save_data()
+
+func load_completed_save_game() -> void:
+	# save.c's GenerateCompletedSaveGame builds a profile with every route,
+	# character, emerald, and extra menu unlocked. Godot stores the highest
+	# usable level index rather than the source's unlocked-level count.
+	var final_zone_index := maxi(0, _level_names.size() - 2)
+	var true_area_index := maxi(0, _level_names.size() - 1)
+	_unlocked_level_index = true_area_index
+	_character_unlocked_level_indices = [true_area_index, final_zone_index, final_zone_index, final_zone_index, final_zone_index]
+	_selected_level_index = 0
+	_profile_score = 0
+	_extra_zone_status = 2
+	_level_cleared_flags.fill(true)
+	_best_scores.fill(0)
+	_time_attack_best_times = {}
+	_time_attack_record_tables = {}
+	_character_unlocked = [true, true, true, true, true]
+	_completed_character_routes = [true, true, true, true, true]
+	_chaos_emerald_masks = [127, 127, 127, 127, 127]
+	_chaos_emerald_mask = 127
+	_sound_test_unlocked = true
+	_boss_time_attack_unlocked = true
+	_tiny_chao_unlocked = true
+	_true_area_unlocked = true
+	_extra_ending_credits_played = true
+	_chaos_emeralds_message_seen = false
+	_sync_active_character_level_progress()
 	_save_save_data()
 
 func _calculate_clear_rank(time_seconds: float, score: int) -> String:

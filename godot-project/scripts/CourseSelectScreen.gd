@@ -14,6 +14,7 @@ var _left_stage: ColorRect = null
 var _right_stage: ColorRect = null
 var _prompt_band: ColorRect = null
 var _launch_fade: ColorRect = null
+var _intro_fade: ColorRect = null
 var _map_card: ColorRect = null
 var _map_frame: ColorRect = null
 var _summary_card: ColorRect = null
@@ -109,6 +110,7 @@ func _ensure_chrome() -> void:
 	_right_stage = _ensure_rect("CourseRightStage", Rect2(576.0, 246.0, 498.0, 256.0), Color(0.10, 0.16, 0.28, 0.94))
 	_prompt_band = _ensure_rect("CoursePromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.92))
 	_launch_fade = _ensure_rect("LaunchFade", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.92, 0.97, 1.0, 0.0))
+	_intro_fade = _ensure_rect("CourseIntroFade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.05, 0.10, 0.0))
 	_map_card = _ensure_rect("CourseMapCard", Rect2(224.0, 276.0, 234.0, 188.0), Color(0.07, 0.13, 0.24, 0.97))
 	_map_frame = _ensure_rect("CourseMapFrame", Rect2(238.0, 290.0, 206.0, 160.0), Color(0.10, 0.18, 0.32, 0.96))
 	_summary_card = _ensure_rect("CourseSummaryCard", Rect2(218.0, 470.0, 314.0, 44.0), Color(0.07, 0.13, 0.23, 0.95))
@@ -143,6 +145,7 @@ func _ensure_chrome() -> void:
 	_right_stage.z_index = -5
 	_prompt_band.z_index = -5
 	_launch_fade.z_index = 3
+	_intro_fade.z_index = 4
 	_map_card.z_index = -4
 	_map_frame.z_index = -3
 	_summary_card.z_index = -3
@@ -235,10 +238,11 @@ func _update_summary() -> void:
 		_type_label.text = CoreBridge.get_course_select_type_label()
 		_type_label.modulate = Color(0.96, 0.98, 0.90, 0.98)
 	if _badge_label:
-		_badge_label.text = "ST"
+		_badge_label.text = CoreBridge.get_menu_badge_text("ST")
 		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.98)
 	_update_banner()
 	_update_launch_fade()
+	_update_intro_fade()
 
 func _update_banner() -> void:
 	var selected_text := CoreBridge.get_course_select_banner_text()
@@ -277,9 +281,20 @@ func _update_launch_fade() -> void:
 	else:
 		_launch_fade.color = Color(0.94, 0.98, 1.0, 0.0)
 
+func _update_intro_fade() -> void:
+	if _intro_fade == null:
+		return
+	if CoreBridge.is_course_select_intro():
+		var progress := CoreBridge.get_course_select_intro_progress()
+		_intro_fade.color = Color(0.02, 0.05, 0.10, 0.88 * (1.0 - progress))
+	else:
+		_intro_fade.color = Color(0.02, 0.05, 0.10, 0.0)
+
 func _update_map() -> void:
 	var nodes: Array = CoreBridge.get_course_select_map_nodes()
 	var marker_pulse := 0.5 + 0.5 * sin(_map_pulse_time * 6.0)
+	var unlock_phase := CoreBridge.get_course_select_unlock_phase()
+	var unlock_progress := CoreBridge.get_course_select_unlock_progress()
 	var course_positions: Dictionary = {}
 	for node_data in nodes:
 		course_positions[int(node_data.get("index", -1))] = Vector2(node_data.get("position", Vector2.ZERO))
@@ -297,7 +312,11 @@ func _update_map() -> void:
 		_map_links[i].position = Vector2(254.0 + minf(from_pos.x, to_pos.x), 310.0 + minf(from_pos.y, to_pos.y))
 		_map_links[i].size = Vector2(width, height)
 		var active_path := bool(from_node.get("unlocked", false)) and bool(to_node.get("unlocked", false))
-		_map_links[i].color = Color(0.30, 0.64, 0.94, 0.92) if active_path else Color(0.18, 0.34, 0.54, 0.56)
+		var path_color := Color(0.30, 0.64, 0.94, 0.92) if active_path else Color(0.18, 0.34, 0.54, 0.56)
+		if CoreBridge.is_course_select_unlocking() and i == nodes.size() - 2:
+			var reveal_alpha := 0.18 + (unlock_progress * 0.82) if unlock_phase == CoreBridge.COURSE_UNLOCK_PHASE_PATH else 1.0
+			path_color = Color(1.0, 0.78, 0.28, reveal_alpha)
+		_map_links[i].color = path_color
 	for i in range(_map_nodes.size()):
 		var visible := i < nodes.size()
 		_map_nodes[i].visible = visible
@@ -399,13 +418,14 @@ func _update_rows() -> void:
 		_status_labels[i].text = str(row.get("status", ""))
 		_row_labels[i].modulate = Color(1.0, 0.98, 0.84, 1.0) if selected else Color(0.98, 0.98, 1.0, 1.0)
 		_value_labels[i].modulate = Color(0.70, 0.84, 1.0, 0.94)
-		match str(row.get("status", "")):
-			"CLEARED":
-				_status_labels[i].modulate = Color(0.36, 0.92, 0.56, 1.0)
-			"READY", "UNLOCKED":
-				_status_labels[i].modulate = Color(1.0, 0.88, 0.40, 1.0)
-			_:
-				_status_labels[i].modulate = Color(0.78, 0.84, 0.94, 0.92)
+		var cleared := bool(row.get("cleared", false))
+		var unlocked := bool(row.get("unlocked", false))
+		if cleared:
+			_status_labels[i].modulate = Color(0.36, 0.92, 0.56, 1.0)
+		elif unlocked:
+			_status_labels[i].modulate = Color(1.0, 0.88, 0.40, 1.0)
+		else:
+			_status_labels[i].modulate = Color(0.78, 0.84, 0.94, 0.92)
 
 func _update_chrome() -> void:
 	var banner_active := CoreBridge.is_course_select_settling()
@@ -464,6 +484,8 @@ func _set_screen_visible(screen_visible: bool) -> void:
 		_prompt_band.visible = screen_visible
 	if _launch_fade:
 		_launch_fade.visible = screen_visible
+	if _intro_fade:
+		_intro_fade.visible = screen_visible
 	if _map_card:
 		_map_card.visible = screen_visible
 	if _map_frame:

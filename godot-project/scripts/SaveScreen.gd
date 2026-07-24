@@ -153,20 +153,21 @@ func _update_option_labels() -> void:
 		_row_cards[i].position.y = top + lift
 		_option_labels[i].position.y = top - 3.0 + lift
 		_meta_labels[i].position.y = top - 3.0 + lift
-		var item_text := str(items[i])
-		var meta_text := "%s   %s" % [CoreBridge.get_options_item_meta(i), CoreBridge.get_options_item_status(i)]
-		_row_cards[i].color = _get_row_card_color(selected, item_text)
+			var item_text := str(items[i])
+			var item_visual := CoreBridge.get_options_item_visual(i)
+			var meta_text := "%s   %s" % [CoreBridge.get_options_item_meta(i), CoreBridge.get_options_item_status(i)]
+			_row_cards[i].color = _get_row_card_color(selected, item_visual)
 		_option_labels[i].text = item_text
 		_option_labels[i].modulate = Color(1.0, 0.98, 0.84, 1.0) if selected else Color(0.92, 0.96, 1.0, 0.94)
 		_meta_labels[i].text = meta_text
-		_meta_labels[i].modulate = _get_meta_color(item_text, meta_text)
+			_meta_labels[i].modulate = _get_meta_color(item_visual)
 
 func _update_summary() -> void:
 	if _summary_label:
 		_summary_label.text = CoreBridge.get_options_summary_text().replace("   ", "\n")
 		_summary_label.modulate = Color(0.90, 0.96, 1.0, 0.98)
 	if _badge_label:
-		_badge_label.text = "OPTIONS"
+		_badge_label.text = CoreBridge.get_options_badge_text()
 		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
 
 func _update_chrome() -> void:
@@ -195,21 +196,21 @@ func _update_chrome() -> void:
 	if _summary_card:
 		_summary_card.color = summary
 
-func _get_row_card_color(selected: bool, item_text: String) -> Color:
+func _get_row_card_color(selected: bool, item_visual: String) -> Color:
 	if CoreBridge.is_save_reset_pending():
 		return Color(0.46, 0.18, 0.12, 0.98) if selected else Color(0.26, 0.12, 0.10, 0.96)
 	if selected:
 		return Color(0.20, 0.40, 0.66, 0.98)
-	if item_text == "DELETE GAME DATA":
+	if item_visual == "erase":
 		return Color(0.18, 0.10, 0.12, 0.96)
 	return Color(0.10, 0.16, 0.29, 0.96)
 
-func _get_meta_color(item_text: String, meta_text: String) -> Color:
+func _get_meta_color(item_visual: String) -> Color:
 	if CoreBridge.is_save_reset_pending():
 		return Color(1.0, 0.84, 0.78, 0.96)
-	if item_text == "DELETE GAME DATA":
+	if item_visual == "erase":
 		return Color(0.98, 0.78, 0.78, 0.94)
-	if meta_text.contains("PROFILE"):
+	if item_visual == "profile":
 		return Color(0.78, 0.96, 0.84, 0.96)
 	return Color(0.80, 0.90, 1.0, 0.92)
 

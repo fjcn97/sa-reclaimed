@@ -215,13 +215,13 @@ func _update_summary() -> void:
 		_summary_label.text = CoreBridge.get_name_entry_summary_text()
 		_summary_label.modulate = Color(0.98, 0.98, 1.0, 0.98)
 	if _guide_label:
-		_guide_label.text = "CHARACTER BOARD   Q/E MOVE SLOT"
+		_guide_label.text = CoreBridge.get_name_entry_guide_text()
 		_guide_label.modulate = Color(0.74, 0.86, 1.0, 0.92)
 	if _preview_title_label:
-		_preview_title_label.text = "LIVE NAME PREVIEW"
+		_preview_title_label.text = CoreBridge.get_name_entry_preview_title_text()
 		_preview_title_label.modulate = Color(0.74, 0.88, 1.0, 0.96)
 	if _badge_label:
-		_badge_label.text = "NAME"
+		_badge_label.text = CoreBridge.get_menu_badge_text("NAME")
 		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
 
 func _update_chrome() -> void:

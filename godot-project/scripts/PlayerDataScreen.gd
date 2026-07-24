@@ -167,7 +167,7 @@ func _update_header() -> void:
 	if _badge_label == null:
 		_badge_label = _ensure_label("BadgeLabel", Vector2(902.0, 316.0), Vector2(200.0, 34.0), 22)
 	if _badge_label:
-		_badge_label.text = "PROFILE"
+		_badge_label.text = CoreBridge.get_menu_badge_text("PROFILE")
 		_badge_label.modulate = Color(0.18, 0.30, 0.24, 0.98)
 
 func _update_chrome() -> void:
@@ -203,6 +203,7 @@ func _update_rows() -> void:
 			continue
 		var row: Dictionary = rows[i]
 		var is_selected := bool(row.get("selected", false))
+		var is_profile := bool(row.get("profile", false))
 		var status_text := str(row.get("status", ""))
 		var top := 320.0 + float(i) * 28.0
 		var lift := -2.0 if is_selected else 0.0
@@ -217,10 +218,8 @@ func _update_rows() -> void:
 		_status_labels[i].text = status_text
 		_row_labels[i].modulate = Color(1.0, 1.0, 1.0, 1.0) if is_selected else Color(0.18, 0.30, 0.24, 1.0)
 		_value_labels[i].modulate = Color(0.96, 0.99, 0.98, 0.96) if is_selected else Color(0.30, 0.48, 0.38, 0.94)
-		if status_text == "PROFILE":
+		if is_profile:
 			_status_labels[i].modulate = Color(0.96, 1.0, 0.98, 1.0) if is_selected else Color(0.18, 0.46, 0.30, 1.0)
-		elif status_text == "ERASE":
-			_status_labels[i].modulate = Color(1.0, 0.96, 0.96, 1.0) if is_selected else Color(0.84, 0.28, 0.20, 1.0)
 		else:
 			_status_labels[i].modulate = Color(0.96, 1.0, 0.98, 1.0) if is_selected else Color(0.34, 0.50, 0.40, 0.92)
 

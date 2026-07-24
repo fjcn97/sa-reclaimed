@@ -36,10 +36,10 @@ func _ready() -> void:
 	_ensure_chrome()
 	_ensure_header_labels()
 	_ensure_rows()
-	_set_screen_visible(CoreBridge.is_clear_screen())
+	_set_screen_visible(CoreBridge.is_clear_screen() and not CoreBridge.is_time_attack_clear_screen())
 
 func _process(_delta: float) -> void:
-	var clear_mode: bool = CoreBridge.is_clear_screen()
+	var clear_mode: bool = CoreBridge.is_clear_screen() and not CoreBridge.is_time_attack_clear_screen()
 	_set_screen_visible(clear_mode)
 	if not clear_mode:
 		return
@@ -145,21 +145,26 @@ func _update_header() -> void:
 		_stage_label.modulate = Color(1.0, 0.95, 0.68, 1.0)
 	if _rank_label:
 		_rank_label.text = CoreBridge.get_clear_result_badge_text()
-		_rank_label.add_theme_font_size_override("font_size", 36 if CoreBridge.get_clear_title_text() == "TIME ATTACK" else 56)
+		_rank_label.add_theme_font_size_override("font_size", 36 if CoreBridge.is_clear_time_attack_mode() else 56)
 		_rank_label.modulate = Color(0.16, 0.10, 0.02, 1.0)
 	if _record_label:
-		_record_label.text = CoreBridge.get_clear_time_attack_record_status_text() if CoreBridge.get_clear_title_text() == "TIME ATTACK" else ("COUNTING" if not CoreBridge.is_clear_input_ready() else CoreBridge.get_clear_rank_text_value())
-		_record_label.modulate = Color(0.10, 0.20, 0.34, 1.0) if CoreBridge.get_clear_title_text() == "TIME ATTACK" else Color(0.22, 0.12, 0.03, 1.0)
+		_record_label.text = CoreBridge.get_clear_time_attack_record_status_text() if CoreBridge.is_clear_time_attack_mode() else (CoreBridge.get_clear_counting_text() if not CoreBridge.is_clear_input_ready() else CoreBridge.get_clear_rank_text_value())
+		_record_label.modulate = Color(0.10, 0.20, 0.34, 1.0) if CoreBridge.is_clear_time_attack_mode() else Color(0.22, 0.12, 0.03, 1.0)
 		_record_label.visible = true
 
 func _update_rows() -> void:
 	var rows: Array = CoreBridge.get_clear_rows()
 	for i in range(_row_labels.size()):
+		var row_visible := i < rows.size()
+		_row_labels[i].visible = row_visible
+		_value_labels[i].visible = row_visible
+		if not row_visible:
+			continue
 		var row: Dictionary = rows[i]
 		_row_labels[i].text = str(row.get("label", ""))
 		_value_labels[i].text = str(row.get("value", ""))
-		_row_labels[i].modulate = Color(0.74, 0.90, 1.0, 1.0) if CoreBridge.get_clear_title_text() == "TIME ATTACK" else Color(0.98, 0.88, 0.44, 1.0)
-		_value_labels[i].modulate = Color(1.0, 0.96, 0.84, 1.0) if CoreBridge.get_clear_title_text() == "TIME ATTACK" else Color(0.98, 0.98, 1.0, 1.0)
+		_row_labels[i].modulate = Color(0.74, 0.90, 1.0, 1.0) if CoreBridge.is_clear_time_attack_mode() else Color(0.98, 0.88, 0.44, 1.0)
+		_value_labels[i].modulate = Color(1.0, 0.96, 0.84, 1.0) if CoreBridge.is_clear_time_attack_mode() else Color(0.98, 0.98, 1.0, 1.0)
 
 func _update_chrome() -> void:
 	var colors := CoreBridge.get_clear_chrome_colors()
@@ -195,30 +200,28 @@ func _update_chrome() -> void:
 func _update_rank_style() -> void:
 	if _rank_badge == null or _rank_label == null:
 		return
-	if CoreBridge.get_clear_title_text() == "TIME ATTACK":
-		match _rank_label.text:
-			"GOLD":
+	if CoreBridge.is_clear_time_attack_mode():
+		match CoreBridge.get_clear_time_attack_medal_rank():
+			1:
 				_rank_badge.color = Color(0.92, 0.84, 0.28, 0.98)
-			"SILVER":
+			2:
 				_rank_badge.color = Color(0.78, 0.84, 0.94, 0.98)
-			"BRONZE":
+			3:
 				_rank_badge.color = Color(0.74, 0.52, 0.24, 0.98)
-			"COPPER":
-				_rank_badge.color = Color(0.66, 0.44, 0.22, 0.98)
 			_:
 				_rank_badge.color = Color(0.44, 0.58, 0.76, 0.98)
 		return
 	match _rank_label.text:
 		"S":
-			_rank_badge.color = Color(0.92, 0.86, 0.34, 0.98) if CoreBridge.get_clear_title_text() == "TIME ATTACK" else Color(0.96, 0.82, 0.24, 0.98)
+			_rank_badge.color = Color(0.92, 0.86, 0.34, 0.98) if CoreBridge.is_clear_time_attack_mode() else Color(0.96, 0.82, 0.24, 0.98)
 		"A":
-			_rank_badge.color = Color(0.64, 0.84, 1.0, 0.98) if CoreBridge.get_clear_title_text() == "TIME ATTACK" else Color(0.86, 0.76, 0.34, 0.98)
+			_rank_badge.color = Color(0.64, 0.84, 1.0, 0.98) if CoreBridge.is_clear_time_attack_mode() else Color(0.86, 0.76, 0.34, 0.98)
 		"B":
-			_rank_badge.color = Color(0.54, 0.72, 0.92, 0.98) if CoreBridge.get_clear_title_text() == "TIME ATTACK" else Color(0.72, 0.74, 0.78, 0.98)
+			_rank_badge.color = Color(0.54, 0.72, 0.92, 0.98) if CoreBridge.is_clear_time_attack_mode() else Color(0.72, 0.74, 0.78, 0.98)
 		"C":
-			_rank_badge.color = Color(0.38, 0.58, 0.80, 0.98) if CoreBridge.get_clear_title_text() == "TIME ATTACK" else Color(0.66, 0.46, 0.22, 0.98)
+			_rank_badge.color = Color(0.38, 0.58, 0.80, 0.98) if CoreBridge.is_clear_time_attack_mode() else Color(0.66, 0.46, 0.22, 0.98)
 		_:
-			_rank_badge.color = Color(0.26, 0.40, 0.64, 0.98) if CoreBridge.get_clear_title_text() == "TIME ATTACK" else Color(0.56, 0.28, 0.16, 0.98)
+			_rank_badge.color = Color(0.26, 0.40, 0.64, 0.98) if CoreBridge.is_clear_time_attack_mode() else Color(0.56, 0.28, 0.16, 0.98)
 
 func _set_screen_visible(screen_visible: bool) -> void:
 	if _backdrop:

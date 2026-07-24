@@ -169,7 +169,7 @@ func _update_summary() -> void:
 		_mode_label.text = CoreBridge.get_time_attack_lobby_mode_text()
 		_mode_label.modulate = Color(1.0, 0.88, 0.40, 1.0)
 	if _record_label:
-		_record_label.text = "BEST\n%s" % CoreBridge.get_time_attack_lobby_record_text()
+		_record_label.text = CoreBridge.get_time_attack_lobby_record_label_text()
 		_record_label.modulate = Color(1.0, 0.96, 0.88, 1.0)
 	if _character_card:
 		_character_card.color = colors.get("card", Color(0.09, 0.15, 0.28, 0.96))
@@ -237,7 +237,7 @@ func _update_rows() -> void:
 		_status_labels[i].position = Vector2(834.0, top + 7.0 + lift)
 		_option_labels[i].modulate = Color(1.0, 0.98, 0.84, 1.0) if selected else Color(0.96, 0.98, 1.0, 1.0)
 		_meta_labels[i].modulate = Color(0.72, 0.84, 0.98, 0.94)
-		_status_labels[i].modulate = Color(1.0, 0.88, 0.40, 1.0) if str(row.get("status", "")) == "READY" else Color(0.78, 0.84, 0.94, 0.92)
+		_status_labels[i].modulate = Color(1.0, 0.88, 0.40, 1.0) if i == 0 else Color(0.78, 0.84, 0.94, 0.92)
 
 func _set_screen_visible(screen_visible: bool) -> void:
 	if _backdrop:

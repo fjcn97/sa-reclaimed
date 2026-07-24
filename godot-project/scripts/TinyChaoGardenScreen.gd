@@ -203,9 +203,9 @@ func _update_option_labels() -> void:
 		_status_labels[i].text = status_text
 		_option_labels[i].modulate = Color(1.0, 1.0, 1.0, 1.0) if is_selected else Color(0.16, 0.28, 0.12, 0.98)
 		_meta_labels[i].modulate = Color(0.96, 1.0, 0.90, 0.96) if is_selected else Color(0.32, 0.46, 0.20, 0.94)
-		if status_text == "READY":
+		if bool(row.get("ready", false)):
 			_status_labels[i].modulate = Color(0.14, 0.54, 0.12, 1.0) if not is_selected else Color(0.98, 1.0, 0.90, 1.0)
-		elif name_text == "BACK":
+		elif bool(row.get("back", false)):
 			_status_labels[i].modulate = Color(0.72, 0.40, 0.18, 0.96)
 		else:
 			_status_labels[i].modulate = Color(0.28, 0.44, 0.18, 0.96) if not is_selected else Color(0.98, 1.0, 0.90, 1.0)
@@ -221,10 +221,10 @@ func _update_summary() -> void:
 		_summary_label.text = CoreBridge.get_tiny_chao_summary_text()
 		_summary_label.modulate = Color(0.32, 0.24, 0.10, 0.98)
 	if _status_title_label:
-		_status_title_label.text = "GARDEN STATUS"
+		_status_title_label.text = CoreBridge.get_tiny_chao_status_title_text()
 		_status_title_label.modulate = Color(0.32, 0.24, 0.10, 0.98)
 	if _badge_label:
-		_badge_label.text = "CHAO"
+		_badge_label.text = CoreBridge.get_tiny_chao_badge_text()
 		_badge_label.modulate = Color(0.22, 0.44, 0.14, 0.98)
 
 func _update_garden_avatar() -> void:

@@ -196,10 +196,10 @@ func _update_summary() -> void:
 		_summary_label.text = CoreBridge.get_multiplayer_lobby_summary_text()
 		_summary_label.modulate = Color(0.96, 0.94, 0.90, 0.96)
 	if _badge_label:
-		_badge_label.text = "YES" if CoreBridge.get_multiplayer_lobby_cursor() == 0 else "NO"
+		_badge_label.text = CoreBridge.get_multiplayer_lobby_badge_text()
 		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.96)
 	if _section_label:
-		_section_label.text = "NEXT PACKET"
+		_section_label.text = CoreBridge.get_multiplayer_lobby_section_text()
 		_section_label.modulate = Color(0.86, 0.82, 0.74, 0.92)
 
 func _update_chrome() -> void:

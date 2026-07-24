@@ -145,7 +145,7 @@ func _update_summary() -> void:
 		_summary_label.text = CoreBridge.get_multiplayer_outcome_summary_text()
 		_summary_label.modulate = Color(0.92, 0.96, 1.0, 0.96)
 	if _badge_label:
-		_badge_label.text = "OK" if CoreBridge.get_multiplayer_outcome_title() == "CONNECTION SUCCESS" else "ERR"
+		_badge_label.text = CoreBridge.get_multiplayer_outcome_badge_text()
 		_badge_label.modulate = Color(0.18, 0.18, 0.24, 0.98)
 
 func _update_chrome() -> void:

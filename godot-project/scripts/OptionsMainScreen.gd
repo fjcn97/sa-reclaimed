@@ -146,7 +146,7 @@ func _update_summary() -> void:
 	if _badge_label == null:
 		_badge_label = _ensure_label("BadgeLabel", Vector2(900.0, 316.0), Vector2(204.0, 34.0), 22)
 	if _badge_label:
-		_badge_label.text = "SETUP"
+		_badge_label.text = CoreBridge.get_menu_badge_text("SETUP")
 		_badge_label.modulate = Color(0.14, 0.28, 0.42, 0.98)
 
 func _update_rows() -> void:
@@ -162,6 +162,7 @@ func _update_rows() -> void:
 			continue
 		var row: Dictionary = rows[i]
 		var is_selected := i == selected
+		var action := str(row.get("action", ""))
 		var top := 250.0 + float(i) * 28.0
 		var lift := -2.0 if is_selected else 0.0
 		_row_cards[i].position.y = top + lift
@@ -176,9 +177,9 @@ func _update_rows() -> void:
 		_status_labels[i].text = status_text
 		_row_labels[i].modulate = Color(1.0, 1.0, 1.0, 1.0) if is_selected else Color(0.14, 0.26, 0.42, 1.0)
 		_value_labels[i].modulate = Color(0.96, 0.98, 1.0, 0.96) if is_selected else Color(0.28, 0.44, 0.58, 0.94)
-		if status_text == "SWITCH" or status_text == "OPEN":
+		if action == "open":
 			_status_labels[i].modulate = Color(1.0, 0.98, 1.0, 1.0) if is_selected else Color(0.14, 0.50, 0.70, 1.0)
-		elif status_text == "ERASE":
+		elif action == "erase":
 			_status_labels[i].modulate = Color(1.0, 0.94, 0.94, 1.0) if is_selected else Color(0.82, 0.28, 0.20, 1.0)
 		else:
 			_status_labels[i].modulate = Color(1.0, 0.98, 1.0, 1.0) if is_selected else Color(0.42, 0.54, 0.62, 0.92)

@@ -157,15 +157,10 @@ func _update_rows() -> void:
 
 func _update_summary() -> void:
 	if _summary_label:
-		var selected := CoreBridge.get_pause_menu_index()
-		var rows: Array = CoreBridge.get_pause_menu_rows()
-		var summary_text := "RETURN TO THE CURRENT STAGE"
-		if selected > 0 and selected < rows.size():
-			summary_text = "LEAVE THE STAGE\n%s" % str(rows[selected].get("value", ""))
-		_summary_label.text = summary_text
+		_summary_label.text = CoreBridge.get_pause_summary_text()
 		_summary_label.modulate = Color(0.90, 0.96, 1.0, 0.96)
 	if _badge_label:
-		_badge_label.text = "PAUSED"
+		_badge_label.text = CoreBridge.get_pause_badge_text()
 		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
 
 func _update_chrome() -> void:

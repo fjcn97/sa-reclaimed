@@ -47,19 +47,23 @@ func _process(delta: float) -> void:
 	if not active:
 		return
 	_pulse_time += delta * 2.6
+	var intro_progress := CoreBridge.get_multiplayer_mode_intro_progress()
+	var intro_amount := 1.0 - intro_progress
+	var title_shift := -44.0 * intro_amount
+	var side_shift := 72.0 * intro_amount
 	var pulse := 0.5 + (sin(Time.get_ticks_msec() / 220.0) * 0.5)
 	if title_label:
 		title_label.text = CoreBridge.get_multiplayer_mode_title_text()
-		title_label.position = Vector2(330.0, 72.0)
+		title_label.position = Vector2(330.0 + title_shift, 72.0)
 		title_label.size = Vector2(620.0, 54.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_label.modulate = Color(0.10, 0.21, 0.43, 1.0)
+		title_label.modulate = Color(0.10, 0.21, 0.43, 0.35 + intro_progress * 0.65)
 	if prompt_label:
 		prompt_label.text = CoreBridge.get_multiplayer_mode_prompt_text()
 		prompt_label.position = Vector2(170.0, 564.0)
 		prompt_label.size = Vector2(940.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		prompt_label.modulate = Color(0.92, 0.43, 0.14, 0.76 + (pulse * 0.18))
+		prompt_label.modulate = Color(0.92, 0.43, 0.14, (0.30 + intro_progress * 0.46) + (pulse * 0.18))
 	if detail_label:
 		detail_label.text = "%s\n%s" % [CoreBridge.get_multiplayer_mode_info_text(), CoreBridge.get_multiplayer_mode_detail_text()]
 		detail_label.position = Vector2(154.0, 618.0)
@@ -69,6 +73,16 @@ func _process(delta: float) -> void:
 	_update_chrome()
 	_update_option_labels()
 	_update_summary()
+	if _left_stage:
+		_left_stage.position.x = 160.0 - side_shift
+	if _option_stage:
+		_option_stage.position.x = 184.0 - side_shift
+	if _right_stage:
+		_right_stage.position.x = 640.0 + side_shift
+	if _focus_plate:
+		_focus_plate.position.x = 650.0 + side_shift
+	if _summary_card:
+		_summary_card.position.x = 884.0 + side_shift
 
 func _ensure_chrome() -> void:
 	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.98, 0.98, 0.97, 1.0))
@@ -165,6 +179,7 @@ func _update_option_labels() -> void:
 			continue
 		var row: Dictionary = rows[i]
 		var is_selected := bool(row.get("selected", false))
+		var available := bool(row.get("available", true))
 		var top := 262.0 + float(i) * 102.0
 		var lift := -6.0 if is_selected else 0.0
 		_option_cards[i].position = Vector2(202.0, top + lift)
@@ -172,14 +187,14 @@ func _update_option_labels() -> void:
 		_option_labels[i].position = Vector2(226.0, top + 10.0 + lift)
 		_meta_labels[i].position = Vector2(228.0, top + 44.0 + lift)
 		_status_labels[i].position = Vector2(430.0, top + 24.0 + lift)
-		_option_cards[i].color = _get_card_color(is_selected)
+		_option_cards[i].color = _get_card_color(available, is_selected)
 		_option_labels[i].text = str(row.get("name", ""))
 		_option_labels[i].modulate = Color(1.0, 1.0, 1.0, 1.0) if is_selected else Color(0.10, 0.21, 0.43, 1.0)
 		_meta_labels[i].text = str(row.get("description", ""))
 		_meta_labels[i].modulate = Color(1.0, 0.94, 0.86, 0.96) if is_selected else Color(0.25, 0.39, 0.60, 0.96)
 		var status_text := str(row.get("status", ""))
 		_status_labels[i].text = status_text
-		_status_labels[i].modulate = Color(1.0, 0.98, 0.88, 1.0) if is_selected else Color(0.92, 0.36, 0.12, 1.0)
+		_status_labels[i].modulate = Color(1.0, 0.98, 0.88, 1.0) if is_selected and available else (Color(0.52, 0.52, 0.58, 1.0) if not available else Color(0.92, 0.36, 0.12, 1.0))
 
 func _update_summary() -> void:
 	if _summary_label:
@@ -230,9 +245,11 @@ func _update_chrome() -> void:
 	if _header_glow:
 		_header_glow.color = Color(0.10, 0.21, 0.43, 0.12 + absf(sin(_pulse_time * 0.9)) * 0.06)
 
-func _get_card_color(selected: bool) -> Color:
+func _get_card_color(available: bool, selected: bool) -> Color:
 	if selected:
-		return Color(0.14, 0.30, 0.58, 0.98) if CoreBridge.get_multiplayer_mode_badge_text() == "LINK" else Color(0.94, 0.46, 0.14, 0.98)
+		if not available:
+			return Color(0.56, 0.52, 0.54, 0.98)
+		return Color(0.14, 0.30, 0.58, 0.98) if CoreBridge.is_multiplayer_link_mode() else Color(0.94, 0.46, 0.14, 0.98)
 	return Color(0.88, 0.92, 1.0, 1.0)
 
 func _set_screen_visible(screen_visible: bool) -> void:

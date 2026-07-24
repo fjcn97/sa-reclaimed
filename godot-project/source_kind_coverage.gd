@@ -9,14 +9,19 @@ const SPECIAL_INTERACTABLES := [
 
 func _init() -> void:
 	var bridge: Node = BRIDGE.new()
+	get_root().add_child(bridge)
 	var unsupported: Dictionary = {}
 	var checked := 0
+	var terrains_checked := 0
 	for boss_mode in [false, true]:
 		var limit := 16 if not boss_mode else 7
 		for index in range(limit):
 			var level_id := index if not boss_mode else index * 2
 			var manifest: Dictionary = LOADER.load_level(level_id, boss_mode)
 			var location := "%s/%s" % [manifest.zone, manifest.act]
+			terrains_checked += 1
+			if not bool(manifest.terrain.get("valid", false)):
+				_register(unsupported, "terrain:%s" % location, location)
 			for row in manifest.entities.get("interactables", []):
 				checked += 1
 				var kind := str(row.get("kind", ""))
@@ -36,13 +41,22 @@ func _init() -> void:
 					continue
 				_register(unsupported, "itembox:%s" % item_kind, location)
 	print("COVERAGE_ROWS=%d" % checked)
+	print("COVERAGE_TERRAINS=%d" % terrains_checked)
 	if unsupported.is_empty():
 		print("COVERAGE_UNSUPPORTED=0")
-		quit(0)
+		_finish(bridge, 0)
+		return
 	for key in unsupported.keys():
 		print("UNSUPPORTED %s locations=%s" % [key, ",".join(unsupported[key])])
 	print("COVERAGE_UNSUPPORTED=%d" % unsupported.size())
-	quit(1)
+	_finish(bridge, 1)
+
+func _finish(bridge: Node, exit_code: int) -> void:
+	bridge.queue_free()
+	call_deferred("_quit_after_cleanup", exit_code)
+
+func _quit_after_cleanup(exit_code: int) -> void:
+	quit(exit_code)
 
 func _register(unsupported: Dictionary, key: String, location: String) -> void:
 	if not unsupported.has(key):

@@ -32,6 +32,19 @@ var _cream_mascot: Control = null
 var _row_cards: Array[ColorRect] = []
 var _row_labels: Array[Label] = []
 var _value_labels: Array[Label] = []
+var _gradient_bands: Array[ColorRect] = []
+var _gradient_time: float = 0.0
+
+const SOURCE_BG_PALETTE: Array[Color] = [
+	Color(0.02, 0.03, 0.08, 0.96),
+	Color(1.0, 1.0, 0.55, 0.90),
+	Color(0.80, 0.87, 0.61, 0.86),
+	Color(0.70, 0.67, 0.08, 0.82),
+	Color(0.02, 0.61, 0.45, 0.80),
+	Color(0.45, 0.38, 0.67, 0.78),
+	Color(0.98, 0.98, 0.98, 0.78),
+	Color(0.02, 0.03, 0.08, 0.96),
+]
 
 func _ready() -> void:
 	set_process(true)
@@ -52,6 +65,7 @@ func _process(_delta: float) -> void:
 	_set_screen_visible(active)
 	if not active:
 		return
+	_gradient_time += _delta
 	var pulse := 0.5 + (sin(Time.get_ticks_msec() / 210.0) * 0.5)
 	if title_label:
 		title_label.text = CoreBridge.get_sound_test_title_text()
@@ -75,8 +89,10 @@ func _process(_delta: float) -> void:
 	_update_rows()
 	_update_name_ticker()
 	_update_speaker_animation()
+	_update_gradient_bands()
 
 func _ensure_chrome() -> void:
+	_ensure_gradient_bands()
 	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.05, 0.70))
 	_hero_glow = _ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.12, 0.34, 0.56, 0.18))
 	_header_plate = _ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.08, 0.12, 0.18, 0.94))
@@ -109,6 +125,25 @@ func _ensure_chrome() -> void:
 	_number_plate.z_index = -1
 	_status_plate.z_index = -1
 	_prompt_band.z_index = -1
+
+func _ensure_gradient_bands() -> void:
+	if not _gradient_bands.is_empty():
+		return
+	for i in range(12):
+		var band := _ensure_rect("PaletteBand%d" % i, Rect2(0.0, float(i) * 60.0, 1280.0, 61.0), SOURCE_BG_PALETTE[i % SOURCE_BG_PALETTE.size()])
+		band.z_index = -10
+		_gradient_bands.append(band)
+
+func _update_gradient_bands() -> void:
+	var phase := fposmod(_gradient_time * 1.2, float(SOURCE_BG_PALETTE.size()))
+	for i in range(_gradient_bands.size()):
+		var sample := phase + float(i) * 0.34
+		var index_a := int(floor(sample)) % SOURCE_BG_PALETTE.size()
+		var index_b := (index_a + 1) % SOURCE_BG_PALETTE.size()
+		var blend := fposmod(sample, 1.0)
+		var color := SOURCE_BG_PALETTE[index_a].lerp(SOURCE_BG_PALETTE[index_b], blend)
+		_gradient_bands[i].color = Color(color.r, color.g, color.b, 0.26)
+		_gradient_bands[i].position.y = float(i) * 60.0 - fposmod(_gradient_time * 18.0, 60.0)
 
 func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
 	var rect_node := get_node_or_null(node_name) as ColorRect
@@ -150,7 +185,7 @@ func _ensure_labels() -> void:
 	_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	if _badge_label == null:
 		_badge_label = _ensure_label("BadgeLabel", Vector2(886.0, 160.0), Vector2(124.0, 38.0), 18)
-	_badge_label.text = "AUDIO"
+	_badge_label.text = CoreBridge.get_menu_badge_text("AUDIO")
 	_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
 
 func _ensure_rows() -> void:
@@ -180,7 +215,7 @@ func _ensure_mascot() -> void:
 
 func _update_header() -> void:
 	if _track_number_label:
-		_track_number_label.text = "NO. %02d" % CoreBridge.get_sound_test_track_number()
+		_track_number_label.text = CoreBridge.get_sound_test_track_number_text()
 	if _track_name_label:
 		_track_name_label.text = CoreBridge.get_sound_test_track_name()
 	if _status_label:
@@ -254,6 +289,8 @@ func _update_speaker_animation() -> void:
 	_speaker_glow.color = Color(glow_base.r, glow_base.g, glow_base.b, clamp(pulse, 0.20, 0.72))
 
 func _set_screen_visible(screen_visible: bool) -> void:
+	for band in _gradient_bands:
+		band.visible = screen_visible
 	if _backdrop:
 		_backdrop.visible = screen_visible
 	if _header_plate:

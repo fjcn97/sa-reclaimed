@@ -235,6 +235,20 @@ func _draw() -> void:
 			for i in range(3):
 				var x := -15.0 + i * 15.0
 				draw_line(Vector2(x, 7.0), Vector2(x + 5.0, -7.0), bouncy_color, 4.0)
+		CoreBridge.ENTITY_NOTE_BLOCK:
+			var block_offset := Vector2(entity_state.note_offset_x, entity_state.note_offset_y)
+			var block_color := Color(0.90, 0.42, 0.78, 0.96) if entity_state.note_health > 1 else Color(0.46, 0.36, 0.52, 0.90)
+			draw_rect(Rect2(block_offset + Vector2(-16.0, -12.0), Vector2(32.0, 24.0)), Color(0.12, 0.14, 0.24, 1.0))
+			draw_rect(Rect2(block_offset + Vector2(-14.0, -10.0), Vector2(28.0, 20.0)), block_color, false, 3.0)
+			draw_circle(block_offset + Vector2(-5.0, -2.0), 3.0, block_color)
+			draw_circle(block_offset + Vector2(5.0, -2.0), 3.0, block_color)
+			draw_line(block_offset + Vector2(-6.0, 5.0), block_offset + Vector2(6.0, 5.0), block_color, 2.0)
+		CoreBridge.ENTITY_NOTE_SPHERE:
+			var sphere_offset := Vector2(entity_state.note_offset_x, entity_state.note_offset_y)
+			var sphere_color := Color(0.52, 0.84, 1.0, 0.92) if not entity_state.activated else Color(0.88, 0.98, 1.0, 1.0)
+			draw_circle(sphere_offset, 20.0, Color(0.10, 0.16, 0.28, 1.0))
+			draw_arc(sphere_offset, 20.0, 0.0, TAU, 24, sphere_color, 3.0)
+			draw_circle(sphere_offset + Vector2(-6.0, -6.0), 5.0, sphere_color)
 		CoreBridge.ENTITY_CONVEYOR:
 			var conveyor_color := Color(0.28, 0.84, 0.72, 0.92)
 			var conveyor_half_width: float = float(entity_state.width) * 0.5
@@ -244,10 +258,84 @@ func _draw() -> void:
 				var arrow_direction := 1.0 if entity_state.surface_speed >= 0.0 else -1.0
 				draw_line(Vector2(x - arrow_direction * 8.0, 0.0), Vector2(x + arrow_direction * 8.0, 0.0), conveyor_color, 3.0)
 				draw_colored_polygon(PackedVector2Array([Vector2(x + arrow_direction * 8.0, 0.0), Vector2(x + arrow_direction * 2.0, -5.0), Vector2(x + arrow_direction * 2.0, 5.0)]), conveyor_color)
+		CoreBridge.ENTITY_LAYER_TOGGLE:
+			var layer_color := Color(0.86, 0.42, 0.96, 0.96) if entity_state.variant == 0 else Color(0.34, 0.82, 1.0, 0.96)
+			draw_rect(Rect2(-18.0, -18.0, 36.0, 36.0), Color(0.10, 0.12, 0.24, 0.96))
+			draw_rect(Rect2(-13.0, -13.0, 26.0, 26.0), layer_color, false, 3.0)
+			var layer_direction := -1.0 if entity_state.variant == 0 else 1.0
+			draw_line(Vector2(-10.0, 0.0), Vector2(10.0, 0.0), layer_color, 3.0)
+			draw_colored_polygon(PackedVector2Array([Vector2(layer_direction * 10.0, 0.0), Vector2(layer_direction * 3.0, -6.0), Vector2(layer_direction * 3.0, 6.0)]), layer_color)
+		CoreBridge.ENTITY_RAMP:
+			var ramp_color := Color(0.98, 0.62, 0.24, 0.92) if not entity_state.activated else Color(1.0, 0.90, 0.48, 1.0)
+			var ramp_direction := -1.0 if entity_state.variant == 1 else 1.0
+			var ramp_points := PackedVector2Array([Vector2(-48.0, 28.0), Vector2(48.0, 28.0), Vector2(48.0 * ramp_direction, -28.0)])
+			draw_colored_polygon(ramp_points, Color(0.12, 0.20, 0.30, 1.0))
+			draw_polyline(ramp_points + PackedVector2Array([ramp_points[0]]), ramp_color, 5.0)
+		CoreBridge.ENTITY_ROTATING_HANDLE:
+			var handle_color := Color(0.42, 0.82, 1.0, 0.92) if not entity_state.activated else Color(1.0, 0.78, 0.28, 1.0)
+			draw_circle(Vector2.ZERO, 10.0, Color(0.10, 0.16, 0.28, 1.0))
+			draw_arc(Vector2.ZERO, 22.0, 0.0, TAU, 24, handle_color, 4.0)
+			var handle_angle: float = entity_state.effect_offset - PI * 0.5
+			var handle_end: Vector2 = Vector2(cos(handle_angle), sin(handle_angle)) * 30.0
+			draw_line(Vector2.ZERO, handle_end, handle_color, 6.0)
+			draw_circle(handle_end, 7.0, handle_color)
+		CoreBridge.ENTITY_FLYING_HANDLE:
+			var flying_color := Color(0.62, 0.86, 0.96, 0.90) if not entity_state.activated else Color(0.92, 1.0, 0.96, 1.0)
+			draw_line(Vector2(0.0, entity_state.flying_handle_top_y - entity_state.world_y), Vector2(0.0, entity_state.flying_handle_bottom_y - entity_state.world_y), Color(0.34, 0.52, 0.68, 0.48), 3.0)
+			draw_circle(Vector2(0.0, entity_state.effect_offset), 16.0, Color(0.10, 0.18, 0.28, 1.0))
+			draw_arc(Vector2(0.0, entity_state.effect_offset), 15.0, 0.0, TAU, 20, flying_color, 4.0)
+		CoreBridge.ENTITY_NOTE_PARTICLE:
+			var note_color := Color(1.0, 0.86, 0.28, 0.94) if entity_state.variant == 0 else Color(0.42, 0.88, 1.0, 0.94)
+			var note_head := Vector2(0.0, 5.0)
+			draw_circle(note_head, 5.0, note_color)
+			draw_line(Vector2(4.0, 5.0), Vector2(4.0, -12.0), note_color, 3.0)
+			draw_line(Vector2(4.0, -12.0), Vector2(12.0, -8.0), note_color, 3.0)
+		CoreBridge.ENTITY_CORK_SCREW:
+			var cork_color := Color(0.70, 0.48, 0.94, 0.86) if entity_state.variant == 0 else Color(0.42, 0.78, 1.0, 0.86)
+			for i in range(3):
+				var radius := 10.0 + float(i) * 8.0
+				draw_arc(Vector2.ZERO, radius, 0.2, PI * 1.8, 18, cork_color, 3.0)
+			draw_circle(Vector2.ZERO, 5.0, Color(0.12, 0.18, 0.30, 1.0))
 		CoreBridge.ENTITY_SPRING:
 			draw_rect(Rect2(-12.0, -6.0, 24.0, 12.0), Color(0.12, 0.64, 1.0))
 			draw_rect(Rect2(-7.0, -14.0, 14.0, 8.0), Color(0.93, 0.2, 0.3))
 			draw_rect(Rect2(-9.0, -2.0, 18.0, 4.0), Color(0.95, 0.96, 1.0))
+		CoreBridge.ENTITY_CHEESE:
+			var cheese_offset := Vector2(entity_state.world_x - entity_state.origin_x, entity_state.world_y - entity_state.origin_y)
+			draw_circle(cheese_offset, 11.0, Color(0.96, 0.72, 0.28, 1.0))
+			draw_circle(cheese_offset + Vector2(-4.0, -3.0), 2.0, Color(0.36, 0.20, 0.12, 1.0))
+			draw_circle(cheese_offset + Vector2(4.0, 2.0), 2.0, Color(0.36, 0.20, 0.12, 1.0))
+		CoreBridge.ENTITY_RING_EFFECT:
+			var ring_progress := clampf(entity_state.state_timer / 0.34, 0.0, 1.0)
+			draw_arc(Vector2.ZERO, 10.0 + ring_progress * 18.0, 0.0, TAU, 20, Color(1.0, 0.88, 0.34, 1.0 - ring_progress), 3.0)
+		CoreBridge.ENTITY_HEART_EFFECT:
+			var heart_scale := 1.0 - clampf(entity_state.state_timer / 0.72, 0.0, 1.0) * 0.35
+			var heart_source := [Vector2(0.0, 12.0), Vector2(-14.0, -2.0), Vector2(-10.0, -12.0), Vector2(0.0, -6.0), Vector2(10.0, -12.0), Vector2(14.0, -2.0)]
+			var heart_points := PackedVector2Array()
+			for point in heart_source:
+				heart_points.append(point * heart_scale)
+			draw_colored_polygon(heart_points, Color(1.0, 0.42, 0.68, 0.90))
+		CoreBridge.ENTITY_DUST_EFFECT:
+			var dust_progress := clampf(entity_state.state_timer / 0.48, 0.0, 1.0)
+			for i in range(4):
+				var dust_x := -12.0 + float(i) * 8.0
+				draw_circle(Vector2(dust_x, -dust_progress * 20.0 + absf(float(i) - 1.5) * 3.0), 5.0 - dust_progress * 2.0, Color(0.72, 0.82, 0.92, 0.72 * (1.0 - dust_progress)))
+		CoreBridge.ENTITY_GRIND_EFFECT:
+			var grind_direction := -1.0 if entity_state.variant == 1 else 1.0
+			for i in range(3):
+				var spark_x := grind_direction * (8.0 + float(i) * 9.0)
+				draw_line(Vector2(spark_x, 8.0), Vector2(spark_x + grind_direction * 8.0, 18.0), Color(1.0, 0.84, 0.30, 0.88), 3.0)
+		CoreBridge.ENTITY_TAIL_SWIPE:
+			var swipe_direction := -1.0 if entity_state.variant == 1 else 1.0
+			draw_arc(Vector2.ZERO, 22.0, -1.2 if swipe_direction > 0.0 else 1.9, 1.2 if swipe_direction > 0.0 else 4.3, 18, Color(0.42, 0.84, 1.0, 0.90), 7.0)
+		CoreBridge.ENTITY_KNUCKLES_FIRE:
+			var fire_direction := -1.0 if entity_state.variant == 1 else 1.0
+			draw_circle(Vector2(fire_direction * 10.0, 0.0), 10.0, Color(1.0, 0.42, 0.18, 0.88))
+			draw_circle(Vector2(fire_direction * 15.0, 0.0), 5.0, Color(1.0, 0.88, 0.38, 0.96))
+		CoreBridge.ENTITY_SONIC_SKID:
+			var skid_direction := -1.0 if entity_state.variant == 1 else 1.0
+			for i in range(3):
+				draw_line(Vector2(-skid_direction * float(i) * 7.0, 8.0 + float(i) * 4.0), Vector2(-skid_direction * (18.0 + float(i) * 7.0), 8.0 + float(i) * 4.0), Color(0.40, 0.76, 1.0, 0.70), 3.0)
 		CoreBridge.ENTITY_ENEMY:
 			if entity_state.enemy_profile == 6:
 				draw_circle(Vector2.ZERO, 13.0, Color(0.20, 0.36, 0.52, 1.0))
@@ -257,6 +345,41 @@ func _draw() -> void:
 					var orbit := Vector2(cos(angle), sin(angle)) * 22.0
 					draw_circle(orbit, 4.0, Color(0.66, 0.88, 1.0, 0.92))
 					draw_line(Vector2.ZERO, orbit, Color(0.46, 0.70, 0.86, 0.46), 2.0)
+			elif entity_state.enemy_profile == 8:
+				draw_circle(Vector2.ZERO, 13.0, Color(0.22, 0.28, 0.36, 1.0))
+				draw_circle(Vector2.ZERO, 9.0, Color(0.80, 0.42, 0.22, 1.0))
+				var fireball_angle: float = entity_state.state_timer
+				var fireball := Vector2(sin(fireball_angle), cos(fireball_angle)) * 21.0
+				draw_circle(fireball, 6.0, Color(1.0, 0.70, 0.24, 0.95))
+				draw_circle(-fireball * 0.62, 3.0, Color(0.74, 0.86, 1.0, 0.90))
+			elif entity_state.enemy_profile == 10:
+				for i in range(entity_state.trail_positions.size() - 1, -1, -1):
+					var trail_point: Vector2 = entity_state.trail_positions[i] - Vector2(entity_state.world_x, entity_state.world_y)
+					var trail_radius: float = 10.0 - float(i) * 1.5
+					draw_circle(trail_point, maxf(4.0, trail_radius), Color(0.30, 0.72, 0.64, 0.86))
+				draw_circle(Vector2.ZERO, 12.0, Color(0.92, 0.38, 0.26, 1.0))
+			elif entity_state.enemy_profile == 11:
+				var head_offset := Vector2(entity_state.target_x - entity_state.world_x, entity_state.target_y - entity_state.world_y)
+				draw_line(Vector2.ZERO, head_offset, Color(0.54, 0.66, 0.72, 0.92), 7.0)
+				draw_circle(head_offset, 11.0, Color(0.94, 0.50, 0.24, 1.0))
+				draw_circle(Vector2.ZERO, 13.0, Color(0.20, 0.30, 0.42, 1.0))
+				draw_circle(Vector2(-4.0, -3.0), 2.0, Color.WHITE)
+				draw_circle(Vector2(4.0, -3.0), 2.0, Color.WHITE)
+			elif entity_state.enemy_profile == 13:
+				var spinner_points := PackedVector2Array()
+				for i in range(8):
+					var spinner_angle: float = entity_state.state_timer + float(i) * PI / 4.0
+					var spinner_radius: float = 20.0 if i % 2 == 0 else 7.0
+					spinner_points.append(Vector2(cos(spinner_angle), sin(spinner_angle)) * spinner_radius)
+				draw_colored_polygon(spinner_points, Color(0.70, 0.76, 0.88, 0.94))
+				draw_circle(Vector2.ZERO, 7.0, Color(0.18, 0.24, 0.34, 1.0))
+			elif entity_state.enemy_profile == 15:
+				for i in range(entity_state.trail_positions.size() - 1, -1, -1):
+					var flickey_point: Vector2 = entity_state.trail_positions[i] - Vector2(entity_state.world_x, entity_state.world_y)
+					draw_circle(flickey_point, maxf(4.0, 9.0 - float(i) * 1.5), Color(0.82, 0.66, 0.34, 0.88))
+				draw_circle(Vector2.ZERO, 12.0, Color(0.38, 0.78, 0.92, 1.0))
+				draw_circle(Vector2(-4.0, -3.0), 2.0, Color.WHITE)
+				draw_circle(Vector2(4.0, -3.0), 2.0, Color.WHITE)
 			else:
 				draw_circle(Vector2.ZERO, 12.0, Color(0.95, 0.24, 0.26))
 				draw_rect(Rect2(-14.0, 2.0, 28.0, 8.0), Color(0.18, 0.18, 0.2))
@@ -279,7 +402,8 @@ func _draw() -> void:
 			draw_circle(Vector2(-5.0, -3.0), 2.0, Color.WHITE)
 			draw_circle(Vector2(5.0, -3.0), 2.0, Color.WHITE)
 		CoreBridge.ENTITY_PROJECTILE:
-			draw_circle(Vector2.ZERO, 6.0, Color(0.96, 0.46, 0.24, 0.95))
+			var projectile_color := Color(0.96, 0.46, 0.24, 0.95) if entity_state.enemy_profile != 4 and entity_state.enemy_profile != 5 else Color(0.46, 0.30, 0.24, 1.0)
+			draw_circle(Vector2.ZERO, 7.0 if entity_state.enemy_profile == 4 or entity_state.enemy_profile == 5 else 6.0, projectile_color)
 			draw_circle(Vector2.ZERO, 3.0, Color(1.0, 0.92, 0.48, 1.0))
 		CoreBridge.ENTITY_BULLET_BUZZER:
 			var bullet_color := Color(0.42, 0.72, 1.0) if entity_state.variant == 0 else Color(1.0, 0.48, 0.30)
@@ -315,12 +439,99 @@ func _draw() -> void:
 			draw_colored_polygon(PackedVector2Array([Vector2(0.0, -9.0), Vector2(8.0, 7.0), Vector2(-8.0, 7.0)]), Color(0.98, 0.54, 0.34, 0.96))
 		CoreBridge.ENTITY_BOSS:
 			var boss_color := Color(0.92, 0.30, 0.22) if entity_state.hit_timer <= 0.0 else Color(1.0, 0.88, 0.62)
-			draw_rect(Rect2(-46.0, -28.0, 92.0, 56.0), Color(0.12, 0.16, 0.24, 1.0))
-			draw_rect(Rect2(-38.0, -22.0, 76.0, 44.0), boss_color)
-			draw_circle(Vector2(-20.0, -6.0), 6.0, Color(1.0, 0.92, 0.58, 1.0))
-			draw_circle(Vector2(20.0, -6.0), 6.0, Color(1.0, 0.92, 0.58, 1.0))
-			draw_rect(Rect2(-34.0, 30.0, 22.0, 8.0), Color(0.20, 0.24, 0.34, 1.0))
-			draw_rect(Rect2(12.0, 30.0, 22.0, 8.0), Color(0.20, 0.24, 0.34, 1.0))
+			if entity_state.boss_profile == 1:
+				draw_rect(Rect2(-44.0, -20.0, 88.0, 40.0), Color(0.12, 0.16, 0.24, 1.0))
+				draw_rect(Rect2(-36.0, -15.0, 72.0, 29.0), boss_color)
+				for wheel_x in [-28.0, 2.0, 32.0]:
+					draw_circle(Vector2(wheel_x, 19.0), 8.0, Color(0.16, 0.20, 0.28, 1.0))
+					draw_circle(Vector2(wheel_x, 19.0), 4.0, Color(0.60, 0.66, 0.74, 1.0))
+				var cannon_tip: Vector2 = Vector2(cos(entity_state.effect_offset), sin(entity_state.effect_offset)) * 34.0
+				draw_line(Vector2(0.0, -14.0), cannon_tip + Vector2(0.0, -14.0), Color(0.34, 0.40, 0.52, 1.0), 9.0)
+				draw_circle(Vector2(0.0, -8.0), 5.0, Color(1.0, 0.90, 0.52, 1.0))
+			elif entity_state.boss_profile == 2:
+				draw_rect(Rect2(-34.0, -18.0, 68.0, 36.0), Color(0.12, 0.16, 0.24, 1.0))
+				draw_rect(Rect2(-27.0, -13.0, 54.0, 25.0), boss_color)
+				for disc_index in range(3):
+					var disc_y: float = 23.0 + float(disc_index) * 18.0
+					var disc_radius: float = 18.0 - float(disc_index) * 2.0
+					draw_arc(Vector2(0.0, disc_y), disc_radius, entity_state.effect_offset, entity_state.effect_offset + PI * 1.65, 18, Color(0.34, 0.52, 0.72, 1.0), 5.0)
+				draw_circle(Vector2(-13.0, -5.0), 4.0, Color(1.0, 0.90, 0.52, 1.0))
+				draw_circle(Vector2(13.0, -5.0), 4.0, Color(1.0, 0.90, 0.52, 1.0))
+			elif entity_state.boss_profile == 8:
+				draw_rect(Rect2(-46.0, -28.0, 92.0, 56.0), Color(0.10, 0.12, 0.20, 1.0))
+				for segment_index in range(5):
+					var segment_y: float = -20.0 + float(segment_index) * 11.0
+					var segment_color := boss_color if segment_index % 2 == 0 else Color(0.34, 0.42, 0.62, 1.0)
+					draw_rect(Rect2(-34.0 + float(segment_index % 2) * 4.0, segment_y, 68.0 - float(segment_index % 2) * 8.0, 9.0), segment_color)
+				draw_circle(Vector2(0.0, -26.0), 9.0, Color(0.86, 0.92, 1.0, 1.0))
+				draw_circle(Vector2(-3.0, -28.0), 2.5, Color(0.12, 0.18, 0.28, 1.0))
+			elif entity_state.boss_profile == 7:
+				draw_rect(Rect2(-38.0, -30.0, 76.0, 54.0), Color(0.10, 0.14, 0.24, 1.0))
+				draw_circle(Vector2(0.0, -20.0), 22.0, boss_color)
+				draw_circle(Vector2(-8.0, -24.0), 4.0, Color(0.76, 0.92, 1.0, 1.0))
+				draw_circle(Vector2(8.0, -24.0), 4.0, Color(0.76, 0.92, 1.0, 1.0))
+				for arm_side in [-1.0, 1.0]:
+					var arm_angle: float = entity_state.effect_offset + arm_side * PI * 0.5
+					var arm_tip: Vector2 = Vector2(cos(arm_angle), sin(arm_angle)) * 48.0 + Vector2(0.0, -12.0)
+					draw_line(Vector2(0.0, -12.0), arm_tip, Color(0.34, 0.48, 0.66, 1.0), 9.0)
+					draw_circle(arm_tip, 12.0, Color(0.28, 0.40, 0.58, 1.0))
+				for tower_index in range(3):
+					var tower_x: float = -34.0 + float(tower_index) * 34.0
+					draw_rect(Rect2(tower_x - 10.0, 30.0, 20.0, 12.0), Color(0.26, 0.38, 0.56, 1.0))
+			elif entity_state.boss_profile == 6:
+				draw_circle(Vector2.ZERO, 30.0, Color(0.12, 0.16, 0.24, 1.0))
+				draw_circle(Vector2(0.0, -4.0), 23.0, boss_color)
+				draw_circle(Vector2(-9.0, -10.0), 5.0, Color(1.0, 0.92, 0.62, 1.0))
+				draw_circle(Vector2(9.0, -10.0), 5.0, Color(1.0, 0.92, 0.62, 1.0))
+				draw_line(Vector2(-14.0, 16.0), Vector2(-22.0, 29.0), Color(0.30, 0.48, 0.62, 1.0), 8.0)
+				draw_line(Vector2(14.0, 16.0), Vector2(22.0, 29.0), Color(0.30, 0.48, 0.62, 1.0), 8.0)
+			elif entity_state.boss_profile == 5:
+				draw_circle(Vector2.ZERO, 30.0, Color(0.12, 0.16, 0.24, 1.0))
+				draw_circle(Vector2.ZERO, 24.0, boss_color)
+				for platform_index in range(4):
+					var platform_angle: float = entity_state.effect_offset + float(platform_index) * PI * 0.5
+					var platform_pos := Vector2(cos(platform_angle), sin(platform_angle)) * 42.0
+					draw_circle(platform_pos, 13.0, Color(0.30, 0.48, 0.68, 1.0))
+					draw_circle(Vector2(-7.0, -5.0), 4.0, Color(1.0, 0.90, 0.52, 1.0))
+					draw_circle(Vector2(7.0, -5.0), 4.0, Color(1.0, 0.90, 0.52, 1.0))
+			elif entity_state.boss_profile == 4:
+				draw_circle(Vector2.ZERO, 34.0, Color(0.12, 0.16, 0.24, 1.0))
+				var saucer_points := PackedVector2Array()
+				for point_index in range(20):
+					var point_angle: float = float(point_index) * TAU / 20.0
+					saucer_points.append(Vector2(cos(point_angle) * 42.0, sin(point_angle) * 18.0))
+				draw_colored_polygon(saucer_points, boss_color)
+				draw_arc(Vector2.ZERO, 27.0, entity_state.effect_offset, entity_state.effect_offset + PI * 1.4, 20, Color(0.34, 0.52, 0.72, 1.0), 5.0)
+				draw_circle(Vector2(0.0, -8.0), 8.0, Color(0.52, 0.72, 0.92, 1.0))
+				if entity_state.variant == 1:
+					var beam_end: Vector2 = Vector2(cos(entity_state.effect_offset), sin(entity_state.effect_offset)) * 230.0 + Vector2(0.0, -18.0)
+					draw_line(Vector2(0.0, -18.0), beam_end, Color(0.82, 0.94, 1.0, 0.72), 12.0)
+			elif entity_state.boss_profile == 3:
+				draw_rect(Rect2(-42.0, -20.0, 84.0, 34.0), Color(0.12, 0.16, 0.24, 1.0))
+				draw_colored_polygon(PackedVector2Array([Vector2(-38.0, -17.0), Vector2(35.0, -17.0), Vector2(43.0, 7.0), Vector2(-35.0, 7.0)]), boss_color)
+				draw_circle(Vector2(0.0, -13.0), 7.0, Color(0.56, 0.72, 0.92, 1.0))
+				draw_circle(Vector2(0.0, -13.0), 4.0, Color(0.92, 0.96, 1.0, 1.0))
+				for i in range(3):
+					var tail_phase: float = entity_state.effect_offset + float(i) * 0.9
+					var tail_pos := Vector2(cos(tail_phase) * (13.0 + float(i) * 4.0), 18.0 + sin(tail_phase) * (13.0 + float(i) * 3.0))
+					draw_circle(tail_pos, 8.0 if i < 2 else 10.0, Color(0.28, 0.40, 0.58, 1.0))
+			elif entity_state.boss_profile == 0:
+				draw_rect(Rect2(-44.0, -24.0, 88.0, 48.0), Color(0.12, 0.16, 0.24, 1.0))
+				draw_rect(Rect2(-36.0, -18.0, 72.0, 34.0), boss_color)
+				draw_circle(Vector2(-18.0, -7.0), 5.0, Color(1.0, 0.90, 0.52, 1.0))
+				draw_circle(Vector2(18.0, -7.0), 5.0, Color(1.0, 0.90, 0.52, 1.0))
+				var hammer_tip: Vector2 = Vector2(cos(entity_state.effect_offset), sin(entity_state.effect_offset)) * entity_state.target_x
+				draw_line(Vector2.ZERO, hammer_tip, Color(0.36, 0.42, 0.54, 1.0), 7.0)
+				draw_circle(hammer_tip, 15.0, Color(0.26, 0.30, 0.40, 1.0))
+				draw_rect(Rect2(-30.0, 22.0, 24.0, 8.0), Color(0.20, 0.24, 0.34, 1.0))
+				draw_rect(Rect2(6.0, 22.0, 24.0, 8.0), Color(0.20, 0.24, 0.34, 1.0))
+			else:
+				draw_rect(Rect2(-46.0, -28.0, 92.0, 56.0), Color(0.12, 0.16, 0.24, 1.0))
+				draw_rect(Rect2(-38.0, -22.0, 76.0, 44.0), boss_color)
+				draw_circle(Vector2(-20.0, -6.0), 6.0, Color(1.0, 0.92, 0.58, 1.0))
+				draw_circle(Vector2(20.0, -6.0), 6.0, Color(1.0, 0.92, 0.58, 1.0))
+				draw_rect(Rect2(-34.0, 30.0, 22.0, 8.0), Color(0.20, 0.24, 0.34, 1.0))
+				draw_rect(Rect2(12.0, 30.0, 22.0, 8.0), Color(0.20, 0.24, 0.34, 1.0))
 			var health_ratio := float(entity_state.health) / float(maxi(1, entity_state.max_health))
 			draw_rect(Rect2(-42.0, -42.0, 84.0, 5.0), Color(0.16, 0.08, 0.10, 1.0))
 			draw_rect(Rect2(-42.0, -42.0, 84.0 * health_ratio, 5.0), Color(0.96, 0.24, 0.20, 1.0))

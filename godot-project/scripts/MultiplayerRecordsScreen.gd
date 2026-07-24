@@ -160,7 +160,7 @@ func _ensure_rows() -> void:
 		_draws_labels.append(draws)
 	if _badge_label == null:
 		_badge_label = _ensure_label("BadgeLabel", Vector2(886.0, 160.0), Vector2(108.0, 38.0), 18)
-		_badge_label.text = "VERSUS"
+		_badge_label.text = CoreBridge.get_menu_badge_text("VERSUS")
 		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
 
 func _update_summary() -> void:
@@ -181,19 +181,11 @@ func _update_summary() -> void:
 		_player_draws_label.text = "%02d" % int(player_row.get("draws", 0))
 		_player_draws_label.modulate = Color(0.96, 0.90, 0.60, 1.0)
 	if _column_label:
-		_column_label.text = "PLAYER              W    L    D"
+		var columns := CoreBridge.get_multiplayer_records_column_header_text()
+		_column_label.text = "%s              %s    %s    %s" % [CoreBridge.get_menu_badge_text("PROFILE"), columns[0], columns[1], columns[2]]
 		_column_label.modulate = Color(0.72, 0.84, 1.0, 0.96)
 	if _scroll_hint_label:
-		var hint := ""
-		if CoreBridge.get_multiplayer_records_visible_rows().is_empty():
-			hint = "NO DATA"
-		elif CoreBridge.can_multiplayer_records_scroll_up() and CoreBridge.can_multiplayer_records_scroll_down():
-			hint = "UP/DOWN"
-		elif CoreBridge.can_multiplayer_records_scroll_up():
-			hint = "UP"
-		elif CoreBridge.can_multiplayer_records_scroll_down():
-			hint = "DOWN"
-		_scroll_hint_label.text = hint
+		_scroll_hint_label.text = CoreBridge.get_multiplayer_records_scroll_hint_text()
 		_scroll_hint_label.modulate = Color(1.0, 0.88, 0.52, 0.92)
 
 func _update_chrome() -> void:

@@ -143,7 +143,7 @@ func _update_summary() -> void:
 	if _badge_label == null:
 		_badge_label = _ensure_label("BadgeLabel", Vector2(902.0, 316.0), Vector2(200.0, 34.0), 22)
 	if _badge_label:
-		_badge_label.text = "TEXT"
+		_badge_label.text = CoreBridge.get_menu_badge_text("TEXT")
 		_badge_label.modulate = Color(0.14, 0.28, 0.42, 0.98)
 
 func _update_chrome() -> void:
@@ -180,6 +180,7 @@ func _update_rows() -> void:
 			continue
 		var row: Dictionary = rows[i]
 		var is_selected := bool(row.get("selected", false))
+		var is_current := bool(row.get("current", is_selected))
 		var status_text := str(row.get("status", ""))
 		var top := 248.0 + float(i) * 30.0
 		var lift := -2.0 if is_selected else 0.0
@@ -191,7 +192,7 @@ func _update_rows() -> void:
 		_row_labels[i].text = str(row.get("label", ""))
 		_status_labels[i].text = status_text
 		_row_labels[i].modulate = Color(1.0, 1.0, 1.0, 1.0) if is_selected else Color(0.14, 0.28, 0.42, 1.0)
-		_status_labels[i].modulate = Color(0.96, 1.0, 0.98, 1.0) if is_selected else (Color(0.18, 0.54, 0.34, 1.0) if status_text == "CURRENT" else Color(0.34, 0.50, 0.62, 0.92))
+		_status_labels[i].modulate = Color(0.96, 1.0, 0.98, 1.0) if is_selected else (Color(0.18, 0.54, 0.34, 1.0) if is_current else Color(0.34, 0.50, 0.62, 0.92))
 
 func _set_screen_visible(screen_visible: bool) -> void:
 	if _backdrop:

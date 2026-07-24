@@ -62,6 +62,13 @@ func _draw() -> void:
 				Vector2(platform.x1, platform.slope_start_y + platform.thickness),
 			]), platform_color)
 			draw_polyline(PackedVector2Array([top_left, top_right]), platform_top_color, 4.0)
+		elif platform.crumble_phase == 2:
+			var break_progress: float = 1.0 - platform.crumble_break_timer / (32.0 / 60.0)
+			var segment_width: float = platform_width / 8.0
+			for segment in range(8):
+				var segment_fall := break_progress * break_progress * 42.0 * (1.0 + float(segment % 3) * 0.12)
+				draw_rect(Rect2(platform.x1 + segment * segment_width, platform.top_y + segment_fall, segment_width - 1.0, platform.thickness), platform_color)
+				draw_rect(Rect2(platform.x1 + segment * segment_width, platform.top_y + segment_fall, segment_width - 1.0, 4.0), platform_top_color)
 		else:
 			draw_rect(Rect2(platform.x1, platform.top_y, platform_width, platform.thickness), platform_color)
 			draw_rect(Rect2(platform.x1, platform.top_y, platform_width, 4.0), platform_top_color)

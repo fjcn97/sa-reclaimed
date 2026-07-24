@@ -123,7 +123,7 @@ func _ensure_labels() -> void:
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 func _update_chrome() -> void:
-	var time_over := CoreBridge.get_game_over_title_text() == "TIME OVER"
+	var time_over := CoreBridge.is_game_over_time_over()
 	if _panel:
 		_panel.color = Color(0.10, 0.06, 0.02, 0.96) if time_over else Color(0.12, 0.03, 0.03, 0.96)
 	if _hero_glow:
@@ -147,7 +147,7 @@ func _update_chrome() -> void:
 	if _badge_core:
 		_badge_core.color = Color(0.28, 0.20, 0.08, 0.96) if time_over else Color(0.26, 0.10, 0.08, 0.96)
 	if _badge_label:
-		_badge_label.text = "TIME" if time_over else "OVER"
+		_badge_label.text = CoreBridge.get_game_over_badge_text()
 		_badge_label.modulate = Color(1.0, 0.95, 0.76, 0.96)
 
 func _set_screen_visible(screen_visible: bool) -> void:

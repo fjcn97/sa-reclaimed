@@ -280,15 +280,7 @@ func _is_delete_final_screen() -> bool:
 	return screen_id == "delete_final"
 
 func _get_badge_text() -> String:
-	if screen_id == "difficulty":
-		return "LEVEL"
-	if screen_id == "time_limit":
-		return "CLOCK"
-	if _is_delete_final_screen():
-		return "FINAL"
-	if _is_delete_screen():
-		return "WARN"
-	return "SET"
+	return CoreBridge.get_switch_option_badge_text(screen_id)
 
 func _get_badge_text_color() -> Color:
 	if _is_delete_screen():

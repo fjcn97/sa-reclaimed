@@ -155,6 +155,7 @@ func _update_option_rows() -> void:
 			continue
 		var row: Dictionary = rows[i]
 		var selected := bool(row.get("selected", false))
+		var available := bool(row.get("available", true))
 		var top := 270.0 + float(i) * 92.0
 		var lift := -6.0 if selected else 0.0
 		_option_cards[i].position = Vector2(206.0, top + lift)
@@ -162,14 +163,14 @@ func _update_option_rows() -> void:
 		_option_labels[i].position = Vector2(228.0, top + 10.0 + lift)
 		_meta_labels[i].position = Vector2(230.0, top + 42.0 + lift)
 		_status_labels[i].position = Vector2(404.0, top + 24.0 + lift)
-		_option_cards[i].color = _get_card_color(str(row.get("status", "")), selected)
+		_option_cards[i].color = _get_card_color(available, selected)
 		_option_labels[i].text = str(row.get("name", ""))
 		_option_labels[i].modulate = Color(1.0, 1.0, 1.0, 1.0) if selected else Color(0.12, 0.22, 0.44, 1.0)
 		_meta_labels[i].text = str(row.get("description", ""))
 		_meta_labels[i].modulate = Color(0.96, 0.98, 1.0, 0.96) if selected else Color(0.28, 0.40, 0.60, 0.96)
 		var status_text := str(row.get("status", ""))
 		_status_labels[i].text = status_text
-		_status_labels[i].modulate = _get_status_color(status_text)
+		_status_labels[i].modulate = _get_status_color(available)
 
 func _update_summary() -> void:
 	if _summary_label:
@@ -213,15 +214,15 @@ func _update_chrome() -> void:
 	if _header_glow:
 		_header_glow.color = Color(0.16, 0.26, 0.46, 0.12 + absf(sin(_pulse_time * 0.9)) * 0.06)
 
-func _get_card_color(status_text: String, selected: bool) -> Color:
+func _get_card_color(available: bool, selected: bool) -> Color:
 	if selected:
-		if status_text == "READY":
+		if available:
 			return Color(0.18, 0.50, 0.88, 0.98)
 		return Color(0.90, 0.40, 0.16, 0.98)
 	return Color(0.88, 0.93, 1.0, 1.0)
 
-func _get_status_color(status_text: String) -> Color:
-	if status_text == "READY":
+func _get_status_color(available: bool) -> Color:
+	if available:
 		return Color(0.18, 0.52, 0.84, 1.0)
 	return Color(0.84, 0.38, 0.18, 1.0)
 

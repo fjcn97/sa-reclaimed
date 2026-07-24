@@ -101,7 +101,7 @@ func _ensure_chrome() -> void:
 	_badge_ring = _ensure_rect("BadgeRing", Rect2(920.0, 320.0, 140.0, 140.0), Color(0.92, 0.40, 0.18, 0.20))
 	_badge_core = _ensure_rect("BadgeCore", Rect2(955.0, 355.0, 70.0, 70.0), Color(1.0, 1.0, 1.0, 0.96))
 	_badge_label = _ensure_label("BadgeLabel", Vector2(930.0, 372.0), Vector2(120.0, 32.0), 18)
-	_badge_label.text = "START"
+	_badge_label.text = CoreBridge.get_menu_badge_text("START")
 	_badge_label.modulate = Color(0.78, 0.30, 0.12, 0.95)
 	if _wave_lines.size() == 0:
 		for i in range(3):
@@ -199,14 +199,19 @@ func _update_badge(pulse: float) -> void:
 		_badge_label.modulate = Color(0.78, 0.30, 0.12, 0.76 + (pulse * 0.24))
 
 func _update_wave_lines() -> void:
+	# title_screen.c advances the affine water offset every frame and cycles
+	# through brighter entries in title_screen__waves_brightness.pal.
+	var wave_offset := fposmod(_time * 3.0, 30.0)
+	var brightness := [0.22, 0.52, 0.82]
 	for i in range(_wave_lines.size()):
 		var line := _wave_lines[i]
 		if line == null:
 			continue
 		var phase := _time * 2.0 + float(i) * 0.6
 		line.position.x = 186.0 + sin(phase) * 12.0
+		line.position.y = 286.0 + float(i) * 10.0 + fposmod(wave_offset + float(i) * 10.0, 30.0) - 15.0
 		line.size.x = 908.0 + cos(phase * 0.8) * 36.0
-		line.color = Color(0.28, 0.56, 0.94, 0.08 + absf(sin(phase)) * 0.04)
+		line.color = Color(0.28, 0.56 + brightness[i] * 0.18, 0.94, 0.08 + brightness[i] * 0.08)
 
 func _set_screen_visible(screen_visible: bool) -> void:
 	if _backdrop:

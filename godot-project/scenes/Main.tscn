@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://scripts/TitleScreen.gd" id="6"]
 [ext_resource type="Script" path="res://scripts/PauseScreen.gd" id="7"]
 [ext_resource type="Script" path="res://scripts/ClearScreen.gd" id="9"]
+[ext_resource type="Script" path="res://scripts/TimeAttackResultsScreen.gd" id="47"]
 [ext_resource type="Script" path="res://scripts/IntroScreen.gd" id="10"]
 [ext_resource type="Script" path="res://scripts/TouchControls.gd" id="11"]
 [ext_resource type="Script" path="res://scripts/CharacterSelectScreen.gd" id="12"]
@@ -221,6 +222,10 @@ visible = false
 [node name="ClearScreen" type="CanvasLayer" parent="."]
 layer = 96
 script = ExtResource("9")
+
+[node name="TimeAttackResultsScreen" type="CanvasLayer" parent="."]
+layer = 97
+script = ExtResource("47")
 
 [node name="TitleLabel" type="Label" parent="ClearScreen"]
 offset_left = 180

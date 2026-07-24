@@ -59,19 +59,22 @@ func _process(delta: float) -> void:
 	if not active:
 		return
 	_wheel_time += delta * 2.6
+	var intro_progress := CoreBridge.get_character_select_intro_progress()
+	var intro_amount := 1.0 - intro_progress
+	var side_shift := 82.0 * intro_amount
 	var pulse := 0.5 + (sin(Time.get_ticks_msec() / 220.0) * 0.5)
 	if title_label:
 		title_label.text = CoreBridge.get_character_select_title_text()
-		title_label.position = Vector2(248.0, 116.0)
+		title_label.position = Vector2(248.0, 116.0 - 34.0 * intro_amount)
 		title_label.size = Vector2(612.0, 56.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_label.modulate = Color(0.98, 0.98, 1.0, 1.0)
+		title_label.modulate = Color(0.98, 0.98, 1.0, 0.30 + intro_progress * 0.70)
 	if prompt_label:
 		prompt_label.text = CoreBridge.get_character_select_prompt_text()
 		prompt_label.position = Vector2(188.0, 548.0)
 		prompt_label.size = Vector2(904.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		prompt_label.modulate = Color(1.0, 0.90, 0.54, 0.74 + (pulse * 0.24))
+		prompt_label.modulate = Color(1.0, 0.90, 0.54, (0.30 + intro_progress * 0.44) + (pulse * 0.24))
 	if detail_label:
 		detail_label.text = CoreBridge.get_character_select_detail_text()
 		detail_label.position = Vector2(170.0, 664.0)
@@ -82,6 +85,16 @@ func _process(delta: float) -> void:
 	_update_rows()
 	_update_wheel()
 	_update_chrome()
+	if _left_stage:
+		_left_stage.position.x = 204.0 - side_shift
+	if _header_band:
+		_header_band.position.x = 210.0 - side_shift
+	if _right_stage:
+		_right_stage.position.x = 576.0 + side_shift
+	if _roster_card:
+		_roster_card.position.x = 602.0 + side_shift
+	if _context_chip:
+		_context_chip.position.x = 602.0 + side_shift
 
 func _ensure_chrome() -> void:
 	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.05, 0.10, 0.68))
@@ -226,6 +239,7 @@ func _update_rows() -> void:
 			continue
 		var row: Dictionary = rows[i]
 		var is_selected := bool(row.get("selected", false))
+		var is_available := bool(row.get("available", false))
 		var status_text := str(row.get("status", ""))
 		var top := 290.0 + float(i) * 36.0
 		var lift := -3.0 if is_selected else 0.0
@@ -239,7 +253,7 @@ func _update_rows() -> void:
 		_status_labels[i].text = status_text
 		_row_labels[i].modulate = Color(1.0, 0.98, 0.84, 1.0) if is_selected else Color(0.98, 0.98, 1.0, 1.0)
 		_desc_labels[i].modulate = Color(0.70, 0.84, 1.0, 0.94)
-		_status_labels[i].modulate = Color(0.32, 1.0, 0.56, 1.0) if status_text == "READY" else Color(0.62, 0.66, 0.76, 0.96)
+		_status_labels[i].modulate = Color(0.32, 1.0, 0.56, 1.0) if is_available else Color(0.62, 0.66, 0.76, 0.96)
 
 func _update_wheel() -> void:
 	var rows: Array = CoreBridge.get_character_select_rows()
@@ -251,17 +265,17 @@ func _update_wheel() -> void:
 		if not visible:
 			continue
 		var row: Dictionary = rows[i]
-		var status_text := str(row.get("status", ""))
+		var is_available := bool(row.get("available", false))
 		var is_selected := bool(row.get("selected", false))
 		var pos := _node_positions[i]
 		var bob := sin(_wheel_time + float(i) * 0.8) * 4.0
 		_wheel_nodes[i].position = Vector2(pos.x - 16.0, pos.y - 16.0 + bob)
 		_wheel_node_labels[i].position = Vector2(pos.x - 16.0, pos.y - 16.0 + bob)
-		_wheel_nodes[i].color = Color(0.46, 0.78, 0.98, 0.98) if is_selected else (Color(0.20, 0.30, 0.44, 0.98) if status_text != "LOCKED" else Color(0.24, 0.24, 0.28, 0.96))
+		_wheel_nodes[i].color = Color(0.46, 0.78, 0.98, 0.98) if is_selected else (Color(0.20, 0.30, 0.44, 0.98) if is_available else Color(0.24, 0.24, 0.28, 0.96))
 		var name_text := str(row.get("name", ""))
 		name_text = name_text.replace(" ", "")
 		_wheel_node_labels[i].text = name_text.left(2)
-		_wheel_node_labels[i].modulate = Color(0.96, 0.98, 1.0, 1.0) if status_text != "LOCKED" else Color(0.70, 0.72, 0.76, 0.94)
+		_wheel_node_labels[i].modulate = Color(0.96, 0.98, 1.0, 1.0) if is_available else Color(0.70, 0.72, 0.76, 0.94)
 		if is_selected:
 			selected_index = i
 	if _selected_node_ring:

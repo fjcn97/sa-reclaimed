@@ -181,9 +181,9 @@ func _update_rows() -> void:
 		_row_labels[i].text = "%s %s" % [str(row.get("rank_text", "P%d" % [int(row.get("rank", i + 1))])), str(row.get("name", ""))]
 		_row_labels[i].modulate = Color(1.0, 0.84, 0.40, 1.0) if is_winner else Color(0.96, 0.97, 1.0, 1.0)
 		if selection_mode:
-			_stat_labels[i].text = "%s   LOCKED   %s" % [str(row.get("character", "SONIC")), str(row.get("rank_text", "P%d" % [i + 1]))]
+			_stat_labels[i].text = str(row.get("stat_text", ""))
 		else:
-			_stat_labels[i].text = str(row.get("stat_text", "%s   RINGS %d   SCORE %d" % [str(row.get("character", "SONIC")), int(row.get("rings", 0)), int(row.get("score", 0))]))
+			_stat_labels[i].text = str(row.get("stat_text", ""))
 		_stat_labels[i].modulate = Color(1.0, 0.84, 0.40, 1.0) if is_winner else Color(0.82, 0.88, 0.98, 0.96)
 
 func _update_options() -> void:

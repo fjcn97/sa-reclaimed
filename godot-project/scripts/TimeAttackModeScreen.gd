@@ -45,18 +45,22 @@ func _process(delta: float) -> void:
 	if not active:
 		return
 	_anim_time += delta * 2.8
+	var intro_progress := CoreBridge.get_time_attack_mode_intro_progress()
+	var intro_amount := 1.0 - intro_progress
+	var title_shift := -44.0 * intro_amount
+	var side_shift := 72.0 * intro_amount
 	if title_label:
 		title_label.text = CoreBridge.get_time_attack_mode_title_text()
-		title_label.position = Vector2(332.0, 76.0)
+		title_label.position = Vector2(332.0 + title_shift, 76.0)
 		title_label.size = Vector2(604.0, 52.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_label.modulate = Color(0.26, 0.20, 0.10, 1.0)
+		title_label.modulate = Color(0.26, 0.20, 0.10, 0.35 + intro_progress * 0.65)
 	if prompt_label:
 		prompt_label.text = CoreBridge.get_time_attack_mode_prompt_text()
 		prompt_label.position = Vector2(164.0, 558.0)
 		prompt_label.size = Vector2(952.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		prompt_label.modulate = Color(0.88, 0.42, 0.16, 0.76 + absf(sin(_anim_time * 0.9)) * 0.18)
+		prompt_label.modulate = Color(0.88, 0.42, 0.16, (0.30 + intro_progress * 0.46) + absf(sin(_anim_time * 0.9)) * 0.18)
 	if detail_label:
 		detail_label.text = CoreBridge.get_time_attack_mode_detail_text()
 		detail_label.position = Vector2(148.0, 606.0)
@@ -66,6 +70,16 @@ func _process(delta: float) -> void:
 	_update_chrome()
 	_update_option_labels()
 	_update_summary()
+	if _left_stage:
+		_left_stage.position.x = 160.0 - side_shift
+	if _option_stage:
+		_option_stage.position.x = 184.0 - side_shift
+	if _info_card:
+		_info_card.position.x = 184.0 - side_shift
+	if _right_stage:
+		_right_stage.position.x = 610.0 + side_shift
+	if _summary_card:
+		_summary_card.position.x = 638.0 + side_shift
 
 func _ensure_chrome() -> void:
 	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(1.0, 0.98, 0.94, 1.0))
@@ -158,7 +172,7 @@ func _update_option_labels() -> void:
 		var row: Dictionary = rows[i]
 		var is_selected := bool(row.get("selected", false))
 		var status_text := str(row.get("status", ""))
-		var is_locked := status_text == "LOCKED"
+		var is_locked := bool(row.get("locked", false))
 		var top := 272.0 + float(i) * 92.0
 		var lift := -6.0 if is_selected else 0.0
 		_option_cards[i].position = Vector2(206.0, top + lift)
@@ -172,14 +186,14 @@ func _update_option_labels() -> void:
 		_meta_labels[i].text = str(row.get("description", ""))
 		_meta_labels[i].modulate = Color(1.0, 0.98, 0.92, 0.96) if is_selected and not is_locked else (Color(0.58, 0.62, 0.70, 0.92) if is_locked else Color(0.48, 0.36, 0.20, 0.94))
 		_status_labels[i].text = status_text
-		_status_labels[i].modulate = _get_status_color(status_text, is_selected)
+		_status_labels[i].modulate = _get_status_color(is_locked, is_selected)
 
 func _update_summary() -> void:
 	if _summary_label:
 		_summary_label.text = CoreBridge.get_time_attack_mode_summary_text()
 		_summary_label.modulate = Color(0.34, 0.24, 0.12, 0.98)
 	if _emblem_label:
-		_emblem_label.text = "TA"
+		_emblem_label.text = CoreBridge.get_menu_badge_text("TA")
 		_emblem_label.modulate = Color(0.78, 0.32, 0.14, 0.98)
 	if _info_card:
 		_info_card.color = Color(1.0, 0.90, 0.78, 0.98)
@@ -230,14 +244,10 @@ func _get_idle_card_color(locked: bool) -> Color:
 		return Color(0.88, 0.86, 0.86, 0.96)
 	return Color(1.0, 0.95, 0.86, 1.0)
 
-func _get_status_color(status_text: String, selected: bool) -> Color:
-	match status_text:
-		"READY":
-			return Color(1.0, 0.98, 0.92, 1.0) if selected else Color(0.84, 0.40, 0.16, 0.96)
-		"LOCKED":
-			return Color(0.52, 0.52, 0.58, 1.0)
-		_:
-			return Color(0.84, 0.40, 0.16, 0.94)
+func _get_status_color(locked: bool, selected: bool) -> Color:
+	if locked:
+		return Color(0.52, 0.52, 0.58, 1.0)
+	return Color(1.0, 0.98, 0.92, 1.0) if selected else Color(0.84, 0.40, 0.16, 0.96)
 
 func _set_screen_visible(screen_visible: bool) -> void:
 	if _backdrop:
