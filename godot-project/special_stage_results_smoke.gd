@@ -12,6 +12,7 @@ func _run() -> void:
 	bridge._selected_level_index = 0
 	bridge._unlocked_level_index = 1
 	bridge._open_special_stage()
+	_check(bridge.get_special_stage_source_tilemap() == "special_stage_1_bg", "first emerald selects original Special Stage background")
 	bridge._special_stage_phase = 1
 	bridge._special_stage_timer = 1.0 / 60.0
 	bridge._special_stage_ring_count = 5

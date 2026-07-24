@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+const SourceTilemapTextureImpl = preload("res://scripts/SourceTilemapTexture.gd")
+
 @export var title_label: Label = null
 @export var prompt_label: Label = null
 @export var detail_label: Label = null
@@ -7,6 +9,8 @@ extends CanvasLayer
 var _backdrop: ColorRect = null
 var _band: ColorRect = null
 var _glow: ColorRect = null
+var _source_logo: TextureRect = null
+var _source_texture: Texture2D = null
 var _pulse_time: float = 0.0
 
 func _ready() -> void:
@@ -46,11 +50,21 @@ func _process(delta: float) -> void:
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		detail_label.modulate = Color(0.80, 0.88, 1.0, 0.88)
 	_update_chrome()
+	_update_source_logo()
 
 func _ensure_chrome() -> void:
 	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.94, 0.97, 1.0, 1.0))
 	_band = _ensure_rect("LogoBand", Rect2(210.0, 286.0, 860.0, 72.0), Color(0.08, 0.20, 0.56, 0.94))
 	_glow = _ensure_rect("LogoGlow", Rect2(176.0, 240.0, 928.0, 168.0), Color(0.24, 0.60, 0.98, 0.10))
+	_source_logo = TextureRect.new()
+	_source_logo.name = "OriginalPresentedBySega"
+	_source_logo.position = Vector2(400.0, 200.0)
+	_source_logo.size = Vector2(480.0, 320.0)
+	_source_logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_source_logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_source_logo.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_source_logo.z_index = -1
+	add_child(_source_logo)
 	_backdrop.z_index = -3
 	_glow.z_index = -2
 	_band.z_index = -1
@@ -70,6 +84,13 @@ func _update_chrome() -> void:
 	if _glow:
 		_glow.color = Color(0.24, 0.60, 0.98, 0.08 + absf(sin(_pulse_time * 1.4)) * 0.06)
 
+func _update_source_logo() -> void:
+	if _source_logo == null:
+		return
+	if _source_texture == null:
+		_source_texture = SourceTilemapTextureImpl.compose(CoreBridge.get_sega_logo_source_tilemap())
+	_source_logo.texture = _source_texture
+
 func _set_screen_visible(screen_visible: bool) -> void:
 	if _backdrop:
 		_backdrop.visible = screen_visible
@@ -77,6 +98,8 @@ func _set_screen_visible(screen_visible: bool) -> void:
 		_band.visible = screen_visible
 	if _glow:
 		_glow.visible = screen_visible
+	if _source_logo:
+		_source_logo.visible = screen_visible
 	if title_label:
 		title_label.visible = screen_visible
 	if prompt_label:

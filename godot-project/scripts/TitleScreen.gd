@@ -2,6 +2,8 @@
 # Presents the dedicated press-start/title shell for the Godot remake.
 extends CanvasLayer
 
+const SourceTilemapTextureImpl = preload("res://scripts/SourceTilemapTexture.gd")
+
 @export var title_label: Label = null
 @export var prompt_label: Label = null
 @export var subtitle_label: Label = null
@@ -25,6 +27,11 @@ var _badge_ring: ColorRect = null
 var _badge_core: ColorRect = null
 var _badge_label: Label = null
 var _subtitle_chip: ColorRect = null
+var _source_logo: TextureRect = null
+var _source_logo_cache: Dictionary = {}
+var _source_logo_name := ""
+var _source_background: TextureRect = null
+var _source_background_texture: Texture2D = null
 var _wave_lines: Array[ColorRect] = []
 
 func _ready() -> void:
@@ -83,6 +90,7 @@ func _process(delta: float) -> void:
 	_update_chrome()
 	_update_badge(pulse)
 	_update_wave_lines()
+	_update_source_logo()
 
 func _ensure_chrome() -> void:
 	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.98, 0.99, 1.0, 1.0))
@@ -91,6 +99,24 @@ func _ensure_chrome() -> void:
 	_logo_panel = _ensure_rect("LogoPanel", Rect2(136.0, 90.0, 1008.0, 186.0), Color(1.0, 1.0, 1.0, 0.98))
 	_logo_rule = _ensure_rect("LogoRule", Rect2(186.0, 180.0, 908.0, 10.0), Color(0.20, 0.48, 0.88, 0.22))
 	_subtitle_chip = _ensure_rect("SubtitleChip", Rect2(446.0, 214.0, 388.0, 40.0), Color(0.90, 0.95, 1.0, 0.98))
+	_source_logo = TextureRect.new()
+	_source_logo.name = "OriginalTitleLogo"
+	_source_logo.position = Vector2(380.0, 100.0)
+	_source_logo.size = Vector2(520.0, 200.0)
+	_source_logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_source_logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_source_logo.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_source_logo.z_index = -5
+	add_child(_source_logo)
+	_source_background = TextureRect.new()
+	_source_background.name = "OriginalTitleBackground"
+	_source_background.position = Vector2.ZERO
+	_source_background.size = Vector2(1280.0, 720.0)
+	_source_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_source_background.stretch_mode = TextureRect.STRETCH_SCALE
+	_source_background.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_source_background.z_index = -11
+	add_child(_source_background)
 	_title_plate = _ensure_rect("TitlePlate", Rect2(168.0, 308.0, 944.0, 184.0), Color(0.94, 0.97, 1.0, 0.98))
 	_left_stage = _ensure_rect("LeftStage", Rect2(212.0, 340.0, 360.0, 108.0), Color(0.90, 0.95, 1.0, 0.98))
 	_right_stage = _ensure_rect("RightStage", Rect2(706.0, 340.0, 360.0, 108.0), Color(0.90, 0.95, 1.0, 0.98))
@@ -213,6 +239,20 @@ func _update_wave_lines() -> void:
 		line.size.x = 908.0 + cos(phase * 0.8) * 36.0
 		line.color = Color(0.28, 0.56 + brightness[i] * 0.18, 0.94, 0.08 + brightness[i] * 0.08)
 
+func _update_source_logo() -> void:
+	if _source_logo == null:
+		return
+	var source := CoreBridge.get_title_logo_source_tilemap()
+	if source == _source_logo_name:
+		return
+	_source_logo_name = source
+	if not _source_logo_cache.has(source):
+		_source_logo_cache[source] = SourceTilemapTextureImpl.compose(source, 26, 1)
+	_source_logo.texture = _source_logo_cache[source] as Texture2D
+	if _source_background != null and _source_background_texture == null:
+		_source_background_texture = SourceTilemapTextureImpl.compose(CoreBridge.get_title_background_source_tilemap(), 32, 2)
+		_source_background.texture = _source_background_texture
+
 func _set_screen_visible(screen_visible: bool) -> void:
 	if _backdrop:
 		_backdrop.visible = screen_visible
@@ -226,6 +266,10 @@ func _set_screen_visible(screen_visible: bool) -> void:
 		_logo_rule.visible = screen_visible
 	if _subtitle_chip:
 		_subtitle_chip.visible = screen_visible
+	if _source_logo:
+		_source_logo.visible = screen_visible
+	if _source_background:
+		_source_background.visible = screen_visible
 	if _title_plate:
 		_title_plate.visible = screen_visible
 	if _left_stage:

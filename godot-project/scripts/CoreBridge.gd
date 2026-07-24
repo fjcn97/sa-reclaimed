@@ -84,6 +84,8 @@ const ENTITY_NOTE_BLOCK = 67
 const ENTITY_NOTE_SPHERE = 68
 const ENTITY_FLYING_HANDLE = 69
 const ENTITY_NOTE_PARTICLE = 70
+const ENTITY_LAP_TRIGGER = 71
+const ENTITY_GOAL_LEVER = 72
 const SOURCE_MAP_LOADER := preload("res://scripts/SourceMapLoader.gd")
 const GRAVITY_KIND_DOWN = 0
 const GRAVITY_KIND_UP = 1
@@ -272,14 +274,26 @@ class EntityState:
 	var hit_timer: float = 0.0
 	var flag_active: bool = false
 	var item_kind: int = ITEM_BOX_KIND_RINGS
+	var special_ring_collected: bool = false
+	var special_ring_collect_timer: float = 0.0
+	var fan_speed: float = 1.0
+	var whirlwind_active: bool = false
+	var whirlwind_timer: float = 0.0
+	var propeller_horizontal_step: float = 0.0
+	var propeller_vertical_step: float = 0.0
+	var propeller_phase_units: float = 0.0
 	var rail_end_mode: int = 0
 	var rail_direction: float = 1.0
+	var rail_is_start: bool = true
+	var rail_air_start: bool = false
 	var gravity_kind: int = GRAVITY_KIND_TOGGLE
 	var bounce_strength: float = 1.125
 	var surface_speed: float = 0.0
 	var flying_spring: bool = false
 	var flying_spring_phase: float = 0.0
 	var flying_spring_trigger_timer: float = 0.0
+	var flying_spring_step: int = 0
+	var flying_spring_motion_state: int = 0
 	var floating_spring: bool = false
 	var floating_spring_amplitude_x: float = 0.0
 	var floating_spring_amplitude_y: float = 0.0
@@ -294,6 +308,75 @@ class EntityState:
 	var note_offset_y: float = 0.0
 	var note_particle: bool = false
 	var note_particle_delay: float = 0.0
+	var lap_previous_player_x: float = 0.0
+	var lap_previous_checkpoint_time: float = 0.0
+	var lap_count: int = 0
+	var lap_highest: int = 0
+	var lap_passed: bool = false
+	var lap_touching: bool = false
+	var lap_last_bonus: int = 0
+	var goal_lever: bool = false
+	var goal_toggle: bool = false
+	var gohla_turn_timer: float = 0.0
+	var koura_motion_variant: int = 0
+	var koura_patrol_min_y: float = 0.0
+	var koura_patrol_max_y: float = 0.0
+	var gejigeji_vertical: bool = false
+	var gejigeji_pause_timer: float = 0.0
+	var gejigeji_history: Array = []
+	var kubinaga_phase: int = 0
+	var kubinaga_phase_timer: float = 2.0
+	var kubinaga_extension: float = 0.0
+	var kubinaga_angle: float = 0.0
+	var kubinaga_shot_fired: bool = false
+	var madillo_return_timer: float = 0.0
+	var kyura_phase_units: float = 0.0
+	var kyura_switch_timer: float = 8.0 / 60.0
+	var kyura_recovering: bool = false
+	var kyura_projectile_counter: int = 12
+	var kyura_projectile_variant: int = 0
+	var flickey_vertical_speed: float = -240.0
+	var flickey_turn_timer: float = 0.0
+	var flickey_history: Array = []
+	var mon_phase_timer: float = 0.0
+	var straw_phase: int = 0
+	var straw_phase_timer: float = 30.0 / 60.0
+	var straw_cycles: int = 5
+	var yado_phase: int = 0
+	var yado_phase_timer: float = 120.0 / 60.0
+	var yado_projectile_fired: bool = false
+	var yado_facing: int = 1
+	var bell_phase: int = 0
+	var bell_phase_timer: float = 120.0 / 60.0
+	var pen_boosting: bool = false
+	var pen_turn_timer: float = 0.0
+	var pen_direction: float = -1.0
+	var mouse_boosting: bool = false
+	var mouse_turn_timer: float = 0.0
+	var mouse_direction: float = -1.0
+	var mouse_position_offset: float = 0.0
+	var circus_phase: int = 0
+	var circus_phase_timer: float = 1.0 / 60.0
+	var circus_projectile_spawned: bool = false
+	var balloon_angle: float = 0.0
+	var balloon_amplitude_x: float = 12.0
+	var balloon_amplitude_y: float = 12.0
+	var balloon_projectile_spawned: bool = false
+	var bullet_buzzer_angle: float = 0.0
+	var bullet_buzzer_attack_timer: float = 0.0
+	var bullet_buzzer_projectile_spawned: bool = false
+	var kiki_vertical_direction: float = 1.0
+	var kiki_vertical_min: float = 0.0
+	var kiki_vertical_max: float = 0.0
+	var kiki_border_hits: int = 0
+	var kiki_attack_frames: int = 0
+	var kiki_projectile_spawned: bool = false
+	var buzzer_turn_timer: float = 0.0
+	var buzzer_cooldown: float = 0.0
+	var buzzer_attack_origin_x: float = 0.0
+	var buzzer_attack_origin_y: float = 0.0
+	var buzzer_attack_timer: float = 0.0
+	var pikopiko_clamp_ground: bool = false
 	var bouncy_landing_speed: int = 0
 	var bouncy_launch_frame: int = 0
 	var bouncy_spring_stiffness: float = 9.0
@@ -373,6 +456,8 @@ class EntityState:
 	var cannon_angle: float = 0.0
 	var cannon_active: bool = false
 	var cannon_timer: float = 0.0
+	var cannon_loading: bool = false
+	var cannon_aim_phase: int = 0
 	var rotating_handle_angle: float = 0.0
 	var rotating_handle_speed: float = 0.0
 	var flying_handle: bool = false
@@ -578,6 +663,8 @@ var _copyright_timer: float = 0.0
 var _copyright_duration: float = 4.5
 var _credits_end_timer: float = 0.0
 var _credits_end_duration: float = 4.5
+var _credits_end_story_frame: int = 0
+var _credits_end_story_timer: float = 0.0
 var _credits_end_show_missing_emeralds: bool = false
 const CREDITS_SLIDE_GROUPS := [6, 6, 8, 5]
 const CREDITS_SOURCE_TILES := [
@@ -589,6 +676,7 @@ const CREDITS_SOURCE_TILES := [
 ]
 const CREDITS_INTRO_DURATION: float = 180.0 / 60.0
 const CREDITS_SLIDE_DURATION: float = 150.0 / 60.0
+const CREDITS_END_STORY_DELAYS := [3, 3, 3, 3, 3, 3, 3, 12, 4, 4]
 const CHARACTER_UNLOCK_SEGMENT_COUNT = 4
 const CHARACTER_UNLOCK_SEGMENT_FRAMES = 340
 const CHARACTER_UNLOCK_FINAL_FRAMES = 300
@@ -1838,6 +1926,7 @@ func advance_ui_timers(delta: float, held_input: int = 0, frame_input: int = 0) 
 		if _copyright_timer <= 0.0:
 			_resolve_copyright()
 	if _game_state == GAME_STATE_CREDITS_END:
+		_advance_credits_end_story(delta)
 		_credits_end_timer = maxf(0.0, _credits_end_timer - delta)
 		if _credits_end_timer <= 0.0:
 			_resolve_credits_end()
@@ -2144,6 +2233,8 @@ func _advance_credits_page() -> void:
 func _open_credits_end() -> void:
 	_game_state = GAME_STATE_CREDITS_END
 	_credits_end_timer = _credits_end_duration
+	_credits_end_story_frame = 0
+	_credits_end_story_timer = 0.0
 	_status_text = get_ending_variant_label()
 	var selected_is_amy := _selected_character_index == CHARACTER_NAMES_AMY_INDEX()
 	var selected_route_complete := bool(_completed_character_routes[clampi(_selected_character_index, 0, _completed_character_routes.size() - 1)])
@@ -2581,6 +2672,14 @@ func get_entity_visual_profile(entity_type: int, activated: bool = false) -> Dic
 				"overlay_offset": Vector2(18.0, -28.0),
 				"overlay_color": Color.WHITE,
 			}
+		ENTITY_GOAL_LEVER:
+			return {
+				"body_scale": Vector2.ONE,
+				"overlay_scale": Vector2.ONE,
+				"body_offset": Vector2.ZERO,
+				"overlay_offset": Vector2(18.0, -28.0),
+				"overlay_color": Color(1.0, 0.82, 0.28, 1.0) if activated else Color.WHITE,
+			}
 		ENTITY_SPECIAL_RING:
 			return {
 				"body_scale": Vector2.ONE,
@@ -2790,6 +2889,9 @@ func _apply_source_entities(level: LevelState) -> void:
 				continue
 			goal_added = true
 		var source_entity := _add_source_entity(level, entity_type, row, source_width, source_height)
+		if entity_type == ENTITY_LAP_TRIGGER:
+			_configure_source_lap_trigger(source_entity, row, source_width, source_height, level)
+			continue
 		if entity_type == ENTITY_LAUNCHER:
 			_add_source_launcher(source_entity, row, kind, source_width, source_height, level)
 		elif entity_type == ENTITY_CANNON:
@@ -3027,6 +3129,8 @@ func _apply_source_entities(level: LevelState) -> void:
 			source_entity.decoration = true
 			var decoration_fields: Array = row.get("fields", [])
 			source_entity.decoration_id = maxi(0, _to_int_field(decoration_fields[5]) if decoration_fields.size() > 5 else 0)
+		elif entity_type == ENTITY_GOAL:
+			source_entity.goal_toggle = kind == "TOGGLE__GOAL"
 		elif entity_type == ENTITY_LAYER_TOGGLE:
 			source_entity.variant = 1 if kind.find("BACKGROUND") >= 0 else 0
 			var fields: Array = row.get("fields", [])
@@ -3087,9 +3191,12 @@ func _apply_source_entities(level: LevelState) -> void:
 			source_entity.height = 96.0
 			source_entity.variant = 1 if kind.find("PERIODIC") >= 0 else 0
 			source_entity.velocity_x = -1.0 if kind.find("LEFT") >= 0 else 1.0
+			source_entity.fan_speed = 1.0
 		elif entity_type == ENTITY_WHIRLWIND:
 			source_entity.width = 128.0
 			source_entity.height = 128.0
+			source_entity.whirlwind_active = false
+			source_entity.whirlwind_timer = 0.0
 			var whirlwind_fields: Array = row.get("fields", [])
 			if whirlwind_fields.size() > 8:
 				source_entity.width = _source_entity_extent(whirlwind_fields[7], source_width, source_height, level)
@@ -3113,6 +3220,8 @@ func _apply_source_entities(level: LevelState) -> void:
 		elif entity_type == ENTITY_GRIND_RAIL:
 			source_entity.rail_direction = -1.0 if kind.find("LEFT") >= 0 else 1.0
 			source_entity.rail_end_mode = 1 if kind.find("END_AIR") >= 0 or kind.find("FORCED_JUMP") >= 0 or kind.find("ALTERNATE") >= 0 else 0
+			source_entity.rail_is_start = kind.find("START") >= 0
+			source_entity.rail_air_start = kind.find("START_AIR") >= 0
 	_apply_source_terrain(level, source_width, source_height)
 
 func _add_source_launcher(entity: EntityState, row: Dictionary, kind: String, source_width: float, source_height: float, level: LevelState) -> void:
@@ -3183,6 +3292,24 @@ func _add_source_entity(level: LevelState, entity_type: int, row: Dictionary, so
 	var runtime_x: float = runtime_position.x
 	var runtime_y: float = runtime_position.y
 	return _add_entity(level, entity_type, runtime_x, runtime_y)
+
+func _configure_source_lap_trigger(entity: EntityState, row: Dictionary, source_width: float, source_height: float, level: LevelState) -> void:
+	var fields: Array = row.get("fields", [])
+	var scale := _source_runtime_scale(source_width, source_height, level)
+	var base_x := float(row.get("world_x", 0))
+	var base_y := float(row.get("world_y", 0))
+	var left := float(_to_int_field(fields[5])) * 8.0 if fields.size() > 5 else 0.0
+	var top := float(_to_int_field(fields[6])) * 8.0 if fields.size() > 6 else 0.0
+	var width := maxf(8.0, float(_to_int_field(fields[7])) * 8.0 if fields.size() > 7 else 8.0)
+	var height := maxf(8.0, float(_to_int_field(fields[8])) * 8.0 if fields.size() > 8 else 8.0)
+	var position := _source_runtime_position(level, base_x, base_y, source_width, source_height)
+	entity.world_x = position.x
+	entity.world_y = position.y
+	entity.width = width * scale
+	entity.height = height * scale
+	entity.lap_previous_player_x = _player_state.world_x
+	entity.lap_previous_checkpoint_time = _checkpoint_time
+
 
 func _add_source_crumbling_platform(level: LevelState, row: Dictionary, source_width: float, source_height: float) -> void:
 	var fields: Array = row.get("fields", [])
@@ -3315,6 +3442,10 @@ func _add_source_platform(level: LevelState, source_start_x: int, source_end_x: 
 		_add_sloped_platform(level, start, start_position.y + 12.0, end, end_position.y + 12.0, 12.0, collision_layer)
 
 func _source_interactable_type(kind: String) -> int:
+	if kind == "COLLECT_RINGS_LAP_TRIGGER":
+		return ENTITY_LAP_TRIGGER
+	if kind == "GOAL_LEVER":
+		return ENTITY_GOAL_LEVER
 	if kind == "SPECIAL_RING":
 		return ENTITY_SPECIAL_RING
 	if kind.begins_with("LAUNCHER__"):
@@ -3473,77 +3604,152 @@ func _configure_source_enemy(entity: EntityState, kind: String, row: Dictionary)
 			entity.patrol_max_x = entity.world_x + source_start + source_width
 	match kind:
 		"BUZZER":
-			entity.velocity_x = _enemy_speed * 0.75
+			entity.velocity_x = 45.0
 			entity.state_timer = 0.0
+			entity.buzzer_turn_timer = 0.0
+			entity.buzzer_cooldown = 0.0
+			entity.buzzer_attack_origin_x = entity.world_x
+			entity.buzzer_attack_origin_y = entity.world_y
+			entity.buzzer_attack_timer = 0.0
 		"BALLOON":
 			entity.velocity_x = 42.0
-			entity.state_timer = 1.2
+			entity.velocity_x = 30.0
+			entity.state_timer = 120.0 / 60.0
+			entity.variant = 0
+			entity.balloon_angle = 0.0
+			entity.balloon_projectile_spawned = false
+			if fields.size() > 8:
+				entity.balloon_amplitude_x = clampf(absf(float(_to_int_field(fields[7]))) * 4.0, 4.0, 48.0)
+				entity.balloon_amplitude_y = clampf(absf(float(_to_int_field(fields[8]))) * 4.0, 4.0, 48.0)
 		"BULLETBUZZER":
-			entity.state_timer = 2.0
+			entity.state_timer = 0.0
+			entity.bullet_buzzer_angle = 0.0
+			entity.bullet_buzzer_attack_timer = 0.0
+			entity.bullet_buzzer_projectile_spawned = false
 		"KOURA":
-			entity.velocity_x = 82.0
+			var horizontal := fields.size() > 8 and _to_int_field(fields[7]) > _to_int_field(fields[8])
+			var direction := _to_int_field(fields[6]) if fields.size() > 6 else 0
+			entity.koura_motion_variant = 0 if horizontal and direction == 0 else (1 if horizontal and direction == 1 else (2 if horizontal else 3))
+			entity.velocity_x = -30.0 if entity.koura_motion_variant < 2 else 0.0
+			if entity.koura_motion_variant == 3:
+				entity.velocity_y = -30.0
+				entity.koura_patrol_min_y = entity.world_y + float(_to_int_field(fields[6])) * 8.0 if fields.size() > 6 else entity.world_y - 96.0
+				entity.koura_patrol_max_y = entity.koura_patrol_min_y + float(_to_int_field(fields[8])) * 8.0 if fields.size() > 8 else entity.world_y + 96.0
 		"STAR":
 			entity.state_timer = 2.0
 		"KIKI":
-			entity.state_timer = 1.8
+			entity.state_timer = 0.0
+			entity.kiki_vertical_direction = 1.0
+			entity.kiki_vertical_min = entity.world_y - 48.0
+			entity.kiki_vertical_max = entity.world_y + 48.0
+			entity.kiki_border_hits = 0
+			entity.kiki_attack_frames = 0
+			entity.kiki_projectile_spawned = false
 		"PEN":
 			entity.enemy_profile = 1
-			entity.velocity_x = 30.0
+			entity.velocity_x = -30.0
+			entity.pen_boosting = false
+			entity.pen_turn_timer = 0.0
+			entity.pen_direction = -1.0
 		"MOUSE":
 			entity.enemy_profile = 3
-			entity.velocity_x = 48.0
+			entity.velocity_x = -30.0
+			entity.mouse_boosting = false
+			entity.mouse_turn_timer = 0.0
+			entity.mouse_direction = -1.0
+			entity.mouse_position_offset = 8.0 if fields.size() > 8 and _to_int_field(fields[8]) != 0 else 0.0
 		"BELL":
 			entity.enemy_profile = 2
 			entity.state_timer = 2.0
+			entity.bell_phase = 0
+			entity.bell_phase_timer = 120.0 / 60.0
 		"CIRCUS":
 			entity.enemy_profile = 4
-			entity.state_timer = 1.5
+			entity.circus_phase = 0
+			entity.circus_phase_timer = 1.0 / 60.0
+			entity.circus_projectile_spawned = false
 		"PIKOPIKO":
+			entity.enemy_profile = 18
 			entity.velocity_x = -60.0
+			entity.pikopiko_clamp_ground = fields.size() > 1 and _to_int_field(fields[1]) != 0
 		"YADO":
 			entity.enemy_profile = 5
 			entity.state_timer = 2.0
+			entity.yado_phase = 0
+			entity.yado_phase_timer = 2.0
+			entity.yado_projectile_fired = false
+			entity.yado_facing = 1
 		"GOHLA":
 			entity.enemy_profile = 6
 			entity.state_timer = 0.0
+			entity.velocity_x = -30.0
 		"KURAKURA":
 			entity.enemy_profile = 8
 			entity.state_timer = 0.0
 		"GEJIGEJI":
 			entity.enemy_profile = 10
-			entity.velocity_x = 72.0
+			entity.gejigeji_vertical = fields.size() > 8 and _to_int_field(fields[7]) <= _to_int_field(fields[8])
+			entity.velocity_x = -33.75 if not entity.gejigeji_vertical else 0.0
+			entity.velocity_y = -33.75 if entity.gejigeji_vertical else 0.0
+			if entity.gejigeji_vertical:
+				entity.koura_patrol_min_y = entity.world_y + float(_to_int_field(fields[6])) * 8.0 if fields.size() > 6 else entity.world_y - 96.0
+				entity.koura_patrol_max_y = entity.koura_patrol_min_y + float(_to_int_field(fields[8])) * 8.0 if fields.size() > 8 else entity.world_y + 96.0
+			for _history in range(64):
+				entity.gejigeji_history.append(Vector2(entity.world_x, entity.world_y))
 			for _segment in range(4):
 				entity.trail_positions.append(Vector2(entity.world_x, entity.world_y))
 		"KUBINAGA":
 			entity.enemy_profile = 11
 			entity.target_x = entity.world_x
 			entity.target_y = entity.world_y
-			entity.state_timer = 1.8
+			entity.kubinaga_phase = 0
+			entity.kubinaga_phase_timer = 2.0
+			entity.kubinaga_extension = 0.0
 		"MADILLO":
 			entity.enemy_profile = 12
 			entity.state_timer = 0.0
+			entity.velocity_x = 0.0
+			entity.madillo_return_timer = 0.0
 		"SPINNER":
 			entity.enemy_profile = 13
 			entity.state_timer = 0.0
 		"KYURA":
 			entity.enemy_profile = 14
 			entity.state_timer = 0.0
+			entity.kyura_phase_units = 0.0
+			entity.kyura_switch_timer = 8.0 / 60.0
+			entity.kyura_recovering = false
+			entity.kyura_projectile_counter = 12
+			entity.kyura_projectile_variant = 0
 			entity.target_x = absf(float(_to_int_field(fields[7])) * 4.0) if fields.size() > 7 else 24.0
 			entity.target_y = absf(float(_to_int_field(fields[8])) * 4.0) if fields.size() > 8 else 16.0
 		"FLICKEY":
 			entity.enemy_profile = 15
 			entity.velocity_x = -90.0
+			entity.flickey_vertical_speed = -240.0
+			entity.flickey_turn_timer = 0.0
+			for _history in range(64):
+				entity.flickey_history.append(Vector2(entity.world_x, entity.world_y))
 			for _segment in range(4):
 				entity.trail_positions.append(Vector2(entity.world_x, entity.world_y))
 		"MON":
 			entity.enemy_profile = 16
 			entity.state_timer = 0.0
+			entity.mon_phase_timer = 0.0
 		"HAMMERHEAD":
 			entity.enemy_profile = 7
-			entity.state_timer = float(_to_int_field(fields[8])) / 256.0 * TAU if fields.size() > 8 else 0.0
+			# hammerhead.c multiplies the 256-step source phase by four and
+			# offsets it by half a sine cycle before sampling SIN().
+			entity.state_timer = TAU * 0.5 + (float(_to_int_field(fields[8])) * 4.0 * TAU / 1024.0 if fields.size() > 8 else 0.0)
 		"STRAW":
 			entity.enemy_profile = 9
 			entity.state_timer = 1.0
+			entity.straw_phase = 0
+			entity.straw_phase_timer = 30.0 / 60.0
+			entity.straw_cycles = 5
+			var seed_angle := fmod(absf(entity.world_x * 0.017 + entity.world_y * 0.013), TAU)
+			entity.velocity_x = cos(seed_angle) * 120.0
+			entity.velocity_y = sin(seed_angle) * 120.0
 
 func _source_item_kind(kind: String) -> int:
 	match kind:
@@ -3615,32 +3821,43 @@ func _add_enemy(level: LevelState, x: float, y: float, patrol_min_x: float, patr
 
 func _add_buzzer(level: LevelState, x: float, y: float, patrol_min_x: float, patrol_max_x: float) -> void:
 	var entity := _add_entity(level, ENTITY_BUZZER, x, y)
-	entity.velocity_x = _enemy_speed * 0.75
+	entity.velocity_x = 45.0
 	entity.patrol_min_x = patrol_min_x
 	entity.patrol_max_x = patrol_max_x
 	entity.origin_x = x
 	entity.origin_y = y
 	entity.target_x = x
 	entity.target_y = y
+	entity.buzzer_turn_timer = 0.0
+	entity.buzzer_cooldown = 0.0
+	entity.buzzer_attack_origin_x = x
+	entity.buzzer_attack_origin_y = y
+	entity.buzzer_attack_timer = 0.0
 
 func _add_balloon(level: LevelState, x: float, y: float, patrol_min_x: float, patrol_max_x: float) -> void:
 	var entity := _add_entity(level, ENTITY_BALLOON, x, y)
-	entity.velocity_x = 42.0
+	entity.velocity_x = 30.0
 	entity.patrol_min_x = patrol_min_x
 	entity.patrol_max_x = patrol_max_x
 	entity.origin_x = x
 	entity.origin_y = y
-	entity.state_timer = 1.2
+	entity.state_timer = 120.0 / 60.0
+	entity.balloon_angle = 0.0
+	entity.balloon_projectile_spawned = false
 
 func _add_bullet_buzzer(level: LevelState, x: float, y: float) -> void:
 	var entity := _add_entity(level, ENTITY_BULLET_BUZZER, x, y)
 	entity.origin_x = x
 	entity.origin_y = y
-	entity.state_timer = 2.0
+	entity.state_timer = 0.0
+	entity.bullet_buzzer_angle = 0.0
+	entity.bullet_buzzer_attack_timer = 0.0
+	entity.bullet_buzzer_projectile_spawned = false
 
 func _add_koura(level: LevelState, x: float, y: float, patrol_min_x: float, patrol_max_x: float) -> void:
 	var entity := _add_entity(level, ENTITY_KOURA, x, y)
-	entity.velocity_x = 82.0
+	entity.velocity_x = -30.0
+	entity.koura_motion_variant = 0
 	entity.patrol_min_x = patrol_min_x
 	entity.patrol_max_x = patrol_max_x
 	entity.origin_x = x
@@ -3656,7 +3873,13 @@ func _add_kiki(level: LevelState, x: float, y: float) -> void:
 	var entity := _add_entity(level, ENTITY_KIKI, x, y)
 	entity.origin_x = x
 	entity.origin_y = y
-	entity.state_timer = 1.8
+	entity.state_timer = 0.0
+	entity.kiki_vertical_direction = 1.0
+	entity.kiki_vertical_min = y - 48.0
+	entity.kiki_vertical_max = y + 48.0
+	entity.kiki_border_hits = 0
+	entity.kiki_attack_frames = 0
+	entity.kiki_projectile_spawned = false
 
 func _add_trapped_animal(level: LevelState, x: float, y: float, animal_type: int) -> void:
 	var entity := _add_entity(level, ENTITY_TRAPPED_ANIMAL, x, y)
@@ -3726,12 +3949,15 @@ func _add_whirlwind(level: LevelState, x: float, y: float, width: float, height:
 	var entity := _add_entity(level, ENTITY_WHIRLWIND, x, y)
 	entity.width = width
 	entity.height = height
+	entity.whirlwind_active = false
+	entity.whirlwind_timer = 0.0
 
 func _add_fan(level: LevelState, x: float, y: float, width: float, height: float, direction: float) -> void:
 	var entity := _add_entity(level, ENTITY_FAN, x, y)
 	entity.width = width
 	entity.height = height
 	entity.velocity_x = signf(direction)
+	entity.fan_speed = 1.0
 
 func _add_spikes(level: LevelState, x: float, y: float, width: float, height: float) -> void:
 	var entity := _add_entity(level, ENTITY_SPIKES, x, y)
@@ -3768,6 +3994,8 @@ func _add_grind_rail(level: LevelState, x: float, y: float, width: float, direct
 	entity.height = 18.0
 	entity.rail_direction = -1.0 if direction < 0.0 else 1.0
 	entity.rail_end_mode = 1 if end_mode != 0 else 0
+	entity.rail_is_start = true
+	entity.rail_air_start = false
 
 func _add_gravity_toggle(level: LevelState, x: float, y: float, width: float, height: float, kind: int = GRAVITY_KIND_TOGGLE) -> void:
 	var entity := _add_entity(level, ENTITY_GRAVITY_TOGGLE, x, y)
@@ -3977,6 +4205,13 @@ func _add_entity(level: LevelState, entity_type: int, x: float, y: float) -> Ent
 			entity.width = 32.0
 			entity.height = 32.0
 			entity.anim_id = 583
+		ENTITY_LAP_TRIGGER:
+			entity.width = 8.0
+			entity.height = 8.0
+		ENTITY_GOAL_LEVER:
+			entity.width = 24.0
+			entity.height = 64.0
+			entity.anim_id = 4
 		ENTITY_BUZZER:
 			entity.width = 30.0
 			entity.height = 30.0
@@ -4543,16 +4778,42 @@ func _update_flying_spring_motion(delta: float) -> void:
 			entity.world_x = entity.origin_x + sin(entity.floating_spring_phase) * entity.floating_spring_amplitude_x
 			entity.world_y = entity.origin_y + sin(entity.floating_spring_phase) * entity.floating_spring_amplitude_y
 			continue
-		entity.flying_spring_phase = fmod(entity.flying_spring_phase + delta * 15.0, TAU)
-		var amplitude := 2.0
-		if entity.flying_spring_trigger_timer > 0.0:
-			entity.flying_spring_trigger_timer = maxf(0.0, entity.flying_spring_trigger_timer - delta)
-			amplitude = 16.0
-		entity.world_y = entity.origin_y + sin(entity.flying_spring_phase) * amplitude
+		# flying_spring.c advances its shared animation in byte-sized frames.
+		match entity.flying_spring_motion_state:
+			0:
+				entity.flying_spring_step = (entity.flying_spring_step + 2) & 0xFF
+				entity.world_y = entity.origin_y + sin(float(entity.flying_spring_step * 4) / 256.0 * TAU) * 2.0
+			1:
+				entity.world_y = entity.origin_y + sin(float(entity.flying_spring_step * 4) / 256.0 * TAU) * 16.0
+				var remaining_steps: int = (64 - entity.flying_spring_step) >> 2
+				var step_delta: int = 4 if remaining_steps <= 3 else mini(6, remaining_steps)
+				entity.flying_spring_step += step_delta
+				if entity.flying_spring_step >= 64:
+					entity.flying_spring_step = 0
+					entity.flying_spring_motion_state = 2
+			2:
+				entity.flying_spring_step += 1
+				if entity.flying_spring_step > 0:
+					entity.flying_spring_step = 64
+					entity.flying_spring_motion_state = 3
+			3:
+				entity.world_y = entity.origin_y + sin(float(entity.flying_spring_step * 4) / 256.0 * TAU) * 16.0
+				entity.flying_spring_step += 8
+				if entity.flying_spring_step > 127:
+					entity.flying_spring_step = 128
+					entity.flying_spring_motion_state = 4
+			4:
+				entity.flying_spring_step = (entity.flying_spring_step + 8) & 0xFF
+				if entity.flying_spring_step == 128:
+					entity.flying_spring_step = 0
+					entity.flying_spring_motion_state = 0
+				else:
+					var recovery_amplitude := 6.0 if entity.flying_spring_step > 128 else 3.0
+					entity.world_y = entity.origin_y + sin(float(entity.flying_spring_step * 4) / 256.0 * TAU) * recovery_amplitude
 
 func _update_enemy_motion(delta: float) -> void:
 	for entity in _level_state.entities:
-		if (entity.type != ENTITY_ENEMY and entity.type != ENTITY_BUZZER and entity.type != ENTITY_BALLOON and entity.type != ENTITY_PROJECTILE and entity.type != ENTITY_BULLET_BUZZER and entity.type != ENTITY_KOURA and entity.type != ENTITY_STAR and entity.type != ENTITY_KIKI and entity.type != ENTITY_KIKI_PROJECTILE and entity.type != ENTITY_KIKI_PIECE and entity.type != ENTITY_BOSS and entity.type != ENTITY_ITEM_BOX and entity.type != ENTITY_SCATTER_RING and entity.type != ENTITY_TRAPPED_ANIMAL and entity.type != ENTITY_RING_EFFECT and entity.type != ENTITY_HEART_EFFECT and entity.type != ENTITY_DUST_EFFECT and entity.type != ENTITY_GRIND_EFFECT and entity.type != ENTITY_CHEESE and entity.type != ENTITY_TAIL_SWIPE and entity.type != ENTITY_KNUCKLES_FIRE and entity.type != ENTITY_SONIC_SKID and entity.type != ENTITY_FAN) or not entity.active:
+		if (entity.type != ENTITY_ENEMY and entity.type != ENTITY_BUZZER and entity.type != ENTITY_BALLOON and entity.type != ENTITY_PROJECTILE and entity.type != ENTITY_BULLET_BUZZER and entity.type != ENTITY_KOURA and entity.type != ENTITY_STAR and entity.type != ENTITY_KIKI and entity.type != ENTITY_KIKI_PROJECTILE and entity.type != ENTITY_KIKI_PIECE and entity.type != ENTITY_BOSS and entity.type != ENTITY_ITEM_BOX and entity.type != ENTITY_SPECIAL_RING and entity.type != ENTITY_SCATTER_RING and entity.type != ENTITY_TRAPPED_ANIMAL and entity.type != ENTITY_RING_EFFECT and entity.type != ENTITY_HEART_EFFECT and entity.type != ENTITY_DUST_EFFECT and entity.type != ENTITY_GRIND_EFFECT and entity.type != ENTITY_CHEESE and entity.type != ENTITY_TAIL_SWIPE and entity.type != ENTITY_KNUCKLES_FIRE and entity.type != ENTITY_SONIC_SKID and entity.type != ENTITY_FAN) or not entity.active:
 			continue
 		if entity.type == ENTITY_TRAPPED_ANIMAL:
 			_update_trapped_animal_motion(entity, delta)
@@ -4578,8 +4839,20 @@ func _update_enemy_motion(delta: float) -> void:
 		if entity.type == ENTITY_ITEM_BOX:
 			_update_item_box_effect(entity, delta)
 			continue
+		if entity.type == ENTITY_SPECIAL_RING:
+			_update_special_ring_motion(entity, delta)
+			continue
 		if entity.type == ENTITY_FAN and entity.variant == 1:
-			entity.state_timer = fmod(entity.state_timer + delta, 7.0)
+			entity.state_timer = fmod(entity.state_timer + delta * 60.0, 420.0)
+			var periodic_frame: float = entity.state_timer
+			if periodic_frame < 60.0:
+				entity.fan_speed = 0.0
+			elif periodic_frame < 120.0:
+				entity.fan_speed = (periodic_frame - 60.0) / 60.0
+			elif periodic_frame < 360.0:
+				entity.fan_speed = 1.0
+			else:
+				entity.fan_speed = (420.0 - periodic_frame) / 60.0
 			continue
 		if entity.type == ENTITY_SCATTER_RING:
 			_update_scattered_ring(entity, delta)
@@ -4593,6 +4866,11 @@ func _update_enemy_motion(delta: float) -> void:
 		if entity.type == ENTITY_PROJECTILE:
 			if entity.enemy_profile == 4 or entity.enemy_profile == 5 or entity.enemy_profile == 8:
 				entity.velocity_y += 280.0 * delta
+			if entity.enemy_profile == 11 or entity.enemy_profile == 14 or entity.enemy_profile == 17:
+				entity.state_timer -= delta
+				if entity.state_timer <= 0.0:
+					entity.active = false
+					continue
 			entity.world_x += entity.velocity_x * delta
 			entity.world_y += entity.velocity_y * delta
 			if entity.world_y < _level_state.min_y - 80.0 or entity.world_y > _level_state.max_y + 80.0 or entity.world_x < _level_state.min_x - 80.0 or entity.world_x > _level_state.max_x + 80.0:
@@ -4626,13 +4904,13 @@ func _update_enemy_motion(delta: float) -> void:
 			_update_yado_motion(entity, delta)
 			continue
 		if entity.enemy_profile == 6:
-			entity.state_timer = fmod(entity.state_timer + delta * 2.5, TAU)
+			_update_gohla_motion(entity, delta)
 			continue
 		if entity.enemy_profile == 7:
 			_update_hammerhead_motion(entity, delta)
 			continue
 		if entity.enemy_profile == 8:
-			entity.state_timer = fmod(entity.state_timer + delta * 2.0, TAU)
+			_update_kura_kura_motion(entity, delta)
 			continue
 		if entity.enemy_profile == 10:
 			_update_gejigeji_motion(entity, delta)
@@ -4654,6 +4932,9 @@ func _update_enemy_motion(delta: float) -> void:
 			continue
 		if entity.enemy_profile == 16:
 			_update_mon_motion(entity, delta)
+			continue
+		if entity.enemy_profile == 18:
+			_update_pikopiko_motion(entity, delta)
 			continue
 		if entity.enemy_profile == 9:
 			_update_straw_motion(entity, delta)
@@ -4695,254 +4976,465 @@ func _update_enemy_motion(delta: float) -> void:
 			entity.velocity_x = -abs(entity.velocity_x)
 
 func _update_pen_motion(entity: EntityState, delta: float) -> void:
-	var direction := signf(entity.velocity_x)
-	if is_zero_approx(direction):
-		direction = 1.0
+	if entity.pen_turn_timer > 0.0:
+		entity.pen_turn_timer = maxf(0.0, entity.pen_turn_timer - delta)
+		if entity.pen_turn_timer <= 0.000001:
+			entity.pen_turn_timer = 0.0
+			entity.pen_direction = -entity.pen_direction
+			entity.velocity_x = entity.pen_direction * 30.0
+			entity.pen_boosting = false
+		return
 	var player_delta := _player_state.world_x - entity.world_x
-	var threat := absf(player_delta) < 100.0 and signf(player_delta) == direction
-	var speed := 120.0 if threat else 30.0
-	entity.velocity_x = direction * speed
+	entity.pen_boosting = absf(player_delta) < 100.0 and signf(player_delta) == signf(entity.pen_direction) and not is_zero_approx(player_delta)
+	var speed := 120.0 if entity.pen_boosting else 30.0
+	entity.velocity_x = entity.pen_direction * speed
 	entity.world_x += entity.velocity_x * delta
 	if entity.world_x <= entity.patrol_min_x:
 		entity.world_x = entity.patrol_min_x
-		entity.velocity_x = absf(speed)
+		entity.pen_turn_timer = 18.0 / 60.0
+		entity.pen_direction = -1.0
 	elif entity.world_x >= entity.patrol_max_x:
 		entity.world_x = entity.patrol_max_x
-		entity.velocity_x = -absf(speed)
+		entity.pen_turn_timer = 18.0 / 60.0
+		entity.pen_direction = 1.0
+
+func _update_gohla_motion(entity: EntityState, delta: float) -> void:
+	# gohla.c moves its body by 0.5 px per frame and reverses at the map range.
+	entity.state_timer = fmod(entity.state_timer + delta * 2.5, TAU)
+	if entity.gohla_turn_timer > 0.0:
+		entity.gohla_turn_timer = maxf(0.0, entity.gohla_turn_timer - delta)
+		return
+	entity.world_x += entity.velocity_x * delta
+	if entity.world_x <= entity.patrol_min_x:
+		entity.world_x = entity.patrol_min_x
+		entity.velocity_x = absf(entity.velocity_x)
+		entity.gohla_turn_timer = 0.25
+	elif entity.world_x >= entity.patrol_max_x:
+		entity.world_x = entity.patrol_max_x
+		entity.velocity_x = -absf(entity.velocity_x)
+		entity.gohla_turn_timer = 0.25
+
+func _update_kura_kura_motion(entity: EntityState, delta: float) -> void:
+	# kura_kura.c advances its orbit by four GBA angle units per frame.
+	entity.state_timer = fmod(entity.state_timer + delta * 4.0 * TAU / 256.0 * 60.0, TAU)
+
+func _kura_kura_fireball_position(entity: EntityState) -> Vector2:
+	return Vector2(
+		entity.world_x + sin(entity.state_timer) * 21.0,
+		entity.world_y + cos(entity.state_timer) * 21.0
+	)
 
 func _update_bell_motion(entity: EntityState, delta: float) -> void:
-	entity.state_timer -= delta
-	if entity.state_timer > 0.0:
-		return
-	if entity.variant == 0:
-		entity.variant = 1
-		entity.state_timer = 2.0
-		var projectile := _add_entity(_level_state, ENTITY_PROJECTILE, entity.world_x, entity.world_y - 12.0)
-		var aim := Vector2(_player_state.world_x - entity.world_x, (_player_state.world_y - 20.0) - entity.world_y)
-		if aim.length_squared() > 0.0:
-			aim = aim.normalized() * 150.0
-		projectile.velocity_x = aim.x
-		projectile.velocity_y = aim.y
+	if entity.bell_phase == 0:
+		entity.bell_phase_timer -= delta
+		if entity.bell_phase_timer <= 0.000001:
+			entity.bell_phase = 1
+			entity.variant = 1
+			entity.bell_phase_timer = 124.0 / 60.0 if int(entity.world_x) & 1 else 180.0 / 60.0
 	else:
-		entity.variant = 0
-		entity.state_timer = 2.0
+		entity.bell_phase_timer -= delta
+		if entity.bell_phase_timer <= 0.000001:
+			entity.bell_phase = 0
+			entity.variant = 0
+			entity.bell_phase_timer = 120.0 / 60.0
 
 func _update_mouse_motion(entity: EntityState, delta: float) -> void:
-	var direction := signf(entity.velocity_x)
-	if is_zero_approx(direction):
-		direction = 1.0
+	if entity.mouse_turn_timer > 0.0:
+		entity.mouse_turn_timer = maxf(0.0, entity.mouse_turn_timer - delta)
+		if entity.mouse_turn_timer <= 0.000001:
+			entity.mouse_turn_timer = 0.0
+			entity.mouse_direction = -entity.mouse_direction
+			entity.velocity_x = entity.mouse_direction * 30.0
+			entity.mouse_boosting = false
+		return
 	var player_delta := _player_state.world_x - entity.world_x
-	var threat := absf(player_delta) < 100.0 and signf(player_delta) == direction
-	var speed := 192.0 if threat else 48.0
-	entity.velocity_x = direction * speed
+	entity.mouse_boosting = absf(player_delta) < 100.0 and signf(player_delta) == entity.mouse_direction and not is_zero_approx(player_delta)
+	var speed := 120.0 if entity.mouse_boosting else 30.0
+	entity.velocity_x = entity.mouse_direction * speed
 	entity.world_x += entity.velocity_x * delta
+	entity.world_y = entity.origin_y + entity.mouse_position_offset
 	if entity.world_x <= entity.patrol_min_x:
 		entity.world_x = entity.patrol_min_x
-		entity.velocity_x = absf(speed)
+		entity.mouse_turn_timer = 18.0 / 60.0
+		entity.mouse_direction = -1.0
 	elif entity.world_x >= entity.patrol_max_x:
 		entity.world_x = entity.patrol_max_x
-		entity.velocity_x = -absf(speed)
+		entity.mouse_turn_timer = 18.0 / 60.0
+		entity.mouse_direction = 1.0
 
 func _update_circus_motion(entity: EntityState, delta: float) -> void:
-	entity.state_timer -= delta
-	if entity.state_timer > 0.0:
-		return
-	if entity.variant == 0:
+	entity.circus_phase_timer -= delta
+	if entity.circus_phase == 0:
+		if entity.circus_phase_timer > 0.000001:
+			return
+		entity.circus_phase = 1
+		entity.circus_phase_timer = 30.0 / 60.0
+		entity.circus_projectile_spawned = false
 		entity.variant = 1
-		entity.state_timer = 0.7
-		var projectile := _add_entity(_level_state, ENTITY_PROJECTILE, entity.world_x, entity.world_y - 16.0)
-		projectile.enemy_profile = 4
-		projectile.velocity_x = signf(_player_state.world_x - entity.world_x) * 72.0
-		projectile.velocity_y = -170.0
-	else:
+		return
+	if entity.circus_phase == 1:
+		if entity.circus_phase_timer > 0.000001:
+			return
+		entity.circus_phase = 2
+		entity.circus_phase_timer = 50.0 / 60.0
+		entity.variant = 2
+		if not entity.circus_projectile_spawned:
+			entity.circus_projectile_spawned = true
+			var projectile := _add_entity(_level_state, ENTITY_PROJECTILE, entity.world_x, entity.world_y - 0.125)
+			projectile.enemy_profile = 4
+			projectile.velocity_x = 0.0
+			projectile.velocity_y = -300.0
+		return
+	if entity.circus_phase == 2:
+		if entity.circus_phase_timer > 0.000001:
+			return
+		entity.circus_phase = 3
+		entity.circus_phase_timer = 30.0 / 60.0
+		entity.variant = 3
+		return
+	if entity.circus_phase_timer <= 0.000001:
+		entity.circus_phase = 0
+		entity.circus_phase_timer = 30.0 / 60.0
 		entity.variant = 0
-		entity.state_timer = 1.5
 
 func _update_yado_motion(entity: EntityState, delta: float) -> void:
-	entity.state_timer -= delta
-	if entity.state_timer > 0.0:
+	if entity.yado_phase == 0:
+		entity.yado_phase_timer -= delta
+		var player_side := -1 if _player_state.world_x < entity.world_x else 1
+		if player_side != entity.yado_facing and entity.yado_phase_timer > 0.000001:
+			entity.yado_facing = player_side
+			entity.yado_phase = 2
+			entity.yado_phase_timer = 18.0 / 60.0
+			return
+		if entity.yado_phase_timer <= 0.000001:
+			entity.yado_phase = 1
+			entity.yado_phase_timer = 2.0
+			entity.yado_projectile_fired = false
+			entity.variant = 1
 		return
-	entity.state_timer = 2.0
-	entity.variant = 1
-	var projectile := _add_entity(_level_state, ENTITY_PROJECTILE, entity.world_x, entity.world_y - 6.0)
-	projectile.velocity_x = -150.0 if _player_state.world_x < entity.world_x else 150.0
+	if entity.yado_phase == 1:
+		entity.yado_phase_timer -= delta
+		if not entity.yado_projectile_fired and entity.yado_phase_timer <= 1.0:
+			_spawn_yado_projectile(entity)
+			entity.yado_projectile_fired = true
+		if entity.yado_phase_timer <= 6.0 / 60.0:
+			entity.variant = 2
+		if entity.yado_phase_timer <= 0.000001:
+			entity.yado_phase = 0
+			entity.yado_phase_timer = 2.0
+			entity.variant = 0
+		return
+	entity.yado_phase_timer -= delta
+	if entity.yado_phase_timer <= 0.000001:
+		entity.yado_phase = 0
+		entity.yado_phase_timer = 2.0
+		entity.variant = 0
+
+func _spawn_yado_projectile(source: EntityState) -> void:
+	var projectile := _add_entity(_level_state, ENTITY_PROJECTILE, source.world_x + float(source.yado_facing) * 5.0, source.world_y - 6.0)
+	projectile.enemy_profile = 17
+	projectile.velocity_x = float(source.yado_facing) * 90.0
 	projectile.velocity_y = 0.0
+	projectile.state_timer = 3.0
 
 func _update_hammerhead_motion(entity: EntityState, delta: float) -> void:
 	entity.previous_world_y = entity.world_y
-	entity.state_timer = fmod(entity.state_timer + delta * 1.5, TAU)
-	entity.world_y = entity.origin_y + sin(entity.state_timer) * 30.0
+	entity.state_timer = fmod(entity.state_timer + delta * 1.5 * 4.0 * TAU / 1024.0 * 60.0, TAU)
+	entity.world_y = entity.origin_y + sin(entity.state_timer) * 120.0
 
 func _update_straw_motion(entity: EntityState, delta: float) -> void:
-	entity.state_timer -= delta
-	if entity.state_timer <= 0.0:
-		entity.state_timer = 1.6
-	var target := Vector2(_player_state.world_x, _player_state.world_y - 24.0)
-	var offset := target - Vector2(entity.world_x, entity.world_y)
-	if offset.length_squared() > 1.0:
-		var desired := offset.normalized() * 110.0
-		entity.velocity_x = move_toward(entity.velocity_x, desired.x, 140.0 * delta)
-		entity.velocity_y = move_toward(entity.velocity_y, desired.y, 140.0 * delta)
+	if entity.straw_phase == 0:
+		var target := Vector2(_player_state.world_x, _player_state.world_y - 24.0)
+		var offset := target - Vector2(entity.world_x, entity.world_y)
+		if offset.x < 0.0:
+			entity.velocity_x -= 3.75
+		else:
+			entity.velocity_x += 2.578125
+		if offset.y < 0.0:
+			entity.velocity_y -= 3.75
+		else:
+			entity.velocity_y += 2.578125
+		entity.straw_phase_timer -= delta
+		if entity.straw_phase_timer <= 0.000001:
+			entity.straw_phase_timer = 100.0 / 60.0
+			entity.straw_cycles -= 1
+			entity.straw_phase = 2 if entity.straw_cycles <= 0 else 1
+	elif entity.straw_phase == 1:
+		entity.straw_phase_timer -= delta
+		if entity.straw_phase_timer <= 0.000001:
+			entity.straw_phase = 0
+			entity.straw_phase_timer = 30.0 / 60.0
 	entity.world_x += entity.velocity_x * delta
 	entity.world_y += entity.velocity_y * delta
-	entity.world_x = clampf(entity.world_x, _level_state.min_x, _level_state.max_x)
-	entity.world_y = clampf(entity.world_y, _level_state.min_y + 32.0, _level_state.max_y - 32.0)
 
 func _update_gejigeji_motion(entity: EntityState, delta: float) -> void:
-	if entity.trail_positions.is_empty():
+	if entity.gejigeji_history.is_empty():
+		for _history in range(64):
+			entity.gejigeji_history.append(Vector2(entity.world_x, entity.world_y))
 		for _segment in range(4):
 			entity.trail_positions.append(Vector2(entity.world_x, entity.world_y))
-	for i in range(entity.trail_positions.size() - 1, 0, -1):
-		entity.trail_positions[i] = entity.trail_positions[i - 1]
-	entity.world_x += entity.velocity_x * delta
-	entity.trail_positions[0] = Vector2(entity.world_x, entity.world_y)
-	if entity.world_x <= entity.patrol_min_x or entity.world_x >= entity.patrol_max_x:
-		entity.world_x = clampf(entity.world_x, entity.patrol_min_x, entity.patrol_max_x)
-		entity.velocity_x = -entity.velocity_x
+	if entity.gejigeji_pause_timer > 0.0:
+		entity.gejigeji_pause_timer = maxf(0.0, entity.gejigeji_pause_timer - delta)
+	else:
+		if entity.gejigeji_vertical:
+			entity.world_y += entity.velocity_y * delta
+			if entity.world_y <= entity.koura_patrol_min_y:
+				entity.world_y = entity.koura_patrol_min_y
+				entity.velocity_y = absf(entity.velocity_y)
+				entity.gejigeji_pause_timer = 1.0
+			elif entity.world_y >= entity.koura_patrol_max_y:
+				entity.world_y = entity.koura_patrol_max_y
+				entity.velocity_y = -absf(entity.velocity_y)
+				entity.gejigeji_pause_timer = 1.0
+		else:
+			entity.world_x += entity.velocity_x * delta
+			if entity.world_x <= entity.patrol_min_x:
+				entity.world_x = entity.patrol_min_x
+				entity.velocity_x = absf(entity.velocity_x)
+				entity.gejigeji_pause_timer = 1.0
+			elif entity.world_x >= entity.patrol_max_x:
+				entity.world_x = entity.patrol_max_x
+				entity.velocity_x = -absf(entity.velocity_x)
+				entity.gejigeji_pause_timer = 1.0
+	entity.gejigeji_history.push_front(Vector2(entity.world_x, entity.world_y))
+	if entity.gejigeji_history.size() > 64:
+		entity.gejigeji_history.pop_back()
+	for i in range(4):
+		var history_index := mini((i + 1) * 13, entity.gejigeji_history.size() - 1)
+		entity.trail_positions[i] = entity.gejigeji_history[history_index]
 
 func _update_kubinaga_motion(entity: EntityState, delta: float) -> void:
-	entity.state_timer -= delta
-	if entity.state_timer <= 0.0:
-		entity.state_timer = 1.8
-	var cycle := 1.8 - entity.state_timer
-	var extension := sin(clampf(cycle / 1.0, 0.0, 1.0) * PI)
-	var target := Vector2(_player_state.world_x, _player_state.world_y - 16.0)
 	var base := Vector2(entity.origin_x, entity.origin_y)
-	var head := base.lerp(target, extension * 0.72)
-	entity.target_x = head.x
-	entity.target_y = head.y
+	if entity.kubinaga_phase == 0:
+		entity.kubinaga_phase_timer -= delta
+		entity.kubinaga_extension = 0.0
+		if entity.kubinaga_phase_timer <= 0.0:
+			var player_offset := Vector2(_player_state.world_x, _player_state.world_y - 16.0) - base
+			if absf(player_offset.x) <= 120.0 and absf(player_offset.y) <= 100.0:
+				entity.kubinaga_angle = player_offset.angle()
+				entity.kubinaga_phase = 1
+				entity.kubinaga_extension = 0.0
+	elif entity.kubinaga_phase == 1:
+		entity.kubinaga_extension = minf(68.0, entity.kubinaga_extension + 120.0 * delta)
+		if entity.kubinaga_extension >= 68.0:
+			entity.kubinaga_phase = 2
+			entity.kubinaga_phase_timer = 32.0 / 60.0
+			entity.kubinaga_shot_fired = false
+	elif entity.kubinaga_phase == 2:
+		entity.kubinaga_phase_timer -= delta
+		if not entity.kubinaga_shot_fired and entity.kubinaga_phase_timer <= 17.0 / 60.0:
+			_spawn_kubinaga_projectile(entity)
+			entity.kubinaga_shot_fired = true
+		if entity.kubinaga_phase_timer <= 0.0:
+			entity.kubinaga_phase = 3
+	else:
+		entity.kubinaga_extension = maxf(0.0, entity.kubinaga_extension - 120.0 * delta)
+		if entity.kubinaga_extension <= 0.0:
+			entity.kubinaga_phase = 0
+			entity.kubinaga_phase_timer = 120.0 / 60.0
+	var head_offset := Vector2(cos(entity.kubinaga_angle), sin(entity.kubinaga_angle)) * entity.kubinaga_extension
+	entity.target_x = base.x + head_offset.x
+	entity.target_y = base.y + head_offset.y
+
+func _spawn_kubinaga_projectile(source: EntityState) -> void:
+	var head := Vector2(source.target_x, source.target_y)
+	var projectile := _add_entity(_level_state, ENTITY_PROJECTILE, head.x, head.y)
+	projectile.enemy_profile = 11
+	projectile.velocity_x = cos(source.kubinaga_angle) * 75.0
+	projectile.velocity_y = sin(source.kubinaga_angle) * 75.0
+	projectile.state_timer = 3.0
 
 func _update_madillo_motion(entity: EntityState, delta: float) -> void:
 	if entity.variant == 0:
 		var player_delta := _player_state.world_x - entity.world_x
 		if absf(player_delta) < 120.0 and absf(_player_state.world_y - entity.world_y) < 50.0:
 			entity.variant = 1
-			entity.velocity_x = signf(player_delta) * 384.0
+			if player_delta < 0.0 and entity.world_x > entity.patrol_min_x:
+				entity.velocity_x = -90.0
+			elif player_delta > 0.0 and entity.world_x < entity.patrol_max_x:
+				entity.velocity_x = 90.0
+			else:
+				entity.variant = 0
+				entity.velocity_x = 0.0
 		return
 	if entity.variant == 1:
 		entity.world_x += entity.velocity_x * delta
-		if entity.world_x <= entity.patrol_min_x or entity.world_x >= entity.patrol_max_x:
+		if (entity.velocity_x < 0.0 and entity.world_x <= entity.patrol_min_x) or (entity.velocity_x > 0.0 and entity.world_x >= entity.patrol_max_x):
 			entity.world_x = clampf(entity.world_x, entity.patrol_min_x, entity.patrol_max_x)
 			entity.variant = 2
-			entity.state_timer = 2.0
+			entity.madillo_return_timer = 120.0 / 60.0
 		return
 	entity.world_x += entity.velocity_x * delta
-	entity.velocity_x = move_toward(entity.velocity_x, 0.0, 240.0 * delta)
-	entity.state_timer -= delta
-	if entity.state_timer <= 0.0:
+	entity.velocity_x *= pow(0.9, delta * 60.0)
+	entity.madillo_return_timer -= delta
+	if entity.madillo_return_timer <= 0.0:
 		entity.variant = 0
 		entity.velocity_x = 0.0
 
 func _update_kyura_motion(entity: EntityState, delta: float) -> void:
-	entity.state_timer = fmod(entity.state_timer + delta * 5.0, TAU)
-	entity.world_x = entity.origin_x + cos(entity.state_timer) * entity.target_x
-	entity.world_y = entity.origin_y + sin(entity.state_timer * 0.6) * entity.target_y
-	if entity.state_timer < delta * 5.0:
-		var projectile := _add_entity(_level_state, ENTITY_PROJECTILE, entity.world_x, entity.world_y + 20.0)
-		projectile.velocity_x = -70.0 if entity.variant == 0 else 70.0
-		projectile.velocity_y = 180.0
-		entity.variant = 1 - entity.variant
+	# kyura.c updates its orbit for 8 frames, holds for 4, then advances by 8
+	# GBA angle units. The projectile counter advances only at each switch.
+	entity.kyura_switch_timer -= delta
+	if entity.kyura_switch_timer <= 0.000001:
+		if not entity.kyura_recovering:
+			entity.kyura_recovering = true
+			entity.kyura_switch_timer = 4.0 / 60.0
+			entity.kyura_projectile_counter -= 1
+			if entity.kyura_projectile_counter == 1:
+				_spawn_kyura_projectile(entity)
+				entity.kyura_projectile_counter = 12
+		else:
+			entity.kyura_recovering = false
+			entity.kyura_switch_timer = 8.0 / 60.0
+			entity.kyura_phase_units = fmod(entity.kyura_phase_units + 8.0, 256.0)
+	var phase := entity.kyura_phase_units * TAU / 256.0
+	entity.state_timer = phase
+	entity.world_x = entity.origin_x + cos(phase * 5.0) * entity.target_x
+	entity.world_y = entity.origin_y + sin(phase * 3.0) * entity.target_y
+
+func _spawn_kyura_projectile(source: EntityState) -> void:
+	var projectile := _add_entity(_level_state, ENTITY_PROJECTILE, source.world_x, source.world_y + 20.0)
+	projectile.enemy_profile = 14
+	projectile.variant = source.kyura_projectile_variant
+	projectile.velocity_x = 0.0
+	projectile.velocity_y = 120.0 if source.kyura_projectile_variant == 0 else 60.0
+	projectile.state_timer = 3.0
+	source.kyura_projectile_variant = 1 - source.kyura_projectile_variant
 
 func _update_flickey_motion(entity: EntityState, delta: float) -> void:
-	if entity.trail_positions.is_empty():
+	if entity.flickey_history.is_empty():
+		for _history in range(64):
+			entity.flickey_history.append(Vector2(entity.world_x, entity.world_y))
 		for _segment in range(4):
 			entity.trail_positions.append(Vector2(entity.world_x, entity.world_y))
-	for i in range(entity.trail_positions.size() - 1, 0, -1):
-		entity.trail_positions[i] = entity.trail_positions[i - 1]
-	entity.velocity_y += 36.0 * delta
-	entity.world_x += entity.velocity_x * delta
-	entity.world_y += entity.velocity_y * delta
-	entity.trail_positions[0] = Vector2(entity.world_x, entity.world_y)
-	if entity.world_y <= _level_state.min_y + 32.0 or entity.world_y >= _level_state.max_y - 32.0:
-		entity.velocity_y = -entity.velocity_y * 0.85
-		entity.world_y = clampf(entity.world_y, _level_state.min_y + 32.0, _level_state.max_y - 32.0)
-	if entity.world_x <= entity.patrol_min_x or entity.world_x >= entity.patrol_max_x:
-		entity.velocity_x = -entity.velocity_x
+	if entity.flickey_turn_timer > 0.0:
+		entity.flickey_turn_timer = maxf(0.0, entity.flickey_turn_timer - delta)
+		if entity.flickey_turn_timer <= 0.000001:
+			entity.flickey_turn_timer = 0.0
+			entity.velocity_x = absf(entity.velocity_x) if entity.velocity_x < 0.0 else -absf(entity.velocity_x)
+			entity.flickey_vertical_speed = -240.0
+	else:
+		entity.flickey_vertical_speed += 7.5 * delta * 60.0
+		entity.world_x += entity.velocity_x * delta
+		entity.world_y += entity.flickey_vertical_speed * delta
+		var floor_y := _level_state.ground_y - 16.0
+		if entity.world_y >= floor_y:
+			entity.world_y = floor_y
+			entity.flickey_vertical_speed = -240.0
+		if (entity.velocity_x < 0.0 and entity.world_x <= entity.patrol_min_x) or (entity.velocity_x > 0.0 and entity.world_x >= entity.patrol_max_x):
+			entity.world_x = clampf(entity.world_x, entity.patrol_min_x, entity.patrol_max_x)
+			entity.flickey_turn_timer = 0.4
+	entity.flickey_history.push_front(Vector2(entity.world_x, entity.world_y))
+	if entity.flickey_history.size() > 64:
+		entity.flickey_history.pop_back()
+	for i in range(4):
+		var history_index := mini((i + 1) * 16, entity.flickey_history.size() - 1)
+		entity.trail_positions[i] = entity.flickey_history[history_index]
 
 func _update_mon_motion(entity: EntityState, delta: float) -> void:
 	if entity.variant == 0:
-		if absf(_player_state.world_x - entity.world_x) < 256.0 and absf(_player_state.world_y - entity.world_y) < 50.0:
+		if absf(_player_state.world_x - entity.world_x) < 120.0 and absf(_player_state.world_y - entity.world_y) < 50.0:
 			entity.variant = 1
-			entity.state_timer = 0.35
+			entity.mon_phase_timer = 18.0 / 60.0
 		return
 	if entity.variant == 1:
-		entity.state_timer -= delta
-		if entity.state_timer <= 0.0:
+		entity.mon_phase_timer -= delta
+		if entity.mon_phase_timer <= 0.000001:
 			entity.variant = 2
 			entity.velocity_y = -330.0
+			entity.mon_phase_timer = 0.0
 		return
-	entity.velocity_y += 900.0 * delta
+	if entity.variant == 3:
+		entity.mon_phase_timer -= delta
+		if entity.mon_phase_timer <= 0.000001:
+			entity.mon_phase_timer = 0.0
+			if absf(_player_state.world_x - entity.world_x) < 120.0 and absf(_player_state.world_y - entity.world_y) < 50.0:
+				entity.variant = 1
+				entity.mon_phase_timer = 18.0 / 60.0
+			else:
+				entity.variant = 0
+		return
+	entity.velocity_y += 12.1875 * delta * 60.0
 	entity.world_y += entity.velocity_y * delta
 	if entity.world_y >= entity.origin_y:
 		entity.world_y = entity.origin_y
 		entity.velocity_y = 0.0
-		entity.variant = 0
+		entity.variant = 3
+		entity.mon_phase_timer = 18.0 / 60.0
 
 func _update_buzzer_motion(entity: EntityState, delta: float) -> void:
-	# Buzzer patrols, lunges at a nearby player, then returns to its flight path.
 	if entity.variant == 0:
-		entity.state_timer += delta
+		if entity.buzzer_turn_timer > 0.0:
+			entity.buzzer_turn_timer = maxf(0.0, entity.buzzer_turn_timer - delta)
+			if entity.buzzer_turn_timer <= 0.000001:
+				entity.buzzer_turn_timer = 0.0
+				entity.velocity_x = -entity.velocity_x
+			return
+		entity.buzzer_cooldown = maxf(0.0, entity.buzzer_cooldown - delta)
 		entity.world_x += entity.velocity_x * delta
-		entity.world_y = entity.origin_y + sin(entity.state_timer * 5.0) * 8.0
 		if entity.world_x <= entity.patrol_min_x:
 			entity.world_x = entity.patrol_min_x
-			entity.velocity_x = abs(entity.velocity_x)
+			if entity.velocity_x < 0.0:
+				entity.buzzer_turn_timer = 18.0 / 60.0
 		if entity.world_x >= entity.patrol_max_x:
 			entity.world_x = entity.patrol_max_x
-			entity.velocity_x = -abs(entity.velocity_x)
+			if entity.velocity_x > 0.0:
+				entity.buzzer_turn_timer = 18.0 / 60.0
 		var dx := _player_state.world_x - entity.world_x
-		var dy := (_player_state.world_y - 20.0) - entity.world_y
-		if _player_state.is_alive and absf(dx) < 90.0 and absf(dy) < 55.0:
+		var player_y := _player_state.world_y - 20.0
+		var facing_player := (entity.velocity_x > 0.0 and dx > 0.0 and dx < 60.0) or (entity.velocity_x < 0.0 and dx < 0.0 and dx > -60.0)
+		if entity.buzzer_cooldown <= 0.000001 and _player_state.is_alive and facing_player and player_y > entity.world_y and player_y < entity.world_y + 80.0:
 			entity.variant = 1
-			entity.state_timer = 0.30
+			entity.buzzer_attack_timer = 32.0 / 60.0
+			entity.buzzer_attack_origin_x = entity.world_x
+			entity.buzzer_attack_origin_y = entity.world_y
 			entity.target_x = _player_state.world_x
-			entity.target_y = _player_state.world_y - 20.0
-			entity.velocity_x = (entity.target_x - entity.world_x) / entity.state_timer
-			entity.velocity_y = (entity.target_y - entity.world_y) / entity.state_timer
-	elif entity.variant == 1:
-		entity.world_x += entity.velocity_x * delta
-		entity.world_y += entity.velocity_y * delta
-		entity.state_timer -= delta
-		if entity.state_timer <= 0.0:
+			entity.target_y = player_y
+		return
+	if entity.variant == 1:
+		entity.buzzer_attack_timer = maxf(0.0, entity.buzzer_attack_timer - delta)
+		var attack_ratio := 1.0 - entity.buzzer_attack_timer / (32.0 / 60.0)
+		entity.world_x = lerpf(entity.buzzer_attack_origin_x, entity.target_x, clampf(attack_ratio, 0.0, 1.0))
+		entity.world_y = lerpf(entity.buzzer_attack_origin_y, entity.target_y, clampf(attack_ratio, 0.0, 1.0))
+		if entity.buzzer_attack_timer <= 0.000001:
 			entity.variant = 2
-			entity.state_timer = 0.42
-			entity.velocity_x = (entity.origin_x - entity.world_x) / entity.state_timer
-			entity.velocity_y = (entity.origin_y - entity.world_y) / entity.state_timer
+			entity.buzzer_attack_timer = 32.0 / 60.0
 	else:
-		entity.world_x += entity.velocity_x * delta
-		entity.world_y += entity.velocity_y * delta
-		entity.state_timer -= delta
-		if entity.state_timer <= 0.0:
+		entity.buzzer_attack_timer = maxf(0.0, entity.buzzer_attack_timer - delta)
+		var return_ratio := 1.0 - entity.buzzer_attack_timer / (32.0 / 60.0)
+		entity.world_x = lerpf(entity.target_x, entity.buzzer_attack_origin_x, clampf(return_ratio, 0.0, 1.0))
+		entity.world_y = lerpf(entity.target_y, entity.buzzer_attack_origin_y, clampf(return_ratio, 0.0, 1.0))
+		if entity.buzzer_attack_timer <= 0.000001:
 			entity.variant = 0
-			entity.world_x = clampf(entity.origin_x, entity.patrol_min_x, entity.patrol_max_x)
-			entity.world_y = entity.origin_y
-			entity.velocity_y = 0.0
-			entity.velocity_x = -abs(entity.velocity_x) if entity.world_x >= entity.patrol_max_x else abs(entity.velocity_x)
+			entity.buzzer_cooldown = 60.0 / 60.0
 
 func _update_balloon_motion(entity: EntityState, delta: float) -> void:
 	if entity.variant == 0:
 		entity.state_timer -= delta
-		entity.world_x += entity.velocity_x * delta
-		entity.world_y = entity.origin_y + sin((1.2 - entity.state_timer) * 5.0) * 12.0
+		entity.balloon_angle = fmod(entity.balloon_angle + delta * 60.0, 1024.0)
+		var x_phase := entity.balloon_angle * 5.0 * TAU / 1024.0
+		var y_phase := entity.balloon_angle * 3.0 * TAU / 1024.0
+		entity.world_x += entity.velocity_x * delta + cos(x_phase) * entity.balloon_amplitude_x * delta * 0.5
+		entity.world_y = entity.origin_y + sin(y_phase) * entity.balloon_amplitude_y
 		if entity.world_x <= entity.patrol_min_x:
 			entity.world_x = entity.patrol_min_x
-			entity.velocity_x = abs(entity.velocity_x)
+			entity.velocity_x = absf(entity.velocity_x)
 		if entity.world_x >= entity.patrol_max_x:
 			entity.world_x = entity.patrol_max_x
-			entity.velocity_x = -abs(entity.velocity_x)
+			entity.velocity_x = -absf(entity.velocity_x)
 		if entity.state_timer <= 0.0:
 			entity.variant = 1
-			entity.state_timer = 0.45
-			entity.activated = false
+			entity.state_timer = 45.0 / 60.0
+			entity.balloon_projectile_spawned = false
 	elif entity.variant == 1:
 		entity.state_timer -= delta
-		if not entity.activated and entity.state_timer <= 0.24:
-			entity.activated = true
+		if not entity.balloon_projectile_spawned and entity.state_timer <= 0.000001:
+			entity.balloon_projectile_spawned = true
 			_spawn_balloon_projectile(entity)
 		if entity.state_timer <= 0.0:
 			entity.variant = 0
-			entity.state_timer = 1.2
-			entity.activated = false
+			entity.state_timer = 120.0 / 60.0
+			entity.balloon_projectile_spawned = false
 
 func _update_item_box_effect(entity: EntityState, delta: float) -> void:
 	if not entity.activated:
@@ -4999,34 +5491,55 @@ func _update_scattered_ring(entity: EntityState, delta: float) -> void:
 		entity.active = false
 
 func _update_bullet_buzzer_motion(entity: EntityState, delta: float) -> void:
+	entity.bullet_buzzer_angle = fmod(entity.bullet_buzzer_angle + delta * 60.0, 1024.0)
+	var x_phase := entity.bullet_buzzer_angle * 5.0 * TAU / 1024.0
+	var y_phase := entity.bullet_buzzer_angle * 3.0 * TAU / 1024.0
+	entity.world_x = entity.origin_x + cos(x_phase) * 48.0
+	entity.world_y = entity.origin_y + sin(y_phase) * 28.0
 	if entity.variant == 0:
 		entity.state_timer -= delta
-		var elapsed := 2.0 - entity.state_timer
-		entity.world_x = entity.origin_x + sin(elapsed * 5.0) * 48.0
-		entity.world_y = entity.origin_y + sin(elapsed * 3.0) * 28.0
 		if entity.state_timer <= 0.0:
 			entity.variant = 1
-			entity.state_timer = 0.55
-			entity.activated = false
+			entity.bullet_buzzer_attack_timer = 50.0 / 60.0
+			entity.bullet_buzzer_projectile_spawned = false
 	else:
-		entity.state_timer -= delta
-		if not entity.activated and entity.state_timer <= 0.30:
-			entity.activated = true
+		entity.bullet_buzzer_attack_timer -= delta
+		if not entity.bullet_buzzer_projectile_spawned and entity.bullet_buzzer_attack_timer <= 16.0 / 60.0:
+			entity.bullet_buzzer_projectile_spawned = true
 			_spawn_bullet_buzzer_projectiles(entity)
-		if entity.state_timer <= 0.0:
+		if entity.bullet_buzzer_attack_timer <= 0.0:
 			entity.variant = 0
-			entity.state_timer = 2.0
-			entity.activated = false
+			entity.state_timer = 60.0 / 60.0
 
 func _update_koura_motion(entity: EntityState, delta: float) -> void:
-	entity.world_x += entity.velocity_x * delta
-	entity.world_y = entity.origin_y + sin(Time.get_ticks_msec() * 0.004) * 4.0
-	if entity.world_x <= entity.patrol_min_x:
-		entity.world_x = entity.patrol_min_x
-		entity.velocity_x = abs(entity.velocity_x)
-	if entity.world_x >= entity.patrol_max_x:
-		entity.world_x = entity.patrol_max_x
-		entity.velocity_x = -abs(entity.velocity_x)
+	# koura.c uses a fixed-point half-pixel step and stage-time sine phase.
+	entity.state_timer = fmod(entity.state_timer + delta * 20.0 * TAU / 256.0 * 60.0, TAU)
+	if entity.koura_motion_variant < 2:
+		entity.world_x += entity.velocity_x * delta
+		if entity.world_x <= entity.patrol_min_x:
+			entity.world_x = entity.patrol_min_x
+			entity.velocity_x = absf(entity.velocity_x)
+		if entity.world_x >= entity.patrol_max_x:
+			entity.world_x = entity.patrol_max_x
+			entity.velocity_x = -absf(entity.velocity_x)
+		if entity.koura_motion_variant == 0 or entity.koura_motion_variant == 1:
+			entity.world_y = entity.origin_y
+		else:
+			entity.world_y = entity.origin_y + sin(entity.state_timer) * 8.0
+	else:
+		if entity.koura_motion_variant == 2:
+			entity.world_y = entity.origin_y + sin(entity.state_timer) * 8.0
+		else:
+			entity.world_y += entity.velocity_y * delta
+			if entity.koura_patrol_min_y == entity.koura_patrol_max_y:
+				entity.koura_patrol_min_y = entity.origin_y - 96.0
+				entity.koura_patrol_max_y = entity.origin_y + 96.0
+			if entity.world_y <= entity.koura_patrol_min_y:
+				entity.world_y = entity.koura_patrol_min_y
+				entity.velocity_y = absf(entity.velocity_y)
+			if entity.world_y >= entity.koura_patrol_max_y:
+				entity.world_y = entity.koura_patrol_max_y
+				entity.velocity_y = -absf(entity.velocity_y)
 
 func _update_star_motion(entity: EntityState, delta: float) -> void:
 	entity.state_timer -= delta
@@ -5048,26 +5561,42 @@ func _update_star_motion(entity: EntityState, delta: float) -> void:
 
 func _update_kiki_motion(entity: EntityState, delta: float) -> void:
 	if entity.variant == 0:
-		entity.state_timer -= delta
-		var elapsed := 1.8 - entity.state_timer
-		entity.world_y = entity.origin_y + sin(elapsed * 3.2) * 34.0
-		if entity.state_timer <= 0.0:
-			entity.variant = 1
-			entity.state_timer = 0.45
-			entity.activated = false
-	else:
-		entity.state_timer -= delta
-		if not entity.activated and entity.state_timer <= 0.20:
-			entity.activated = true
-			_spawn_kiki_projectile(entity)
-		if entity.state_timer <= 0.0:
-			entity.variant = 0
-			entity.state_timer = 1.8
-			entity.activated = false
+		entity.world_y += entity.kiki_vertical_direction * 60.0 * delta
+		if entity.world_y >= entity.kiki_vertical_max:
+			entity.world_y = entity.kiki_vertical_max
+			entity.kiki_vertical_direction = -1.0
+		elif entity.world_y <= entity.kiki_vertical_min:
+			entity.world_y = entity.kiki_vertical_min
+			entity.kiki_vertical_direction = 1.0
+			entity.kiki_border_hits += 1
+			if (entity.kiki_border_hits & 1) == 0:
+				entity.variant = 1
+				entity.kiki_attack_frames = 0
+				entity.kiki_projectile_spawned = false
+		return
+	entity.kiki_attack_frames += 1
+	if not entity.kiki_projectile_spawned and entity.kiki_attack_frames == 18:
+		entity.kiki_projectile_spawned = true
+		_spawn_kiki_projectile(entity)
+	if entity.kiki_attack_frames >= 30:
+		entity.variant = 0
+		entity.kiki_projectile_spawned = false
+
+func _update_pikopiko_motion(entity: EntityState, delta: float) -> void:
+	# piko_piko.c advances its fixed-point horizontal offset by one pixel/frame.
+	entity.world_x += entity.velocity_x * delta
+	if entity.pikopiko_clamp_ground:
+		entity.world_y = _level_state.ground_y - 16.0
+	if entity.world_x <= entity.patrol_min_x:
+		entity.world_x = entity.patrol_min_x
+		entity.velocity_x = absf(entity.velocity_x)
+	elif entity.world_x >= entity.patrol_max_x:
+		entity.world_x = entity.patrol_max_x
+		entity.velocity_x = -absf(entity.velocity_x)
 
 func _update_kiki_projectile(entity: EntityState, delta: float) -> void:
 	entity.state_timer -= delta
-	entity.velocity_y += 520.0 * delta
+	entity.velocity_y += 156.25 * delta
 	entity.world_x += entity.velocity_x * delta
 	entity.world_y += entity.velocity_y * delta
 	if entity.world_y >= _level_state.ground_y - 8.0 or entity.state_timer <= 0.0:
@@ -5075,7 +5604,7 @@ func _update_kiki_projectile(entity: EntityState, delta: float) -> void:
 
 func _update_kiki_piece(entity: EntityState, delta: float) -> void:
 	entity.state_timer -= delta
-	entity.velocity_y += 520.0 * delta
+	entity.velocity_y += 156.25 * delta
 	entity.world_x += entity.velocity_x * delta
 	entity.world_y += entity.velocity_y * delta
 	if entity.state_timer <= 0.0 or entity.world_y > _level_state.max_y + 40.0:
@@ -5526,9 +6055,9 @@ func _spawn_boss_projectile(source: EntityState) -> void:
 	projectile.origin_y = source.world_y
 
 func _spawn_kiki_projectile(source: EntityState) -> void:
-	var projectile := _add_entity(_level_state, ENTITY_KIKI_PROJECTILE, source.world_x, source.world_y + 12.0)
-	projectile.velocity_y = -260.0
-	projectile.velocity_x = clampf((_player_state.world_x - source.world_x) * 0.6, -120.0, 120.0)
+	var projectile := _add_entity(_level_state, ENTITY_KIKI_PROJECTILE, source.world_x, source.world_y + 2.0)
+	projectile.velocity_y = -120.0
+	projectile.velocity_x = clampf((_player_state.world_x - source.world_x) * 0.5, -60.0, 60.0)
 	projectile.state_timer = 1.4
 
 func _split_kiki_projectile(projectile: EntityState) -> void:
@@ -5970,6 +6499,53 @@ func _handle_entity_interactions(held_input: int, frame_input: int, delta: float
 				_try_activate_checkpoint(entity)
 			ENTITY_GOAL:
 				_try_reach_goal(entity)
+			ENTITY_LAP_TRIGGER:
+				_try_lap_trigger(entity)
+			ENTITY_GOAL_LEVER:
+				_try_goal_lever(entity)
+
+func _try_lap_trigger(entity: EntityState) -> void:
+	# The source task only evaluates a crossing after the player leaves the trigger.
+	var player_x := _player_state.world_x
+	var inside := absf(player_x - entity.world_x) <= entity.width * 0.5 and absf(_player_state.world_y - entity.world_y) <= entity.height * 0.5
+	if not _player_state.is_alive:
+		entity.lap_count = entity.lap_highest
+	if inside:
+		entity.lap_touching = true
+		return
+	if entity.lap_touching:
+		entity.lap_touching = false
+		if entity.lap_previous_player_x < entity.world_x - entity.width * 0.5 and player_x > entity.world_x + entity.width * 0.5:
+			if entity.lap_passed:
+				entity.lap_count += 1
+				if entity.lap_highest < entity.lap_count:
+					entity.lap_highest = entity.lap_count
+					var time_diff := _checkpoint_time - entity.lap_previous_checkpoint_time
+					var bonus := 5 if time_diff > 30.0 else (10 if time_diff > 20.0 else 15)
+					entity.lap_last_bonus = bonus
+					_add_ring_reward(bonus)
+					if _run_from_multiplayer:
+						_player_state.rings = mini(255, _player_state.rings)
+					_status_text = "RING BONUS +%d" % bonus
+					entity.lap_previous_checkpoint_time = _checkpoint_time
+			else:
+				entity.lap_passed = true
+				entity.lap_previous_checkpoint_time = _checkpoint_time
+		elif entity.lap_previous_player_x > entity.world_x + entity.width * 0.5 and player_x < entity.world_x - entity.width * 0.5:
+			if entity.lap_passed:
+				entity.lap_count -= 1
+	entity.lap_previous_player_x = player_x
+
+func _try_goal_lever(entity: EntityState) -> void:
+	if entity.activated or not _player_state.is_alive:
+		return
+	var dx := absf(_player_state.world_x - entity.world_x)
+	var dy := absf((_player_state.world_y - 20.0) - entity.world_y)
+	if dx < 28.0 and dy < 64.0:
+		# stage_goal.c changes the lever animation; TOGGLE__GOAL owns the clear.
+		entity.activated = true
+		entity.collected = true
+
 
 func _try_collect_ring(entity: EntityState) -> void:
 	var dx: float = _player_state.world_x - entity.world_x
@@ -6004,12 +6580,24 @@ func _spawn_scattered_rings(count: int) -> void:
 		entity.state_timer = 2.8
 
 func _try_collect_special_ring(entity: EntityState) -> void:
+	if _run_from_multiplayer or entity.special_ring_collected:
+		return
 	var dx: float = _player_state.world_x - entity.world_x
 	var dy: float = (_player_state.world_y - 20.0) - entity.world_y
 	if dx * dx + dy * dy <= 24.0 * 24.0:
-		entity.active = false
+		entity.special_ring_collected = true
+		entity.special_ring_collect_timer = 30.0 / 60.0
+		entity.state_timer = entity.special_ring_collect_timer
 		entity.collected = true
 		_player_state.special_rings = min(7, _player_state.special_rings + 1)
+
+func _update_special_ring_motion(entity: EntityState, delta: float) -> void:
+	if not entity.special_ring_collected:
+		return
+	entity.special_ring_collect_timer = maxf(0.0, entity.special_ring_collect_timer - delta)
+	entity.state_timer = entity.special_ring_collect_timer
+	if entity.special_ring_collect_timer <= 0.000001:
+		entity.active = false
 
 func _add_score(amount: int) -> void:
 	if amount <= 0:
@@ -6032,15 +6620,28 @@ func _try_whirlwind(entity: EntityState, delta: float) -> void:
 	var half_height := entity.height * 0.5
 	var dx := _player_state.world_x - entity.world_x
 	var dy := _player_state.world_y - entity.world_y
-	if absf(dx) > half_width or absf(dy) > half_height:
+	if not entity.whirlwind_active and (absf(dx) > half_width or absf(dy) > half_height):
 		return
-	# Sky Canyon's whirlwind centers the player before lifting them upward.
-	_player_state.world_x = move_toward(_player_state.world_x, entity.world_x, 90.0 * delta)
-	var top_limit := entity.world_y - half_height + _player_half_height
-	if _player_state.world_y > top_limit:
-		_velocity_y = -300.0
-	else:
-		_velocity_y = minf(_velocity_y, -80.0)
+	if not entity.whirlwind_active:
+		# whirlwind.c gives the player a bounded scripted state, rather than a
+		# permanent upward impulse while the hitbox happens to overlap.
+		entity.whirlwind_active = true
+		entity.whirlwind_timer = 64.0 / 60.0
+		_velocity_y = minf(_velocity_y, -180.0)
+	entity.whirlwind_timer = maxf(0.0, entity.whirlwind_timer - delta)
+	var outside_current := absf(dx) > half_width + 20.0 or _player_state.world_y < entity.world_y - half_height - 20.0
+	if entity.whirlwind_timer <= 0.000001 or outside_current:
+		entity.whirlwind_active = false
+		entity.whirlwind_timer = 0.0
+		_velocity_y = -180.0
+		_player_state.char_state = 2
+		_player_state.anim_id = 2
+		return
+	# The source uses a gradually increasing horizontal pull and caps the
+	# vertical speed while the player remains inside the scripted current.
+	_player_state.world_x = move_toward(_player_state.world_x, entity.world_x, 180.0 * delta)
+	_velocity_y = move_toward(_velocity_y, -300.0, 15.0 * delta * 60.0)
+	_player_state.world_y = move_toward(_player_state.world_y, entity.world_y - half_height + _player_half_height, 120.0 * delta)
 	_player_state.is_grounded = false
 	_player_state.char_state = 3
 	_player_state.anim_id = 2
@@ -6052,55 +6653,90 @@ func _try_fan(entity: EntityState, held_input: int, delta: float) -> void:
 	var dy := _player_state.world_y - entity.world_y
 	if absf(dx) > half_width or absf(dy) > half_height:
 		return
-	var fan_force := 1.0
-	if entity.variant == 1:
-		# sky_canyon/fan.c cycles off, accelerate, full, and decelerate
-		# over seven seconds for periodic fans.
-		if entity.state_timer < 1.0:
-			fan_force = 0.0
-		elif entity.state_timer < 2.0:
-			fan_force = entity.state_timer - 1.0
-		elif entity.state_timer < 6.0:
-			fan_force = 1.0
-		else:
-			fan_force = 7.0 - entity.state_timer
-	if fan_force <= 0.0:
+	var fan_force := entity.fan_speed
+	if fan_force <= 0.000001:
 		return
-	var resistance := 1.0
-	if entity.velocity_x > 0.0 and held_input & DPAD_LEFT:
-		resistance = 0.25
-	elif entity.velocity_x < 0.0 and held_input & DPAD_RIGHT:
-		resistance = 0.25
-	_player_state.world_x += entity.velocity_x * 150.0 * fan_force * resistance * delta
-	_player_state.speed_x = entity.velocity_x * 150.0 * fan_force * resistance
+	var player_ratio := (dx + half_width) / maxf(1.0, entity.width)
+	if entity.velocity_x < 0.0:
+		player_ratio = 1.0 - player_ratio
+	player_ratio = clampf(player_ratio, 0.0, 1.0)
+	var player_delta_per_frame := player_ratio * 16.0 * fan_force
+	var moving_with_fan := (entity.velocity_x < 0.0 and _player_state.speed_x < 0.0) or (entity.velocity_x > 0.0 and _player_state.speed_x > 0.0)
+	if moving_with_fan:
+		_player_state.speed_x = clampf(_player_state.speed_x + entity.velocity_x * 15.0 * fan_force, -540.0, 540.0)
+		_player_state.ground_speed = _player_state.speed_x
+	else:
+		_player_state.world_x += entity.velocity_x * player_delta_per_frame * delta * 60.0
+		var boundary := entity.world_x + (half_width - 48.0 if entity.velocity_x < 0.0 else -half_width + 48.0)
+		if entity.velocity_x < 0.0:
+			_player_state.world_x = minf(_player_state.world_x, boundary) if entity.variant == 0 else _player_state.world_x
+		else:
+			_player_state.world_x = maxf(_player_state.world_x, boundary) if entity.variant == 0 else _player_state.world_x
+		_player_state.speed_x = entity.velocity_x * player_delta_per_frame * 60.0
+		_player_state.ground_speed = _player_state.speed_x
+	if entity.velocity_x < 0.0 and held_input & DPAD_RIGHT:
+		_player_state.speed_x = -absf(_player_state.speed_x)
+	elif entity.velocity_x > 0.0 and held_input & DPAD_LEFT:
+		_player_state.speed_x = -absf(_player_state.speed_x)
 
 func _try_propeller(entity: EntityState, held_input: int, delta: float) -> void:
 	var half_width := entity.width * 0.5
 	var half_height := entity.height * 0.5
 	var dx := _player_state.world_x - entity.world_x
-	var player_center_y := _player_state.world_y - 20.0
-	var dy := player_center_y - entity.world_y
+	var dy := _player_state.world_y - entity.world_y
 	var in_current := absf(dx) <= half_width and absf(dy) <= half_height
 
 	if entity.variant == 1:
-		if not in_current:
+		var in_vertical_current := _player_state.world_y >= entity.world_y - 96.0 and _player_state.world_y <= entity.world_y + 64.0
+		if not in_current or not in_vertical_current:
 			entity.variant = 0
-			_velocity_y = -240.0
+			_velocity_y = -120.0 if entity.propeller_phase_units <= 128.0 else 0.0
+			_player_state.speed_y = _velocity_y
 			_player_state.char_state = 2
 			_player_state.anim_id = 2
+			return
+		if _player_state.world_y > entity.world_y - 48.0:
+			_player_state.world_y = move_toward(_player_state.world_y, entity.world_y - 48.0, 240.0 * delta)
+			_velocity_y = 0.0
+			_player_state.is_grounded = false
+			_player_state.char_state = 4
+			_player_state.anim_id = 2
+			return
+		entity.variant = 2
+		entity.propeller_phase_units = 0.0
+		if _player_state.speed_x >= 1.0:
+			entity.propeller_horizontal_step = 2.0
+		elif _player_state.speed_x < 0.0:
+			entity.propeller_horizontal_step = -2.0
+		else:
+			entity.propeller_horizontal_step = -0.125 if _facing_direction < 0.0 else 0.125
+	if entity.variant == 2:
+		var active_vertical_current := _player_state.world_y >= entity.world_y - 96.0 and _player_state.world_y <= entity.world_y + 64.0
+		if absf(dx) > half_width or not active_vertical_current:
+			entity.variant = 0
+			_player_state.char_state = 2
+			_player_state.anim_id = 2
+			_velocity_y = -120.0 if entity.propeller_phase_units <= 128.0 else 0.0
+			_player_state.speed_y = _velocity_y
 			return
 		var steering := 0.0
 		if held_input & DPAD_LEFT:
 			steering -= 1.0
 		if held_input & DPAD_RIGHT:
 			steering += 1.0
-		entity.velocity_x = move_toward(entity.velocity_x, steering * 180.0, 480.0 * delta)
-		_player_state.world_x += entity.velocity_x * delta
+		if steering != 0.0:
+			entity.propeller_horizontal_step = move_toward(entity.propeller_horizontal_step, steering * 2.0, 1.0 * delta * 60.0)
+		elif absf(entity.propeller_horizontal_step) < 0.125:
+			entity.propeller_horizontal_step = -0.125 if entity.propeller_horizontal_step < 0.0 else 0.125
+		entity.propeller_horizontal_step = clampf(entity.propeller_horizontal_step, -2.0, 2.0)
+		_player_state.world_x += entity.propeller_horizontal_step * delta * 60.0
 		_player_state.world_x = clampf(_player_state.world_x, _level_state.min_x, _level_state.max_x)
-		_player_state.world_y = move_toward(_player_state.world_y, entity.world_y - 28.0, 240.0 * delta)
+		_player_state.world_y -= entity.propeller_vertical_step * delta * 60.0
+		entity.propeller_phase_units = fmod(entity.propeller_phase_units - 4.0 + 1024.0, 1024.0)
+		entity.propeller_vertical_step = sin(entity.propeller_phase_units * 4.0 * TAU / 1024.0) * 16.0
 		_velocity_y = 0.0
 		_player_state.is_grounded = false
-		_player_state.speed_x = entity.velocity_x
+		_player_state.speed_x = entity.propeller_horizontal_step * 60.0
 		_player_state.speed_y = 0.0
 		_player_state.char_state = 4
 		_player_state.anim_id = 2
@@ -6108,7 +6744,9 @@ func _try_propeller(entity: EntityState, held_input: int, delta: float) -> void:
 
 	if in_current:
 		entity.variant = 1
-		entity.velocity_x = 0.0
+		entity.propeller_horizontal_step = 0.0
+		entity.propeller_vertical_step = 0.0
+		entity.propeller_phase_units = 0.0
 		_velocity_y = 0.0
 		_player_state.is_grounded = false
 		_player_state.char_state = 4
@@ -6123,7 +6761,8 @@ func _try_booster(entity: EntityState, delta: float) -> void:
 	var dy := absf(_player_state.world_y - entity.world_y)
 	if dx > half_width + 14.0 or dy > half_height + 20.0:
 		return
-	var boost_speed := 520.0 * signf(entity.velocity_x)
+	# booster.c clamps qSpeedGround to +/-3072, or 12 pixels per GBA frame.
+	var boost_speed := 720.0 * signf(entity.velocity_x)
 	_player_state.world_x += boost_speed * delta
 	_boost_effect_timer = 0.45
 	_player_state.speed_x = boost_speed
@@ -6141,12 +6780,12 @@ func _try_dash_ring(entity: EntityState, delta: float) -> void:
 	if entity.activated or _dash_timer > 0.0:
 		return
 	var angle := -PI * 0.5 + float(entity.variant) * PI * 0.25
-	_dash_velocity_x = cos(angle) * 620.0
-	_dash_velocity_y = sin(angle) * 620.0
+	_dash_velocity_x = cos(angle) * 480.0
+	_dash_velocity_y = sin(angle) * 480.0
 	_dash_timer = 0.85
 	_boost_effect_timer = 0.85
-	_player_state.world_x += _dash_velocity_x * delta
-	_player_state.world_y += _dash_velocity_y * delta
+	_player_state.world_x = entity.world_x
+	_player_state.world_y = entity.world_y
 	_player_state.speed_x = _dash_velocity_x
 	_player_state.speed_y = _dash_velocity_y
 	_player_state.is_grounded = false
@@ -6155,12 +6794,22 @@ func _try_dash_ring(entity: EntityState, delta: float) -> void:
 	entity.activated = true
 
 func _try_grind_rail(entity: EntityState) -> void:
-	if _grind_timer > 0.0 or _dash_timer > 0.0 or _velocity_y < 0.0:
+	if _grind_timer > 0.0 or _dash_timer > 0.0 or not entity.rail_is_start:
 		return
 	var half_width := entity.width * 0.5
 	var dx := _player_state.world_x - entity.world_x
 	var dy := _player_state.world_y - entity.world_y
 	if absf(dx) > half_width or dy < -32.0 or dy > 28.0:
+		return
+	if entity.rail_air_start:
+		if _player_state.is_grounded or _velocity_y < 0.0:
+			return
+	else:
+		if not _player_state.is_grounded or _velocity_y < 0.0:
+			return
+	if entity.rail_direction > 0.0 and _player_state.world_x > entity.world_x + half_width * 0.5:
+		return
+	if entity.rail_direction < 0.0 and _player_state.world_x < entity.world_x - half_width * 0.5:
 		return
 	_grind_timer = 12.0
 	_grind_velocity_x = 240.0 * entity.rail_direction
@@ -6463,10 +7112,33 @@ func _corkscrew_stop(entity: EntityState, jumped: bool) -> void:
 func _try_cannon(entity: EntityState, held_input: int, delta: float) -> void:
 	var dx := _player_state.world_x - entity.world_x
 	var dy := _player_state.world_y - entity.world_y
+	if entity.cannon_loading:
+		_player_state.world_x = move_toward(_player_state.world_x, entity.world_x, 60.0 * delta)
+		_player_state.world_y = move_toward(_player_state.world_y, entity.world_y, 60.0 * delta)
+		_player_state.speed_x = 0.0
+		_player_state.speed_y = 0.0
+		_velocity_y = 0.0
+		_player_state.char_state = 5
+		if is_equal_approx(_player_state.world_x, entity.world_x) and is_equal_approx(_player_state.world_y, entity.world_y):
+			entity.cannon_loading = false
+			entity.cannon_active = true
+			entity.cannon_timer = 0.0
+			entity.cannon_aim_phase = 1 if entity.cannon_facing_right else 0
+		return
 	if entity.cannon_active:
 		entity.cannon_timer += delta
-		var aim_offset := sin(entity.cannon_timer * 2.4) * (PI * 0.25)
-		entity.cannon_angle = aim_offset if entity.cannon_facing_right else PI - aim_offset
+		var aim_targets := [
+			(PI * 5.0 / 4.0) if not entity.cannon_facing_right else (PI * 0.25),
+			(PI * 0.75) if not entity.cannon_facing_right else (PI * 1.75),
+		]
+		var target_angle: float = aim_targets[entity.cannon_aim_phase]
+		var angle_delta := wrapf(target_angle - entity.cannon_angle, -PI, PI)
+		var angle_step := 4.0 * TAU / 1024.0
+		if absf(angle_delta) < 5.0 * TAU / 1024.0:
+			entity.cannon_angle = target_angle
+			entity.cannon_aim_phase = 1 - entity.cannon_aim_phase
+		else:
+			entity.cannon_angle = fmod(entity.cannon_angle + signf(angle_delta) * angle_step + TAU, TAU)
 		_player_state.world_x = entity.world_x - (40.0 if entity.cannon_facing_right else -40.0)
 		_player_state.world_y = entity.world_y
 		_player_state.speed_x = 0.0
@@ -6492,7 +7164,7 @@ func _try_cannon(entity: EntityState, held_input: int, delta: float) -> void:
 		return
 	if absf(dx) > 44.0 or absf(dy) > 44.0:
 		return
-	entity.cannon_active = true
+	entity.cannon_loading = true
 	entity.cannon_timer = 0.0
 	_player_state.speed_x = 0.0
 	_player_state.speed_y = 0.0
@@ -6656,7 +7328,7 @@ func _try_hook_rail(entity: EntityState, frame_input: int, delta: float) -> void
 	_velocity_y = 0.0
 
 func _try_bounce_from_spring(entity: EntityState, delta: float) -> void:
-	if _velocity_y < 0.0:
+	if (entity.flying_spring and _velocity_y <= 0.0) or (not entity.flying_spring and _velocity_y < 0.0):
 		return
 
 	var half_width := entity.width * 0.5
@@ -6693,9 +7365,11 @@ func _try_bounce_from_spring(entity: EntityState, delta: float) -> void:
 			launch = Vector2(_spring_jump_speed * 0.78, _spring_jump_speed * 0.78)
 		_:
 			launch = Vector2(0.0, -_spring_jump_speed)
-	_velocity_y = launch.y
 	if entity.flying_spring:
-		entity.flying_spring_trigger_timer = 0.85
+		launch = Vector2(0.0, -330.0)
+		entity.flying_spring_step = 0
+		entity.flying_spring_motion_state = 1
+	_velocity_y = launch.y
 	_player_state.speed_x = launch.x
 	_player_state.world_x += launch.x * delta
 	_player_state.world_y = min(_player_state.world_y, entity.world_y - half_height - 1.0) if launch.y < 0.0 else _player_state.world_y
@@ -6706,6 +7380,34 @@ func _try_bounce_from_spring(entity: EntityState, delta: float) -> void:
 func _try_hit_enemy(entity: EntityState) -> void:
 	if _damage_cooldown > 0.0:
 		return
+	if entity.enemy_profile == 11:
+		var head_position := Vector2(entity.target_x, entity.target_y)
+		if Vector2(_player_state.world_x, _player_state.world_y - 20.0).distance_to(head_position) <= 16.0:
+			if _attack_timer > 0.0:
+				entity.kubinaga_extension = 0.0
+				entity.kubinaga_phase = 0
+				entity.kubinaga_phase_timer = 2.0
+				return
+			_apply_contact_damage(-260.0, 0.6)
+			return
+	if entity.enemy_profile == 15:
+		var player_position := Vector2(_player_state.world_x, _player_state.world_y - 20.0)
+		for iron_ball in entity.trail_positions:
+			if player_position.distance_to(iron_ball) <= 14.0:
+				_apply_contact_damage(-260.0, 0.6)
+				return
+	if entity.enemy_profile == 10:
+		var player_position := Vector2(_player_state.world_x, _player_state.world_y - 20.0)
+		for trail_point in entity.trail_positions:
+			if player_position.distance_to(trail_point) <= 16.0:
+				_apply_contact_damage(-260.0, 0.6)
+				return
+	if entity.enemy_profile == 8:
+		var fireball := _kura_kura_fireball_position(entity)
+		var fireball_delta := Vector2(_player_state.world_x, _player_state.world_y - 20.0).distance_to(fireball)
+		if fireball_delta <= 16.0:
+			_apply_contact_damage(-260.0, 0.6)
+			return
 	var dx: float = abs(_player_state.world_x - entity.world_x)
 	var dy: float = abs((_player_state.world_y - 20.0) - entity.world_y)
 	if dx < 20.0 and dy < 22.0:
@@ -7217,9 +7919,15 @@ func _try_reach_goal(entity: EntityState) -> void:
 	if _level_complete:
 		return
 
-	var dx: float = abs(_player_state.world_x - entity.world_x)
-	var dy: float = abs(_player_state.world_y - entity.world_y)
-	if dx < 28.0 and dy < 64.0:
+	var reached := false
+	if entity.goal_toggle:
+		# stage_goal.c uses a horizontal finish line for TOGGLE__GOAL.
+		reached = _player_state.world_x >= entity.world_x
+	else:
+		var dx: float = abs(_player_state.world_x - entity.world_x)
+		var dy: float = abs(_player_state.world_y - entity.world_y)
+		reached = dx < 28.0 and dy < 64.0
+	if reached and _player_state.is_alive:
 		_level_complete = true
 		_clear_from_goal = true
 		_game_state = GAME_STATE_CLEAR
@@ -7230,6 +7938,11 @@ func _try_reach_goal(entity: EntityState) -> void:
 		_player_state.speed_y = 0.0
 		_status_text = "STAGE CLEAR - START OR A TO REPLAY"
 		_add_score(5000)
+		if not _run_from_time_attack and not _run_from_multiplayer and _player_state.is_grounded and absf(_player_state.ground_speed) > 150.0:
+			var speed := absf(_player_state.ground_speed)
+			var goal_bonus := 200 if speed <= 240.0 else (300 if speed <= 540.0 else (500 if speed <= 600.0 else 800))
+			_add_score(goal_bonus)
+			_status_text = "STAGE CLEAR +%d" % goal_bonus
 		_clear_time_snapshot = _elapsed_time
 		_clear_score_snapshot = _player_state.score
 		_clear_ring_snapshot = _player_state.rings
@@ -8009,6 +8722,12 @@ func get_press_start_prompt_text() -> String:
 
 func get_press_start_subtitle_text() -> String:
 	return _language_text("HIGH-SPEED ACTION", "HOCHGESCHWINDIGKEIT", "ACTION RAPIDE", "ACCION A TODA VELOCIDAD", "AZIONE AD ALTA VELOCITA")
+
+func get_title_logo_source_tilemap() -> String:
+	return "sa2_title_logo_jp" if _language_index == 0 else "sa2_logo_en"
+
+func get_title_background_source_tilemap() -> String:
+	return "title_screen_bg"
 
 func get_press_start_info_rows() -> Array:
 	return [
@@ -12555,6 +13274,9 @@ func get_intro_detail_text() -> String:
 		return "START SEQUENCE LOCKED"
 	return "%s TO BEGIN" % get_confirm_label()
 
+func get_final_intro_source_tilemaps() -> Array:
+	return ["cutscene_final_ending_fall_bg", "cutscene_final_ending_fall_clouds"]
+
 func is_race_start_message_visible() -> bool:
 	return _game_state == GAME_STATE_PLAYING and _race_start_message_timer > 0.0
 
@@ -12922,6 +13644,9 @@ func get_sega_logo_prompt_text() -> String:
 func get_sega_logo_detail_text() -> String:
 	return _language_text("%s SKIP", "%s UEBERSPRINGEN", "%s PASSER", "%s OMITIR", "%s SALTA") % get_confirm_label()
 
+func get_sega_logo_source_tilemap() -> String:
+	return "intro_presented_by_sega"
+
 func get_sonic_team_logo_title_text() -> String:
 	return "SONIC TEAM"
 
@@ -12930,6 +13655,9 @@ func get_sonic_team_logo_prompt_text() -> String:
 
 func get_sonic_team_logo_detail_text() -> String:
 	return _language_text("%s SKIP   AUTO TITLE", "%s UEBERSPRINGEN   AUTO-TITEL", "%s PASSER   TITRE AUTO", "%s OMITIR   TITULO AUTO", "%s SALTA   TITOLO AUTO") % get_confirm_label()
+
+func get_sonic_team_logo_source_tilemap() -> String:
+	return "intro_created_by_sonic_team"
 
 func get_credits_title_text() -> String:
 	return "SONIC ADVANCE 2   %s" % get_ending_variant_label()
@@ -13029,6 +13757,9 @@ func get_special_stage_title_text() -> String:
 		return _language_text("SPECIAL STAGE RUN", "SPECIAL-STAGE-LAUF", "COURSE SPECIAL", "RECORRIDO ESPECIAL", "CORSA SPECIALE")
 	return _language_text("SPECIAL STAGE RESULTS", "SPECIAL-STAGE-ERGEBNIS", "RESULTAT SPECIAL", "RESULTADO ESPECIAL", "RISULTATO SPECIALE")
 
+func get_special_stage_source_tilemap() -> String:
+	return "special_stage_%d_bg" % (clampi(_special_stage_emerald_index, 0, 6) + 1)
+
 func get_special_stage_prompt_text() -> String:
 	if _special_stage_paused:
 		return _language_text("SPECIAL STAGE PAUSED", "SPECIAL STAGE PAUSIERT", "SPECIAL STAGE EN PAUSE", "SPECIAL STAGE EN PAUSA", "SPECIAL STAGE IN PAUSA")
@@ -13120,6 +13851,21 @@ func get_copyright_detail_text() -> String:
 func get_credits_end_title_text() -> String:
 	return "SONIC ADVANCE 2\n%s" % get_ending_variant_label()
 
+func get_credits_end_source_tilemap() -> String:
+	if _ending_variant == ENDING_VARIANT_EXTRA:
+		return "storyframe_sonic_leaves_%d" % _credits_end_story_frame
+	return "credits_sa2_logo_jp" if _language_index == 0 else "credits_sa2_logo_en"
+
+func _advance_credits_end_story(delta: float) -> void:
+	if _ending_variant != ENDING_VARIANT_EXTRA or _credits_end_story_frame >= 11:
+		return
+	if _credits_end_story_timer > 0.0:
+		_credits_end_story_timer = maxf(0.0, _credits_end_story_timer - delta)
+		return
+	_credits_end_story_frame += 1
+	if _credits_end_story_frame >= 1 and _credits_end_story_frame <= CREDITS_END_STORY_DELAYS.size():
+		_credits_end_story_timer = float(CREDITS_END_STORY_DELAYS[_credits_end_story_frame - 1]) / 60.0
+
 func get_credits_end_prompt_text() -> String:
 	if _ending_variant == ENDING_VARIANT_EXTRA:
 		return _language_text("TRUE AREA 53 COMPLETE", "TRUE AREA 53 KOMPLETT", "TRUE AREA 53 TERMINE", "TRUE AREA 53 COMPLETA", "TRUE AREA 53 COMPLETATA")
@@ -13144,6 +13890,30 @@ func get_character_unlock_detail_text() -> String:
 		return _language_text("%s CONTINUE   %s SKIP", "%s WEITER   %s UEBERSPRINGEN", "%s CONTINUER   %s PASSER", "%s CONTINUAR   %s OMITIR", "%s CONTINUA   %s SALTA") % [get_confirm_label(), get_secondary_label()]
 	var description: String = str(_character_descriptions[_character_unlock_pending])
 	return _language_text("%s\n%s CONTINUE   %s SKIP", "%s\n%s WEITER   %s UEBERSPRINGEN", "%s\n%s CONTINUER   %s PASSER", "%s\n%s CONTINUAR   %s OMITIR", "%s\n%s CONTINUA   %s SALTA") % [description, get_confirm_label(), get_secondary_label()]
+
+func get_character_unlock_source_slide_tilemap() -> String:
+	var source_name := _character_unlock_source_name()
+	if source_name.is_empty():
+		return ""
+	return "storyframe_%s_unlock_%d" % [source_name, mini(_character_unlock_segment, 3)]
+
+func get_character_unlock_source_dialogue_tilemap() -> String:
+	var source_name := _character_unlock_source_name()
+	if source_name.is_empty():
+		return ""
+	var language_names := ["jp", "en", "de", "fr", "es", "it"]
+	var language_index := clampi(_language_index, 0, language_names.size() - 1)
+	return "storyframe_%s_unlock_%d_dlg_%s" % [source_name, mini(_character_unlock_segment, 3), language_names[language_index]]
+
+func _character_unlock_source_name() -> String:
+	match _character_unlock_pending:
+		1:
+			return "cream"
+		2:
+			return "tails"
+		3:
+			return "knuckles"
+	return ""
 
 func skip_sonic_team_logo() -> void:
 	if _game_state != GAME_STATE_SONIC_TEAM:

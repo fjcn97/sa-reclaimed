@@ -107,7 +107,7 @@ func _update_slots() -> void:
 func _update_source_card() -> void:
 	if _source_card == null:
 		return
-	var language_names := ["en", "de", "fr", "es", "it", "jp"]
+	var language_names := ["jp", "en", "de", "fr", "es", "it"]
 	var language_index := clampi(int(CoreBridge._language_index), 0, language_names.size() - 1)
 	var source := "collect_all_chaos_emeralds_%s" % language_names[language_index]
 	if source == _source_card_name:

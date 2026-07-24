@@ -2,6 +2,8 @@
 # Presents an original-inspired stage intro title card.
 extends CanvasLayer
 
+const SourceTilemapTextureImpl = preload("res://scripts/SourceTilemapTexture.gd")
+
 @export var title_label: Label = null
 @export var prompt_label: Label = null
 @export var detail_label: Label = null
@@ -30,6 +32,9 @@ var _zone_label: Label = null
 var _act_label: Label = null
 var _character_label: Label = null
 var _countdown_label: Label = null
+var _final_bg_texture: TextureRect = null
+var _final_clouds_texture: TextureRect = null
+var _final_source_cache: Dictionary = {}
 var _badge_cards: Array[ColorRect] = []
 var _badge_labels: Array[Label] = []
 
@@ -73,6 +78,7 @@ func _process(delta: float) -> void:
 	_update_countdown_label()
 	_update_stage_intro_timing(CoreBridge.get_intro_stage_frame())
 	_update_chrome()
+	_update_final_source_art()
 
 func _ensure_chrome() -> void:
 	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.04, 0.40))
@@ -89,6 +95,8 @@ func _ensure_chrome() -> void:
 	_wheel_core = _ensure_rect("WheelCore", Rect2(903.0, 143.0, 70.0, 70.0), Color(0.04, 0.08, 0.16, 0.96))
 	_badge_strip = _ensure_rect("BadgeStrip", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.84))
 	_prompt_band = _ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.05, 0.09, 0.17, 0.92))
+	_final_bg_texture = _create_final_source_texture("OriginalFinalEndingFallBackground", -5)
+	_final_clouds_texture = _create_final_source_texture("OriginalFinalEndingFallClouds", -4)
 	_triangle_accent = _ensure_rect("TriangleAccent", Rect2(820.0, 352.0, 210.0, 126.0), Color(0.20, 0.72, 0.48, 0.18))
 	_zone_chip = _ensure_rect("ZoneChip", Rect2(232.0, 160.0, 126.0, 34.0), Color(0.22, 0.56, 0.92, 0.96))
 	_act_chip = _ensure_rect("ActChip", Rect2(374.0, 160.0, 102.0, 34.0), Color(0.12, 0.24, 0.46, 0.96))
@@ -111,6 +119,37 @@ func _ensure_chrome() -> void:
 	_zone_chip.z_index = -1
 	_act_chip.z_index = -1
 	_character_chip.z_index = -1
+
+func _create_final_source_texture(node_name: String, layer_index: int) -> TextureRect:
+	var node := TextureRect.new()
+	node.name = node_name
+	node.position = Vector2(176.0, 188.0)
+	node.size = Vector2(928.0, 464.0)
+	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	node.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	node.z_index = layer_index
+	add_child(node)
+	return node
+
+func _update_final_source_art() -> void:
+	var final_mode := CoreBridge.is_final_intro_screen()
+	if _final_bg_texture:
+		_final_bg_texture.visible = final_mode
+	if _final_clouds_texture:
+		_final_clouds_texture.visible = final_mode
+	if not final_mode:
+		return
+	var sources: Array = CoreBridge.get_final_intro_source_tilemaps()
+	if sources.size() < 2:
+		return
+	for source in sources:
+		if not _final_source_cache.has(source):
+			_final_source_cache[source] = SourceTilemapTextureImpl.compose(str(source), 32)
+	if _final_bg_texture:
+		_final_bg_texture.texture = _final_source_cache[sources[0]] as Texture2D
+	if _final_clouds_texture:
+		_final_clouds_texture.texture = _final_source_cache[sources[1]] as Texture2D
 
 func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
 	var rect_node := get_node_or_null(node_name) as ColorRect
@@ -308,6 +347,10 @@ func _set_screen_visible(screen_visible: bool) -> void:
 		_wheel_icon_label.visible = screen_visible
 	if _countdown_label:
 		_countdown_label.visible = screen_visible and not CoreBridge.get_intro_countdown_text().is_empty()
+	if _final_bg_texture:
+		_final_bg_texture.visible = screen_visible and CoreBridge.is_final_intro_screen()
+	if _final_clouds_texture:
+		_final_clouds_texture.visible = screen_visible and CoreBridge.is_final_intro_screen()
 	for card in _badge_cards:
 		if not screen_visible:
 			card.visible = false

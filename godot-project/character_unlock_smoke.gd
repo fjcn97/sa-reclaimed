@@ -14,6 +14,8 @@ func _run() -> void:
 	bridge._open_character_unlock()
 	_check(bridge.is_character_unlock_screen(), "unlock cutscene opens")
 	_check(bridge._character_unlock_segment == 0 and bridge._character_unlock_scene_frame == 0.0, "unlock starts at first segment")
+	_check(bridge.get_character_unlock_source_slide_tilemap() == "storyframe_cream_unlock_0", "Cream starts on original storyframe")
+	_check(bridge.get_character_unlock_source_dialogue_tilemap() == "storyframe_cream_unlock_0_dlg_en", "Cream starts on English source dialogue")
 
 	for _frame in range(8):
 		bridge.advance_ui_timers(1.0 / 60.0)
@@ -24,11 +26,13 @@ func _run() -> void:
 	_check(bridge._character_unlock_scene_frame == 340.0, "START fast-forwards only current segment")
 	bridge.advance_ui_timers(1.0 / 60.0)
 	_check(bridge.is_character_unlock_screen() and bridge._character_unlock_segment == 1, "next segment remains visible")
+	_check(bridge.get_character_unlock_source_slide_tilemap() == "storyframe_cream_unlock_1", "next unlock segment follows source slide order")
 
 	bridge._character_unlock_segment = 3
 	bridge._character_unlock_scene_frame = 340.0
 	bridge.advance_ui_timers(1.0 / 60.0)
 	_check(bridge.is_character_unlock_screen() and bridge._character_unlock_segment == 4, "final message follows four segments")
+	_check(bridge.get_character_unlock_source_dialogue_tilemap() == "storyframe_cream_unlock_3_dlg_en", "final message holds the fourth source dialogue card")
 	for _frame in range(301):
 		bridge.advance_ui_timers(1.0 / 60.0)
 	_check(not bridge.is_character_unlock_screen(), "final message resolves after source duration")

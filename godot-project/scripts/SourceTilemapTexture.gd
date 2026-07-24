@@ -2,7 +2,7 @@
 class_name SourceTilemapTexture
 extends RefCounted
 
-static func compose(source: String) -> Texture2D:
+static func compose(source: String, map_width: int = 30, map_entry_bytes: int = 2) -> Texture2D:
 	var base := ProjectSettings.globalize_path("res://../data/sa2/tilemaps/%s" % source)
 	var tiles := Image.new()
 	if tiles.load(base.path_join("tiles.png")) != OK:
@@ -11,13 +11,16 @@ static func compose(source: String) -> Texture2D:
 	if map_file == null:
 		return null
 	var tilemap := map_file.get_buffer(map_file.get_length())
-	var map_width := 30
-	var map_height := int(tilemap.size() / 2 / map_width)
+	map_width = maxi(map_width, 1)
+	map_entry_bytes = 1 if map_entry_bytes == 1 else 2
+	var map_height := int(tilemap.size() / map_entry_bytes / map_width)
 	var image := Image.create(map_width * 8, map_height * 8, false, Image.FORMAT_RGBA8)
 	for map_y in range(map_height):
 		for map_x in range(map_width):
-			var offset := (map_y * map_width + map_x) * 2
-			var entry := int(tilemap[offset]) | (int(tilemap[offset + 1]) << 8)
+			var offset := (map_y * map_width + map_x) * map_entry_bytes
+			var entry := int(tilemap[offset])
+			if map_entry_bytes == 2:
+				entry |= int(tilemap[offset + 1]) << 8
 			var tile_index := entry & 0x03ff
 			var flip_x := (entry & 0x0400) != 0
 			var flip_y := (entry & 0x0800) != 0

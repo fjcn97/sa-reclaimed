@@ -2,6 +2,8 @@
 # The collectible field is represented by deterministic lane checkpoints.
 extends CanvasLayer
 
+const SourceTilemapTextureImpl = preload("res://scripts/SourceTilemapTexture.gd")
+
 @export var title_label: Label = null
 @export var prompt_label: Label = null
 @export var detail_label: Label = null
@@ -16,6 +18,9 @@ var _run_card: ColorRect = null
 var _run_label: Label = null
 var _pause_card: ColorRect = null
 var _pause_label: Label = null
+var _source_background: TextureRect = null
+var _source_background_cache: Dictionary = {}
+var _source_background_name := ""
 var _lane_cards: Array[ColorRect] = []
 var _emerald_slots: Array[ColorRect] = []
 var _emerald_labels: Array[Label] = []
@@ -53,6 +58,7 @@ func _process(delta: float) -> void:
 	if _glow:
 		_glow.color = Color(0.12, 0.42, 0.66, 0.14 + pulse * 0.08)
 	_update_results()
+	_update_source_background()
 
 func _ensure_chrome() -> void:
 	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.06, 0.98))
@@ -69,6 +75,15 @@ func _ensure_chrome() -> void:
 	_pause_label = _ensure_label("PauseLabel", Vector2(410.0, 338.0), Vector2(460.0, 84.0), 24)
 	_pause_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_pause_label.text = CoreBridge.get_special_stage_pause_text()
+	_source_background = TextureRect.new()
+	_source_background.name = "OriginalSpecialStageBackground"
+	_source_background.position = Vector2(166.0, 144.0)
+	_source_background.size = Vector2(948.0, 430.0)
+	_source_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_source_background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_source_background.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_source_background.z_index = -2
+	add_child(_source_background)
 	_backdrop.z_index = -5
 	_glow.z_index = -4
 	_panel.z_index = -3
@@ -84,6 +99,17 @@ func _ensure_chrome() -> void:
 	for i in range(3):
 		var lane := _ensure_rect("Lane%d" % i, Rect2(370.0, 394.0 + float(i) * 22.0, 540.0, 14.0), Color(0.12, 0.24, 0.38, 0.98))
 		_lane_cards.append(lane)
+
+func _update_source_background() -> void:
+	if _source_background == null:
+		return
+	var source := CoreBridge.get_special_stage_source_tilemap()
+	if source == _source_background_name:
+		return
+	_source_background_name = source
+	if not _source_background_cache.has(source):
+		_source_background_cache[source] = SourceTilemapTextureImpl.compose(source, 32)
+	_source_background.texture = _source_background_cache[source] as Texture2D
 
 func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
 	var node := get_node_or_null(node_name) as ColorRect
@@ -141,6 +167,8 @@ func _set_screen_visible(screen_visible: bool) -> void:
 	for node in [_backdrop, _glow, _panel, _rule, _ring_card, _ring_label, _run_card, _run_label, _pause_card, _pause_label, title_label, prompt_label, detail_label]:
 		if node:
 			node.visible = screen_visible
+	if _source_background:
+		_source_background.visible = screen_visible
 	for node in _emerald_slots:
 		node.visible = screen_visible
 	for node in _emerald_labels:

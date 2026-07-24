@@ -153,14 +153,14 @@ func _update_option_labels() -> void:
 		_row_cards[i].position.y = top + lift
 		_option_labels[i].position.y = top - 3.0 + lift
 		_meta_labels[i].position.y = top - 3.0 + lift
-			var item_text := str(items[i])
-			var item_visual := CoreBridge.get_options_item_visual(i)
-			var meta_text := "%s   %s" % [CoreBridge.get_options_item_meta(i), CoreBridge.get_options_item_status(i)]
-			_row_cards[i].color = _get_row_card_color(selected, item_visual)
+		var item_text := str(items[i])
+		var item_visual := CoreBridge.get_options_item_visual(i)
+		var meta_text := "%s   %s" % [CoreBridge.get_options_item_meta(i), CoreBridge.get_options_item_status(i)]
+		_row_cards[i].color = _get_row_card_color(selected, item_visual)
 		_option_labels[i].text = item_text
 		_option_labels[i].modulate = Color(1.0, 0.98, 0.84, 1.0) if selected else Color(0.92, 0.96, 1.0, 0.94)
 		_meta_labels[i].text = meta_text
-			_meta_labels[i].modulate = _get_meta_color(item_visual)
+		_meta_labels[i].modulate = _get_meta_color(item_visual)
 
 func _update_summary() -> void:
 	if _summary_label:

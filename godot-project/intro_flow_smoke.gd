@@ -35,6 +35,8 @@ func _run() -> void:
 	bridge.physics_tick(0, 0, 3.1)
 	_check(not bridge.is_intro_screen(), "skipped countdown starts gameplay")
 	bridge.open_time_attack_lobby(true)
+	_check(bridge.get_final_intro_source_tilemaps()[0] == "cutscene_final_ending_fall_bg", "final intro exposes original fall background")
+	_check(bridge.get_final_intro_source_tilemaps()[1] == "cutscene_final_ending_fall_clouds", "final intro exposes original cloud layer")
 	bridge.init_level(0, true)
 	_check(not bridge.can_skip_intro(), "boss intro cannot skip")
 	_check(bridge.get_intro_countdown_text().is_empty(), "boss intro has no countdown numbers")

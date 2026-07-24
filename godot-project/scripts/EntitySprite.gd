@@ -34,6 +34,9 @@ func _process(delta: float) -> void:
 	if entity_state == null:
 		visible = false
 		return
+	if entity_state.type == CoreBridge.ENTITY_LAP_TRIGGER:
+		visible = false
+		return
 
 	visible = entity_state.active
 	if not visible:
@@ -133,6 +136,9 @@ func _apply_visuals() -> void:
 			_body.texture = _make_checkpoint_pole_texture()
 			_overlay.texture = _make_flag_texture(entity_state.activated)
 		CoreBridge.ENTITY_GOAL:
+			_body.texture = _make_goal_pole_texture()
+			_overlay.texture = _make_goal_flag_texture()
+		CoreBridge.ENTITY_GOAL_LEVER:
 			_body.texture = _make_goal_pole_texture()
 			_overlay.texture = _make_goal_flag_texture()
 		_:
@@ -251,6 +257,12 @@ func _animate(delta: float) -> void:
 			var offset: Vector2 = profile.get("overlay_offset", Vector2(18.0, -28.0))
 			_overlay.position.x = offset.x + sin(_pulse_time * 5.5) * 2.5
 			_overlay.position.y = offset.y
+			_body.rotation = sin(_pulse_time * 2.8) * 0.04
+		CoreBridge.ENTITY_GOAL_LEVER:
+			_overlay.rotation = sin(_pulse_time * 6.0) * 0.12
+			var lever_profile := CoreBridge.get_entity_visual_profile(entity_state.type, bool(entity_state.activated))
+			var lever_offset: Vector2 = lever_profile.get("overlay_offset", Vector2(18.0, -28.0))
+			_overlay.position = lever_offset
 			_body.rotation = sin(_pulse_time * 2.8) * 0.04
 		_:
 			pass

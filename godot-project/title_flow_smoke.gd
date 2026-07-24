@@ -13,6 +13,20 @@ func _run() -> void:
 		bridge.name = "CoreBridge"
 		get_root().add_child(bridge)
 	bridge.open_press_start_screen()
+	_check(bridge.get_title_logo_source_tilemap() == "sa2_logo_en", "English title uses original logo")
+	bridge._language_index = 0
+	_check(bridge.get_title_logo_source_tilemap() == "sa2_title_logo_jp", "Japanese title uses original logo")
+	bridge._language_index = 1
+	bridge._open_boot_intro()
+	_check(bridge.get_sega_logo_source_tilemap() == "intro_presented_by_sega", "Sega boot uses original source card")
+	bridge.skip_sega_logo()
+	_check(bridge.is_press_start_screen(), "Sega skip returns to title")
+	bridge._boot_intro_pending = true
+	bridge._open_sonic_team_logo()
+	_check(bridge.is_sonic_team_logo_screen(), "automatic boot transition enters Sonic Team card")
+	_check(bridge.get_sonic_team_logo_source_tilemap() == "intro_created_by_sonic_team", "Sonic Team boot uses original source card")
+	bridge.skip_sonic_team_logo()
+	_check(bridge.is_press_start_screen(), "Sonic Team skip returns to title")
 	bridge.start_title_selection()
 	_check(bridge.is_play_mode_screen(), "modern A confirm starts title flow")
 	bridge.advance_ui_timers(0.5)
