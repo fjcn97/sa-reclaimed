@@ -6,6 +6,7 @@ class_name StageBackdrop
 var _time: float = 0.0
 var _source_bg_texture: Texture2D = null
 var _source_bg_level_id := -1
+const BACKGROUND_PROFILE := preload("res://scripts/SourceBackgroundProfile.gd")
 
 func _ready() -> void:
 	set_process(true)
@@ -35,6 +36,7 @@ func _draw() -> void:
 	draw_rect(Rect2(-2000.0, 0.0, 6000.0, 260.0), sky_mid)
 	draw_rect(Rect2(-2000.0, 180.0, 6000.0, 140.0), sky_high)
 	_draw_source_background()
+	_draw_zone4_spotlights()
 
 	_draw_drifting_cloud(Vector2(280.0, 140.0), 1.0, 7.0, 0.0)
 	_draw_drifting_cloud(Vector2(840.0, 110.0), 1.4, 11.0, 0.8)
@@ -99,8 +101,48 @@ func _draw_hill(origin: Vector2, size: Vector2, color: Color) -> void:
 func _draw_source_background() -> void:
 	if _source_bg_texture == null:
 		return
+	var profile := get_source_background_profile(_source_bg_level_id)
+	var strips := int(profile.get("strips", 15))
+	var strip_height := 480.0 / float(maxi(1, strips))
+	var phase_speed := float(profile.get("phase_speed", 0.0))
+	var amplitude_x := float(profile.get("amplitude_x", 0.0))
+	var amplitude_y := float(profile.get("amplitude_y", 0.0))
+	var opacity := float(profile.get("opacity", 0.28))
+	# The original Zone2/3/6/7 background tasks write per-scanline offsets to
+	# HBlank registers. Draw equivalent horizontal strips so the extracted
+	# source background keeps that motion in Godot instead of being a static
+	# backdrop.
 	for x in range(-600, 3000, 512):
-		draw_texture_rect(_source_bg_texture, Rect2(x, 44.0, 512.0, 480.0), false, Color(1.0, 1.0, 1.0, 0.28))
+		for strip in range(strips):
+			var y := 44.0 + float(strip) * strip_height
+			var wave := float(strip) / float(maxi(1, strips - 1)) * TAU
+			var offset_x := sin(_time * phase_speed + wave) * amplitude_x
+			var offset_y := cos(_time * phase_speed * 0.73 + wave * 1.4) * amplitude_y
+			var source_rect := Rect2(x + offset_x, y + offset_y, 512.0, strip_height + 2.0)
+			draw_texture_rect_region(_source_bg_texture, source_rect, Rect2(0.0, float(strip) * 240.0 / float(maxi(1, strips)), 256.0, 240.0 / float(maxi(1, strips))), Color(1.0, 1.0, 1.0, opacity))
+
+func _draw_zone4_spotlights() -> void:
+	var profile := get_source_background_profile(_source_bg_level_id)
+	if not bool(profile.get("spotlights", false)):
+		return
+	# zone_4.inc.c creates two moving spotlight windows over the snow layer.
+	# The polygon cones preserve the readable light shafts without relying on
+	# GBA WIN registers, which do not exist in Godot's renderer.
+	for i in range(2):
+		var phase := _time * (0.42 + float(i) * 0.10) + float(i) * PI
+		var center_x := 420.0 + float(i) * 720.0 + sin(phase) * 130.0
+		var top_x := center_x + sin(phase * 0.7) * 32.0
+		var beam := PackedVector2Array([
+			Vector2(top_x - 18.0, 40.0),
+			Vector2(top_x + 18.0, 40.0),
+			Vector2(center_x + 148.0, 540.0),
+			Vector2(center_x - 148.0, 540.0),
+		])
+		draw_colored_polygon(beam, Color(0.84, 0.92, 1.0, 0.055))
+		draw_line(Vector2(top_x, 40.0), Vector2(center_x, 540.0), Color(0.92, 0.97, 1.0, 0.20), 2.0)
+
+func get_source_background_profile(level_id: int) -> Dictionary:
+	return BACKGROUND_PROFILE.for_level(level_id)
 
 func _build_source_background(manifest: Dictionary) -> Texture2D:
 	if manifest.is_empty() or not bool(manifest.get("valid", false)):

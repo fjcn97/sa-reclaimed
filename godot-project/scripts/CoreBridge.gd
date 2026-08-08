@@ -234,6 +234,10 @@ class PlayerState:
 	var score: int = 0
 	var lives: int = 3
 	var has_cleared_level: bool = false
+	# player_super_sonic.c owns a separate player presentation for the extra
+	# boss route. Keep it on the shared state so the renderer and HUD can use it.
+	var super_sonic: bool = false
+	var super_sonic_ring_timer: float = 0.0
 
 class CameraState:
 	var x: float = 0.0
@@ -461,6 +465,7 @@ class EntityState:
 	var cannon_aim_phase: int = 0
 	var rotating_handle_angle: float = 0.0
 	var rotating_handle_speed: float = 0.0
+	var rotating_handle_quartile: int = 0
 	var flying_handle: bool = false
 	var flying_handle_top_y: float = 0.0
 	var flying_handle_bottom_y: float = 0.0
@@ -1592,6 +1597,7 @@ func physics_tick(held_input: int, frame_input: int, delta: float) -> void:
 		return
 
 	_elapsed_time += delta
+	_update_super_sonic(delta)
 	_start_boost_timer = maxf(0.0, _start_boost_timer - delta)
 	_attack_timer = maxf(0.0, _attack_timer - delta)
 	_flight_timer = maxf(0.0, _flight_timer - delta)
@@ -1643,6 +1649,10 @@ func physics_tick(held_input: int, frame_input: int, delta: float) -> void:
 	var speed_multiplier := 1.35 if _speed_up_timer > 0.0 else 1.0
 	var snow_multiplier := 0.95 if _on_slowing_snow else 1.0
 	var current_move_speed := (INTRO_BOOST_SPEED if _start_boost_timer > 0.0 else _move_speed) * speed_multiplier * snow_multiplier
+	if _player_state.super_sonic:
+		# Super Sonic's directional task uses the extra-boss top speed rather
+		# than the regular character acceleration profile.
+		current_move_speed = 900.0 * speed_multiplier
 	var current_move_direction := 1 if _start_boost_timer > 0.0 and move_direction == 0 else move_direction
 	var gravity_direction := -1.0 if _gravity_inverted else 1.0
 	if _player_state.is_grounded and current_move_direction != 0 and absf(_player_state.speed_x) > 160.0 and signf(_player_state.speed_x) != signf(current_move_direction) and _braking_dust_cooldown <= 0.0:
@@ -2526,7 +2536,7 @@ func get_boost_trail_positions() -> Array:
 	return positions
 
 func is_player_boosting() -> bool:
-	return not _run_from_multiplayer and (_start_boost_timer > 0.0 or _dash_timer > 0.0 or _boost_effect_timer > 0.0)
+	return not _run_from_multiplayer and (_player_state.super_sonic or _start_boost_timer > 0.0 or _dash_timer > 0.0 or _boost_effect_timer > 0.0)
 
 func get_camera_state() -> CameraState:
 	return _camera_state
@@ -7050,6 +7060,8 @@ func _try_rotating_handle(entity: EntityState, _held_input: int, frame_input: in
 		# speed and keeps the player centered until the jump transition releases it.
 		entity.rotating_handle_angle = fmod(entity.rotating_handle_angle + entity.rotating_handle_speed * delta, TAU)
 		entity.effect_offset = entity.rotating_handle_angle
+		# rotating_handle.c selects one of twelve sprite variants from rot>>4.
+		entity.variant = clampi(int(fposmod(entity.rotating_handle_angle, TAU) / TAU * 1024.0) >> 4, 0, 11)
 		_player_state.world_x = entity.world_x
 		_player_state.world_y = entity.world_y
 		_player_state.speed_x = 0.0
@@ -7058,7 +7070,22 @@ func _try_rotating_handle(entity: EntityState, _held_input: int, frame_input: in
 		_player_state.is_grounded = false
 		_player_state.char_state = 5
 		if frame_input & A_BUTTON:
-			var tangent := Vector2(-sin(entity.rotating_handle_angle), cos(entity.rotating_handle_angle))
+			# Match the source's four quadrant-specific release offsets. The GBA
+			# implementation computes these in 10-bit trig units; radians are
+			# equivalent here while keeping the existing Godot velocity scale.
+			var angle_units := fposmod(entity.rotating_handle_angle, TAU) / TAU * 1024.0
+			var release_units := angle_units
+			match entity.rotating_handle_quartile:
+				0:
+					release_units = 32.0 - angle_units
+				1:
+					release_units = angle_units + 32.0
+				2:
+					release_units = angle_units - 32.0
+				3:
+					release_units = 544.0 - angle_units
+			var release_angle := release_units * TAU / 1024.0
+			var tangent := Vector2(cos(release_angle), sin(release_angle))
 			entity.activated = false
 			entity.state_timer = 0.0
 			_player_state.speed_x = tangent.x * 300.0
@@ -7074,6 +7101,10 @@ func _try_rotating_handle(entity: EntityState, _held_input: int, frame_input: in
 	entity.rotating_handle_angle = 0.0
 	entity.effect_offset = 0.0
 	entity.rotating_handle_speed = clampf(absf(_player_state.speed_x) + absf(_velocity_y), 220.0, 384.0)
+	if _player_state.speed_x >= 0.0:
+		entity.rotating_handle_quartile = 0 if _player_state.world_y > entity.world_y else 1
+	else:
+		entity.rotating_handle_quartile = 2 if _player_state.world_y > entity.world_y else 3
 	_player_state.world_x = entity.world_x
 	_player_state.world_y = entity.world_y
 	_velocity_y = 0.0
@@ -8000,7 +8031,12 @@ func _update_camera() -> void:
 	_camera_state.min_y = _level_state.min_y
 	_camera_state.max_y = _level_state.max_y
 
-	_camera_state.x = clamp(_player_state.world_x, viewport.x * 0.5, _level_state.max_x - viewport.x * 0.5) + _screen_shake_offset.x
+	var camera_target_x := _player_state.world_x
+	if _player_state.super_sonic:
+		# sub_802BCCC keeps the extra-boss camera ahead of the player while the
+		# scrolling arena moves beneath the rocket-like Super Sonic sprite.
+		camera_target_x += clampf(_player_state.speed_x * 0.18, -144.0, 144.0)
+	_camera_state.x = clamp(camera_target_x, viewport.x * 0.5, _level_state.max_x - viewport.x * 0.5) + _screen_shake_offset.x
 	_camera_state.y = clamp(_player_state.world_y - 120.0, viewport.y * 0.5, _level_state.max_y - viewport.y * 0.5) + _screen_shake_offset.y
 
 func _request_screen_shake(amplitude: float, duration: float, phase_speed: float, horizontal: bool, vertical: bool, random_value: bool) -> void:
@@ -8081,6 +8117,14 @@ func _reset_player() -> void:
 	# life; solo and time-attack runs retain the standard three.
 	_player_state.lives = 1 if _run_from_multiplayer else 3
 	_player_state.has_cleared_level = false
+	_player_state.super_sonic = _is_super_sonic_route()
+	_player_state.super_sonic_ring_timer = 0.0
+	if _player_state.super_sonic:
+		# EXTRA_BOSS__INITIAL_RING_COUNT from player_super_sonic.c.
+		_player_state.rings = 50
+		_player_state.variant = 0
+		_player_state.super_sonic_ring_timer = 1.0
+		_status_text = "SUPER SONIC"
 	_velocity_y = 0.0
 	_reset_input_buffer()
 	_spindash_charging = false
@@ -8113,6 +8157,29 @@ func _reset_player() -> void:
 	_flight_timer = 0.0
 	_glide_timer = 0.0
 	_update_camera()
+
+func _is_super_sonic_route() -> bool:
+	return _level_state.level_id == _level_names.size() - 1 \
+		and not _run_from_time_attack \
+		and not _run_from_multiplayer \
+		and get_chaos_emerald_count() >= 7
+
+func _update_super_sonic(delta: float) -> void:
+	if not _player_state.super_sonic or not _player_state.is_alive:
+		return
+	_player_state.super_sonic_ring_timer -= delta
+	while _player_state.super_sonic_ring_timer <= 0.0:
+		_player_state.super_sonic_ring_timer += 1.0
+		if _player_state.rings <= 0:
+			# The source switches to its dead animation as soon as the drain
+			# reaches zero; the Godot equivalent is the normal game-over path.
+			_open_game_over()
+			return
+		_player_state.rings -= 1
+	_player_state.anim_id = 2
+
+func is_player_super_sonic() -> bool:
+	return _player_state.super_sonic
 
 func save_checkpoint(x: float, y: float) -> void:
 	_respawn_x = x
@@ -8332,6 +8399,8 @@ func get_player_visual_palette() -> Array:
 func get_player_visual_color(variant: int, cleared: bool = false) -> Color:
 	if cleared:
 		return Color(0.96, 0.86, 0.24, 1.0)
+	if _player_state.super_sonic:
+		return Color(1.0, 0.86, 0.18, 1.0)
 	var palette := get_player_visual_palette()
 	return palette[clampi(variant, 0, palette.size() - 1)]
 

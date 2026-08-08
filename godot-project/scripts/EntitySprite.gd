@@ -243,7 +243,9 @@ func _animate(delta: float) -> void:
 		CoreBridge.ENTITY_RAMP:
 			_body.modulate.a = 0.82 + sin(_pulse_time * 3.0) * 0.12
 		CoreBridge.ENTITY_ROTATING_HANDLE:
-			rotation = _pulse_time * (3.2 if not entity_state.activated else 7.0)
+			# The original sprite follows the handle's accumulated rot field;
+			# effect_offset is kept in sync by CoreBridge for presentation code.
+			rotation = entity_state.rotating_handle_angle
 		CoreBridge.ENTITY_CORK_SCREW:
 			rotation = sin(_pulse_time * 3.0) * 0.08
 		CoreBridge.ENTITY_ENEMY:

@@ -21,9 +21,12 @@ func _run() -> void:
 	bridge._try_rotating_handle(handle, 0, 0, 1.0)
 	_check(handle.activated, "handle keeps the player attached without jump")
 	_check(handle.rotating_handle_angle != first_angle, "handle continues rotating while attached")
+	_check(handle.variant >= 0 and handle.variant <= 11, "handle selects the source twelve-frame rotation variant")
+	_check(handle.rotating_handle_quartile == 1, "handle records the source release quadrant")
 	bridge._try_rotating_handle(handle, 0, bridge.A_BUTTON, 1.0 / 60.0)
 	_check(not handle.activated, "jump releases the handle")
 	_check(absf(player.speed_x) > 0.0 or absf(player.speed_y) > 0.0, "release applies launch velocity")
+	_check(player.speed_x != 0.0 and player.speed_y != 0.0, "release follows the source quadrant launch vector")
 	print("ROTATING_HANDLE_CHECKS=%d" % checks)
 	quit(1 if failed else 0)
 
