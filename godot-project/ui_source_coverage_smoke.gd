@@ -7,7 +7,10 @@ func _init() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	var main := preload("res://scenes/Main.tscn").instantiate()
+	# Load after the deferred autoload phase so scene scripts can resolve the
+	# CoreBridge singleton exactly as they do from the normal project entrypoint.
+	var main_scene: PackedScene = load("res://scenes/Main.tscn")
+	var main := main_scene.instantiate()
 	get_root().add_child(main)
 	var source_to_scene := {
 		"character_select.c": "CharacterSelectScreen",

@@ -29,12 +29,17 @@ func _run() -> void:
 		bridge._try_whirlwind(whirlwind, 1.0 / 60.0)
 	_check(not whirlwind.whirlwind_active, "Whirlwind releases after the source bounded cycle")
 	_check(player.char_state == 2 and bridge._velocity_y < 0.0, "Whirlwind release leaves the player airborne")
+	bridge._try_whirlwind(whirlwind, 1.0 / 60.0)
+	_check(not whirlwind.whirlwind_active, "Whirlwind does not immediately recapture after release")
 
 	player.world_x = 500.0
 	player.world_y = 300.0
 	whirlwind.whirlwind_active = false
 	bridge._try_whirlwind(whirlwind, 1.0 / 60.0)
 	_check(not whirlwind.whirlwind_active, "Whirlwind ignores players outside its hitbox")
+	player.world_x = 330.0
+	bridge._try_whirlwind(whirlwind, 1.0 / 60.0)
+	_check(whirlwind.whirlwind_active, "Whirlwind can be re-entered after leaving its current")
 
 	print("WHIRLWIND_CHECKS=%d" % checks)
 	quit(1 if failed else 0)

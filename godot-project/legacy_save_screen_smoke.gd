@@ -6,7 +6,7 @@ func _init() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	var scene := preload("res://scenes/SaveScreen.tscn").instantiate()
+	var scene := (load("res://scenes/SaveScreen.tscn") as PackedScene).instantiate()
 	get_root().add_child(scene)
 	_check(scene.get_node_or_null("TitleLabel") != null, "Legacy save scene still loads its menu shell")
 	_check(scene.get_node_or_null("PromptLabel") != null, "Legacy save scene keeps its prompt label")

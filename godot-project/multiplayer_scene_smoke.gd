@@ -7,7 +7,7 @@ func _init() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	var main := preload("res://scenes/Main.tscn").instantiate()
+	var main := (load("res://scenes/Main.tscn") as PackedScene).instantiate()
 	get_root().add_child(main)
 	var bridge: Node = get_root().get_node_or_null("CoreBridge")
 	_check(bridge != null, "Main scene keeps the CoreBridge autoload available")

@@ -279,6 +279,7 @@ class EntityState:
 	var fan_speed: float = 1.0
 	var whirlwind_active: bool = false
 	var whirlwind_timer: float = 0.0
+	var whirlwind_release_latch: bool = false
 	var propeller_horizontal_step: float = 0.0
 	var propeller_vertical_step: float = 0.0
 	var propeller_phase_units: float = 0.0
@@ -2589,6 +2590,15 @@ func get_hud_powerup_text() -> String:
 func is_hud_shield_active() -> bool:
 	return _player_state.shielded and not _magnetic_shielded and _invincibility_timer <= 0.0 and _speed_up_timer <= 0.0
 
+func is_player_magnetic_shielded() -> bool:
+	return _magnetic_shielded and _player_state.shielded
+
+func is_player_invincible() -> bool:
+	return _invincibility_timer > 0.0
+
+func is_player_speed_up_active() -> bool:
+	return _speed_up_timer > 0.0
+
 func is_special_ring_hud_visible() -> bool:
 	return not _run_from_multiplayer and not (_run_from_time_attack and _time_attack_boss_mode)
 
@@ -3426,11 +3436,17 @@ func _apply_source_terrain_layer(level: LevelState, terrain: Dictionary, source_
 		_add_source_platform(level, segment_start, segment_last_x, segment_start_y, segment_end_y, source_width, source_height, collision_layer)
 
 func _source_surface_at(terrain: Dictionary, source_x: int, source_height: int, collision_layer: int) -> int:
+	# The source collision pass keeps the lowest solid surface at each column.
+	# Scan upward from the bottom and stop once a future sample cannot exceed
+	# the current surface. Negative source heights can extend a surface by up to
+	# 16 pixels above its sampled row, so retain that bound for exact results.
 	var best_surface := -1
-	for source_y in range(0, source_height, 8):
+	for source_y in range(source_height - 8, -1, -8):
 		var sample: Dictionary = SOURCE_MAP_LOADER.sample_floor(terrain, source_x, source_y, collision_layer)
 		if bool(sample.get("solid", false)):
 			best_surface = maxi(best_surface, int(sample.get("surface_y", source_y)))
+		if best_surface >= 0 and source_y + 16 <= best_surface:
+			break
 	return best_surface
 
 func _add_source_platform(level: LevelState, source_start_x: int, source_end_x: int, source_start_y: float, source_end_y: float, source_width: float, source_height: float, collision_layer: int) -> void:
@@ -3755,10 +3771,14 @@ func _source_item_kind(kind: String) -> int:
 	match kind:
 		"SHIELD":
 			return ITEM_BOX_KIND_SHIELD
+		"SHIELD_MAGNETIC":
+			return ITEM_BOX_KIND_MAGNETIC_SHIELD
 		"INVINCIBILITY":
 			return ITEM_BOX_KIND_INVINCIBILITY
 		"ONE_UP":
 			return ITEM_BOX_KIND_ONE_UP
+		"SPEED_UP":
+			return ITEM_BOX_KIND_SPEED_UP
 		"RINGS_5":
 			return ITEM_BOX_KIND_RINGS_5
 		"RINGS_10":
@@ -3889,7 +3909,7 @@ func _add_trapped_animal(level: LevelState, x: float, y: float, animal_type: int
 	entity.state_timer = 0.0
 	entity.velocity_x = 16.0 if entity.variant == 2 else 0.0
 
-func _add_boss(level: LevelState, x: float, y: float) -> void:
+func _add_boss(level: LevelState, x: float, y: float) -> EntityState:
 	var entity := _add_entity(level, ENTITY_BOSS, x, y)
 	entity.width = 92.0
 	entity.height = 68.0
@@ -3938,6 +3958,7 @@ func _add_boss(level: LevelState, x: float, y: float) -> void:
 		# boss_4.c starts the Aero Egg on a long approach before its bomb loop.
 		entity.velocity_x = 132.0
 		entity.state_timer = 2.0
+	return entity
 
 func _add_checkpoint(level: LevelState, x: float, y: float) -> void:
 	_add_entity(level, ENTITY_CHECKPOINT, x, y)
@@ -3951,6 +3972,7 @@ func _add_whirlwind(level: LevelState, x: float, y: float, width: float, height:
 	entity.height = height
 	entity.whirlwind_active = false
 	entity.whirlwind_timer = 0.0
+	entity.whirlwind_release_latch = false
 
 func _add_fan(level: LevelState, x: float, y: float, width: float, height: float, direction: float) -> void:
 	var entity := _add_entity(level, ENTITY_FAN, x, y)
@@ -6620,6 +6642,11 @@ func _try_whirlwind(entity: EntityState, delta: float) -> void:
 	var half_height := entity.height * 0.5
 	var dx := _player_state.world_x - entity.world_x
 	var dy := _player_state.world_y - entity.world_y
+	if not entity.whirlwind_active and entity.whirlwind_release_latch:
+		if absf(dx) > half_width or absf(dy) > half_height:
+			entity.whirlwind_release_latch = false
+		else:
+			return
 	if not entity.whirlwind_active and (absf(dx) > half_width or absf(dy) > half_height):
 		return
 	if not entity.whirlwind_active:
@@ -6633,6 +6660,7 @@ func _try_whirlwind(entity: EntityState, delta: float) -> void:
 	if entity.whirlwind_timer <= 0.000001 or outside_current:
 		entity.whirlwind_active = false
 		entity.whirlwind_timer = 0.0
+		entity.whirlwind_release_latch = true
 		_velocity_y = -180.0
 		_player_state.char_state = 2
 		_player_state.anim_id = 2
@@ -14614,10 +14642,13 @@ func _read_save_dictionary(path: String) -> Variant:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return null
-	var parser := JSON.new()
-	if parser.parse(file.get_as_text()) != OK:
+	# Corrupt primaries are expected during backup recovery. The static parser
+	# returns null without logging an engine error, allowing the .bak fallback
+	# to remain a normal, quiet recovery path.
+	var text := file.get_as_text().strip_edges()
+	if text.is_empty() or not text.begins_with("{") or not text.ends_with("}"):
 		return null
-	return parser.data
+	return JSON.parse_string(text)
 
 func _reset_progress() -> void:
 	# save.c preserves the selected language when it creates a fresh save.

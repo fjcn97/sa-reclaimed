@@ -14,6 +14,14 @@ func _run() -> void:
 	_check(controller._keycode_to_bit(KEY_ESCAPE) == CoreBridge.B_BUTTON, "Escape backs out of menus")
 	_check(controller._keycode_to_bit(KEY_Z) == CoreBridge.A_BUTTON, "Z remains A")
 	_check(controller._keycode_to_bit(KEY_X) == CoreBridge.B_BUTTON, "X remains B")
+	var stick := InputEventJoypadMotion.new()
+	stick.axis = JOY_AXIS_LEFT_X
+	stick.axis_value = -0.8
+	controller._handle_joypad_motion(stick)
+	_check((controller._joypad_axis_input & CoreBridge.DPAD_LEFT) != 0, "Left analog stick maps to left")
+	stick.axis_value = 0.0
+	controller._handle_joypad_motion(stick)
+	_check((controller._joypad_axis_input & (CoreBridge.DPAD_LEFT | CoreBridge.DPAD_RIGHT)) == 0, "Analog deadzone releases horizontal input")
 	controller.queue_free()
 	print("INPUT_MAPPING_CHECKS=%d" % checks)
 	quit(1 if failed else 0)

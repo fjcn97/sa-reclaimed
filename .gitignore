@@ -102,6 +102,7 @@ sa2_debug.log
 .godot-local/
 .tmp_appdata/
 .tmp_localappdata/
+*.gd.uid
 
 # Log files
 *.log

@@ -124,7 +124,16 @@ func _process(_delta: float) -> void:
 	if powerup_label:
 		powerup_label.text = CoreBridge.get_hud_powerup_text()
 		powerup_label.visible = powerup_label.text != ""
-		powerup_label.modulate = Color(0.52, 0.92, 1.0, 1.0) if CoreBridge.is_hud_shield_active() else Color(1.0, 0.84, 0.28, 1.0)
+		if CoreBridge.is_player_magnetic_shielded():
+			powerup_label.modulate = Color(0.78, 0.58, 1.0, 1.0)
+		elif CoreBridge.is_hud_shield_active():
+			powerup_label.modulate = Color(0.52, 0.92, 1.0, 1.0)
+		elif CoreBridge.is_player_invincible():
+			powerup_label.modulate = Color(1.0, 0.92, 0.30, 1.0)
+		elif CoreBridge.is_player_speed_up_active():
+			powerup_label.modulate = Color(1.0, 0.56, 0.24, 1.0)
+		else:
+			powerup_label.modulate = Color(1.0, 0.84, 0.28, 1.0)
 	if lives_label:
 		lives_label.text = "x %d" % max(0, state.lives - 1)
 		lives_label.position = Vector2(104.0, 646.0)

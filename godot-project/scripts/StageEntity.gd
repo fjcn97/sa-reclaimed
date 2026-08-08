@@ -19,6 +19,40 @@ func _process(_delta: float) -> void:
 		global_position = Vector2(entity_state.world_x, entity_state.world_y)
 		queue_redraw()
 
+func _item_box_label() -> String:
+	match entity_state.item_kind:
+		CoreBridge.ITEM_BOX_KIND_SHIELD:
+			return "SH"
+		CoreBridge.ITEM_BOX_KIND_MAGNETIC_SHIELD:
+			return "MG"
+		CoreBridge.ITEM_BOX_KIND_INVINCIBILITY:
+			return "INV"
+		CoreBridge.ITEM_BOX_KIND_ONE_UP:
+			return "1UP"
+		CoreBridge.ITEM_BOX_KIND_SPEED_UP:
+			return "SPD"
+		CoreBridge.ITEM_BOX_KIND_RINGS_5:
+			return "+5"
+		CoreBridge.ITEM_BOX_KIND_RINGS_10:
+			return "+10"
+		_:
+			return "+%d" % entity_state.variant
+
+func _item_box_color() -> Color:
+	match entity_state.item_kind:
+		CoreBridge.ITEM_BOX_KIND_SHIELD:
+			return Color(0.34, 0.82, 1.0)
+		CoreBridge.ITEM_BOX_KIND_MAGNETIC_SHIELD:
+			return Color(0.72, 0.48, 1.0)
+		CoreBridge.ITEM_BOX_KIND_INVINCIBILITY:
+			return Color(1.0, 0.84, 0.24)
+		CoreBridge.ITEM_BOX_KIND_SPEED_UP:
+			return Color(1.0, 0.52, 0.20)
+		CoreBridge.ITEM_BOX_KIND_ONE_UP:
+			return Color(0.38, 1.0, 0.54)
+		_:
+			return Color(1.0, 0.92, 0.48)
+
 func _draw() -> void:
 	if entity_state == null or not entity_state.active:
 		return
@@ -51,12 +85,12 @@ func _draw() -> void:
 			var box_broken: bool = bool(entity_state.activated)
 			draw_rect(Rect2(-16.0, -16.0, 32.0, 32.0), Color(0.30, 0.34, 0.44, 1.0) if box_broken else Color(0.96, 0.72, 0.16, 1.0))
 			draw_rect(Rect2(-11.0, -11.0, 22.0, 22.0), Color(0.10, 0.14, 0.22, 1.0), false, 3.0)
-			var box_text := "SH" if entity_state.item_kind == CoreBridge.ITEM_BOX_KIND_SHIELD else ("INV" if entity_state.item_kind == CoreBridge.ITEM_BOX_KIND_INVINCIBILITY else "+%d" % entity_state.variant)
+			var box_text := _item_box_label()
 			if not box_broken:
 				draw_string(ThemeDB.fallback_font, Vector2(-8.0, 7.0), box_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11, Color.WHITE)
 			else:
 				var icon_y: float = -float(entity_state.effect_offset) - 18.0
-				var icon_color := Color(0.34, 0.82, 1.0) if entity_state.item_kind == CoreBridge.ITEM_BOX_KIND_SHIELD else (Color(1.0, 0.84, 0.24) if entity_state.item_kind == CoreBridge.ITEM_BOX_KIND_INVINCIBILITY else Color(1.0, 0.92, 0.48))
+				var icon_color := _item_box_color()
 				draw_circle(Vector2(0.0, icon_y), 12.0, icon_color)
 				draw_string(ThemeDB.fallback_font, Vector2(-10.0, icon_y + 5.0), box_text, HORIZONTAL_ALIGNMENT_CENTER, 20.0, 9, Color(0.08, 0.12, 0.20, 1.0))
 		CoreBridge.ENTITY_PROPELLER:

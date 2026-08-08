@@ -107,7 +107,8 @@ func _apply_visuals() -> void:
 			_overlay.texture = null
 		CoreBridge.ENTITY_ITEM_BOX:
 			_body.texture = _make_item_box_texture()
-			_overlay.texture = _make_shield_icon_texture() if entity_state.item_kind == CoreBridge.ITEM_BOX_KIND_SHIELD else (_make_invincibility_icon_texture() if entity_state.item_kind == CoreBridge.ITEM_BOX_KIND_INVINCIBILITY else _make_item_box_icon_texture())
+			_overlay.texture = _item_box_icon_texture(entity_state.item_kind)
+			_overlay.modulate = _item_box_icon_color(entity_state.item_kind)
 		CoreBridge.ENTITY_PROPELLER:
 			_body.texture = _make_propeller_texture()
 			_overlay.texture = _make_propeller_overlay_texture()
@@ -130,8 +131,13 @@ func _apply_visuals() -> void:
 			_body.texture = _make_corkscrew_texture(entity_state.variant == 1)
 			_overlay.texture = null
 		CoreBridge.ENTITY_ENEMY:
-			_body.texture = _make_enemy_body_texture()
-			_overlay.texture = _make_enemy_face_texture()
+			# Source enemies carry a species profile. Let StageEntity render that
+			# profile so imported enemies keep their individual silhouettes,
+			# projectiles, trails, and attack poses instead of sharing one generic
+			# texture.
+			use_fallback = true
+			_body.texture = null
+			_overlay.texture = null
 		CoreBridge.ENTITY_CHECKPOINT:
 			_body.texture = _make_checkpoint_pole_texture()
 			_overlay.texture = _make_flag_texture(entity_state.activated)
@@ -628,6 +634,30 @@ func _make_item_box_icon_texture() -> Texture2D:
 				image.set_pixel(x, y, Color(0.78, 0.94, 1.0, 0.92))
 	return ImageTexture.create_from_image(image)
 
+func _item_box_icon_texture(item_kind: int) -> Texture2D:
+	match item_kind:
+		CoreBridge.ITEM_BOX_KIND_SHIELD, CoreBridge.ITEM_BOX_KIND_MAGNETIC_SHIELD:
+			return _make_shield_icon_texture()
+		CoreBridge.ITEM_BOX_KIND_INVINCIBILITY:
+			return _make_invincibility_icon_texture()
+		CoreBridge.ITEM_BOX_KIND_SPEED_UP:
+			return _make_speed_icon_texture()
+		CoreBridge.ITEM_BOX_KIND_ONE_UP:
+			return _make_one_up_icon_texture()
+		_:
+			return _make_item_box_icon_texture()
+
+func _item_box_icon_color(item_kind: int) -> Color:
+	match item_kind:
+		CoreBridge.ITEM_BOX_KIND_MAGNETIC_SHIELD:
+			return Color(0.72, 0.48, 1.0, 1.0)
+		CoreBridge.ITEM_BOX_KIND_SPEED_UP:
+			return Color(1.0, 0.78, 0.24, 1.0)
+		CoreBridge.ITEM_BOX_KIND_ONE_UP:
+			return Color(0.52, 1.0, 0.62, 1.0)
+		_:
+			return Color.WHITE
+
 func _make_shield_icon_texture() -> Texture2D:
 	var image := Image.create(32, 32, false, Image.FORMAT_RGBA8)
 	image.fill(Color(0.0, 0.0, 0.0, 0.0))
@@ -650,6 +680,27 @@ func _make_invincibility_icon_texture() -> Texture2D:
 			var star_radius := 11.0 if int(floor((angle + PI) / (PI / 5.0))) % 2 == 0 else 5.0
 			if radius <= star_radius:
 				image.set_pixel(x, y, Color(1.0, 0.94, 0.34, 0.98))
+	return ImageTexture.create_from_image(image)
+
+func _make_speed_icon_texture() -> Texture2D:
+	var image := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	var points := PackedVector2Array([Vector2(18, 3), Vector2(7, 17), Vector2(15, 17), Vector2(12, 29), Vector2(25, 13), Vector2(17, 13)])
+	for y in range(32):
+		for x in range(32):
+			if Geometry2D.is_point_in_polygon(Vector2(x, y), points):
+				image.set_pixel(x, y, Color.WHITE)
+	return ImageTexture.create_from_image(image)
+
+func _make_one_up_icon_texture() -> Texture2D:
+	var image := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(5, 27):
+		for x in range(5, 27):
+			var dx := x - 16
+			var dy := y - 16
+			if dx * dx + dy * dy <= 120:
+				image.set_pixel(x, y, Color.WHITE)
 	return ImageTexture.create_from_image(image)
 
 func _make_propeller_texture() -> Texture2D:

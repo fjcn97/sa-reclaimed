@@ -34,6 +34,11 @@ var _row_labels: Array[Label] = []
 var _value_labels: Array[Label] = []
 var _gradient_bands: Array[ColorRect] = []
 var _gradient_time: float = 0.0
+var _track_audio_player: AudioStreamPlayer = null
+var _track_audio_key := ""
+
+const PREVIEW_SAMPLE_RATE := 22050
+const PREVIEW_SECONDS := 4
 
 const SOURCE_BG_PALETTE: Array[Color] = [
 	Color(0.02, 0.03, 0.08, 0.96),
@@ -58,13 +63,18 @@ func _ready() -> void:
 	_ensure_labels()
 	_ensure_rows()
 	_ensure_mascot()
+	_track_audio_player = AudioStreamPlayer.new()
+	_track_audio_player.name = "SoundTestPreviewPlayer"
+	add_child(_track_audio_player)
 	_set_screen_visible(CoreBridge.is_sound_test_screen())
 
 func _process(_delta: float) -> void:
 	var active: bool = CoreBridge.is_sound_test_screen()
 	_set_screen_visible(active)
 	if not active:
+		_stop_track_preview()
 		return
+	_sync_track_preview()
 	_gradient_time += _delta
 	var pulse := 0.5 + (sin(Time.get_ticks_msec() / 210.0) * 0.5)
 	if title_label:
@@ -90,6 +100,53 @@ func _process(_delta: float) -> void:
 	_update_name_ticker()
 	_update_speaker_animation()
 	_update_gradient_bands()
+
+func _sync_track_preview() -> void:
+	var playing := CoreBridge.is_sound_test_playing()
+	if not playing:
+		_stop_track_preview()
+		return
+	var track_key := "%d:%s" % [CoreBridge.get_sound_test_track_number(), CoreBridge.get_sound_test_track_name()]
+	if _track_audio_player == null:
+		return
+	if track_key != _track_audio_key or _track_audio_player.stream == null:
+		_track_audio_key = track_key
+		_track_audio_player.stream = _make_track_preview(CoreBridge.get_sound_test_track_number(), CoreBridge.get_sound_test_tempo())
+		_track_audio_player.play()
+	elif not _track_audio_player.playing:
+		_track_audio_player.play()
+
+func _stop_track_preview() -> void:
+	if _track_audio_player and _track_audio_player.playing:
+		_track_audio_player.stop()
+
+func _make_track_preview(track_number: int, tempo: float) -> AudioStreamWAV:
+	var sample_count := PREVIEW_SAMPLE_RATE * PREVIEW_SECONDS
+	var data := PackedByteArray()
+	data.resize(sample_count * 2)
+	var beat_hz := maxf(1.0, tempo / 60.0)
+	var root_hz := 196.0 * pow(2.0, float(posmod(track_number - 1, 12)) / 12.0)
+	for sample_index in range(sample_count):
+		var time := float(sample_index) / float(PREVIEW_SAMPLE_RATE)
+		var beat: float = floor(time * beat_hz)
+		var note_index := posmod(int(beat) + track_number, 8)
+		var note_hz := root_hz * pow(2.0, float([0, 2, 4, 7, 9, 7, 4, 2][note_index]) / 12.0)
+		var phase := time * note_hz * TAU
+		var bass := sin(time * root_hz * 0.5 * TAU) * 0.22
+		var lead := sin(phase) * 0.26 + sin(phase * 2.0) * 0.08
+		var pulse := 0.12 if fmod(time * beat_hz, 1.0) < 0.08 else 0.0
+		var envelope := minf(1.0, time * 12.0) * minf(1.0, (float(sample_count) / float(PREVIEW_SAMPLE_RATE) - time) * 8.0)
+		var sample := clampf((bass + lead + pulse) * envelope, -0.92, 0.92)
+		data.encode_s16(sample_index * 2, int(sample * 32767.0))
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = PREVIEW_SAMPLE_RATE
+	stream.stereo = false
+	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	stream.loop_begin = 0
+	stream.loop_end = sample_count
+	stream.data = data
+	return stream
 
 func _ensure_chrome() -> void:
 	_ensure_gradient_bands()

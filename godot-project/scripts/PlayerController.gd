@@ -20,6 +20,7 @@ var _frame_input: int = 0
 var _prev_input: int = 0
 var _fallback_held_input: int = 0
 var _fallback_frame_input: int = 0
+var _joypad_axis_input: int = 0
 var _touch_held_input: int = 0
 var _touch_frame_input: int = 0
 var _menu_repeat_timer: float = 0.0
@@ -95,6 +96,8 @@ func _input(event: InputEvent) -> void:
 		_handle_key_event(event)
 	elif event is InputEventJoypadButton:
 		_handle_joypad_event(event)
+	elif event is InputEventJoypadMotion:
+		_handle_joypad_motion(event)
 
 func _handle_key_event(event: InputEventKey) -> void:
 	if event.echo:
@@ -119,6 +122,21 @@ func _handle_joypad_event(event: InputEventJoypadButton) -> void:
 		_fallback_frame_input |= bit
 	else:
 		_fallback_held_input &= ~bit
+
+func _handle_joypad_motion(event: InputEventJoypadMotion) -> void:
+	const AXIS_DEADZONE := 0.35
+	if event.axis == JOY_AXIS_LEFT_X:
+		_joypad_axis_input &= ~(CoreBridge.DPAD_LEFT | CoreBridge.DPAD_RIGHT)
+		if event.axis_value <= -AXIS_DEADZONE:
+			_joypad_axis_input |= CoreBridge.DPAD_LEFT
+		elif event.axis_value >= AXIS_DEADZONE:
+			_joypad_axis_input |= CoreBridge.DPAD_RIGHT
+	elif event.axis == JOY_AXIS_LEFT_Y:
+		_joypad_axis_input &= ~(CoreBridge.DPAD_UP | CoreBridge.DPAD_DOWN)
+		if event.axis_value <= -AXIS_DEADZONE:
+			_joypad_axis_input |= CoreBridge.DPAD_UP
+		elif event.axis_value >= AXIS_DEADZONE:
+			_joypad_axis_input |= CoreBridge.DPAD_DOWN
 
 func _keycode_to_bit(keycode: int) -> int:
 	match keycode:
