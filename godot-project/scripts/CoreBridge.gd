@@ -124,7 +124,9 @@ const TIME_ATTACK_LOBBY_PRESENTER := preload("res://scripts/ui/TimeAttackLobbyPr
 const OPTIONS_PRESENTER := preload("res://scripts/ui/OptionsPresenter.gd")
 const OPTIONS_SETTINGS_SYSTEM := preload("res://scripts/core/OptionsSettingsSystem.gd")
 const SAVE_OPTIONS_NAVIGATION := preload("res://scripts/core/SaveOptionsNavigation.gd")
+const SAVE_OPTIONS_ACTION_FLOW := preload("res://scripts/core/SaveOptionsActionFlow.gd")
 const MENU_INPUT_HELP := preload("res://scripts/ui/MenuInputHelp.gd")
+const RECORDS_MENU_PRESENTER := preload("res://scripts/ui/RecordsMenuPresenter.gd")
 const TIME_ATTACK_RESULTS_PRESENTER := preload("res://scripts/ui/TimeAttackResultsPresenter.gd")
 const GAME_OVER_PRESENTER := preload("res://scripts/ui/GameOverPresenter.gd")
 const SPECIAL_STAGE_PRESENTER := preload("res://scripts/ui/SpecialStagePresenter.gd")
@@ -5383,53 +5385,16 @@ func cancel_save_selection() -> void:
 			update_save_menu_status()
 
 func trigger_save_special_action() -> bool:
-	if _game_state != GAME_STATE_SAVE_OPTIONS or _save_reset_pending:
-		return false
-	if _options_mode != OPTIONS_MODE_BUTTON_CONFIG:
-		return false
-	_button_bindings = PROFILE_CATALOG.default_button_bindings()
-	_button_bindings_before_edit = _button_bindings.duplicate()
-	_save_save_data()
-	_button_config_index = 0
-	update_save_menu_status()
-	return true
+	return SAVE_OPTIONS_ACTION_FLOW.trigger_special(self)
 
 func trigger_save_start_action() -> bool:
-	if _game_state != GAME_STATE_SAVE_OPTIONS or _save_reset_pending:
-		return false
-	if _options_mode != OPTIONS_MODE_NAME_ENTRY:
-		return false
-	# The original START shortcut moves to END first; a second START commits.
-	if not (_name_entry_cursor_col == NAME_ENTRY_CONTROLS_COL and _name_entry_cursor_row == NAME_ENTRY_CONTROL_ROW_END):
-		_name_entry_cursor_col = NAME_ENTRY_CONTROLS_COL
-		_name_entry_cursor_row = NAME_ENTRY_CONTROL_ROW_END
-		update_save_menu_status()
-		return true
-	return false
+	return SAVE_OPTIONS_ACTION_FLOW.trigger_start(self)
 
 func trigger_save_secondary_action() -> bool:
-	if _game_state != GAME_STATE_SAVE_OPTIONS or _save_reset_pending:
-		return false
-	if _options_mode != OPTIONS_MODE_NAME_ENTRY:
-		return false
-	_delete_name_entry_character()
-	update_save_menu_status()
-	return true
+	return SAVE_OPTIONS_ACTION_FLOW.trigger_secondary(self)
 
 func handle_save_shoulder_input(frame_input: int) -> bool:
-	if _game_state != GAME_STATE_SAVE_OPTIONS or _save_reset_pending:
-		return false
-	if _options_mode != OPTIONS_MODE_NAME_ENTRY:
-		return false
-	if frame_input & L_BUTTON:
-		_move_name_entry_active_slot(-1)
-		update_save_menu_status()
-		return true
-	if frame_input & R_BUTTON:
-		_move_name_entry_active_slot(1)
-		update_save_menu_status()
-		return true
-	return false
+	return SAVE_OPTIONS_ACTION_FLOW.handle_shoulders(self, frame_input)
 
 func skip_intro() -> void:
 	if _game_state != GAME_STATE_INTRO:
@@ -6932,18 +6897,10 @@ func get_time_records_title_text() -> String:
 	return _language_text("TIME RECORDS", "ZEITREKORDE", "RECORDS DE TEMPS", "RECORDS DE TIEMPO", "RECORD TEMPI")
 
 func get_time_records_prompt_text() -> String:
-	if _time_records_context == TIME_RECORDS_CONTEXT_TIME_ATTACK:
-		return MENU_INPUT_HELP.records_course_start(self)
-	if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-		return MENU_INPUT_HELP.records_mode_open(self)
-	return MENU_INPUT_HELP.records_character_course(self)
+	return RECORDS_MENU_PRESENTER.time_records_prompt(self)
 
 func get_time_records_detail_text() -> String:
-	if _time_records_context == TIME_RECORDS_CONTEXT_TIME_ATTACK:
-		return "%s   %s = %s   %s = %s" % [_language_text("LEFT/RIGHT = COURSE", "LINKS/RECHTS = KURS", "GAUCHE/DROITE = PARCOURS", "IZQ/DER = FASE", "SINISTRA/DESTRA = CORSO"), get_confirm_label(), _language_text("START", "START", "DEMARRER", "INICIAR", "AVVIA"), get_secondary_label(), _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")]
-	if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-		return "%s   %s = %s   %s = %s" % [_language_text("LEFT/RIGHT = MODE", "LINKS/RECHTS = MODUS", "GAUCHE/DROITE = MODE", "IZQ/DER = MODO", "SINISTRA/DESTRA = MODALITA"), get_confirm_label(), _language_text("OPEN", "OEFFNEN", "OUVRIR", "ABRIR", "APRI"), get_secondary_label(), _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")]
-	return "%s   %s   %s = %s" % [_language_text("UP/DOWN = CHARACTER", "HOCH/RUNTER = CHARAKTER", "HAUT/BAS = PERSONNAGE", "ARRIBA/ABAJO = PERSONAJE", "SU/GIU = PERSONAGGIO"), _language_text("LEFT/RIGHT = COURSE", "LINKS/RECHTS = KURS", "GAUCHE/DROITE = PARCOURS", "IZQ/DER = FASE", "SINISTRA/DESTRA = CORSO"), get_secondary_label(), _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")]
+	return RECORDS_MENU_PRESENTER.time_records_detail(self)
 
 func get_time_records_chrome_colors() -> Dictionary:
 	if _time_records_context == TIME_RECORDS_CONTEXT_TIME_ATTACK:
@@ -7005,10 +6962,10 @@ func get_multiplayer_records_title_text() -> String:
 	return _language_text("VS RECORDS", "VS-REKORDE", "RECORDS VS", "RECORDS VS", "RECORD VS")
 
 func get_multiplayer_records_prompt_text() -> String:
-	return MENU_INPUT_HELP.scroll_back(self)
+	return RECORDS_MENU_PRESENTER.multiplayer_records_prompt(self)
 
 func get_multiplayer_records_detail_text() -> String:
-	return "%s   %s = %s" % [_language_text("UP/DOWN = SCROLL TABLE", "HOCH/RUNTER = TABELLE", "HAUT/BAS = DEFILER", "ARRIBA/ABAJO = TABLA", "SU/GIU = SCORRI TABELLA"), get_secondary_label(), _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")]
+	return RECORDS_MENU_PRESENTER.multiplayer_records_detail(self)
 
 func get_multiplayer_records_chrome_colors() -> Dictionary:
 	return {

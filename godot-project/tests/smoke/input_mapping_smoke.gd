@@ -26,6 +26,24 @@ func _run() -> void:
 	character_confirm.pressed = true
 	controller._handle_key_event(character_confirm)
 	_check(not CoreBridge.is_character_select(), "Enter immediately confirms character select")
+	CoreBridge.open_options_screen()
+	var options_down := InputEventKey.new()
+	options_down.keycode = KEY_DOWN
+	options_down.pressed = true
+	controller._handle_key_event(options_down)
+	_check(CoreBridge._options_menu_index == 1, "Down immediately moves the options cursor")
+	var options_confirm := InputEventKey.new()
+	options_confirm.keycode = KEY_ENTER
+	options_confirm.pressed = true
+	var difficulty_before: int = CoreBridge._difficulty_index
+	controller._handle_key_event(options_confirm)
+	_check(CoreBridge._difficulty_index == wrapi(difficulty_before + 1, 0, 3), "Enter immediately confirms the focused option")
+	CoreBridge.open_options_screen()
+	var options_back := InputEventKey.new()
+	options_back.keycode = KEY_ESCAPE
+	options_back.pressed = true
+	controller._handle_key_event(options_back)
+	_check(not CoreBridge.is_save_options(), "Escape immediately leaves the options menu")
 	var stick := InputEventJoypadMotion.new()
 	stick.axis = JOY_AXIS_LEFT_X
 	stick.axis_value = -0.8

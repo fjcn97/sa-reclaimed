@@ -67,11 +67,13 @@ func _process(_delta: float) -> void:
 	_update_rows()
 
 func _ensure_chrome() -> void:
-	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.98, 1.0, 0.98, 1.0))
-	_hero_glow = ensure_rect("HeroGlow", Rect2(104.0, 96.0, 1072.0, 504.0), Color(0.24, 0.80, 0.58, 0.10))
-	_header_plate = ensure_rect("HeaderPlate", Rect2(150.0, 68.0, 980.0, 82.0), Color(1.0, 1.0, 1.0, 0.98))
-	_panel = ensure_rect("Panel", Rect2(118.0, 170.0, 1044.0, 400.0), Color(0.98, 1.0, 0.99, 0.99))
-	_accent = ensure_rect("AccentBar", Rect2(118.0, 150.0, 1044.0, 10.0), Color(0.20, 0.80, 0.56, 0.96))
+	var chrome := ensure_simple_list_chrome({"backdrop": Color(0.98, 1.0, 0.98, 1.0), "glow": Color(0.24, 0.80, 0.58, 0.10), "panel": Color(0.98, 1.0, 0.99, 0.99), "accent": Color(0.20, 0.80, 0.56, 0.96), "footer": Color(0.96, 1.0, 0.97, 0.99)})
+	_backdrop = chrome["backdrop"]
+	_hero_glow = chrome["hero_glow"]
+	_header_plate = chrome["header_plate"]
+	_panel = chrome["panel"]
+	_accent = chrome["accent"]
+	_prompt_band = chrome["prompt_band"]
 	_header_band = ensure_rect("HeaderBand", LIST_STAGE_RECT, Color(0.90, 0.98, 0.92, 0.98))
 	_profile_stage = ensure_rect("ProfileStage", LIST_STAGE_RECT, Color(0.90, 0.98, 0.92, 0.98))
 	_menu_stage = ensure_rect("MenuStage", LIST_STAGE_RECT, Color(0.94, 1.0, 0.96, 0.98))
@@ -81,12 +83,6 @@ func _ensure_chrome() -> void:
 	_profile_card = ensure_rect("ProfileCard", Rect2(184.0, 228.0, 364.0, 34.0), Color(0.94, 1.0, 0.96, 0.98))
 	_menu_card = ensure_rect("MenuCard", Rect2(184.0, 304.0, 364.0, 132.0), Color(0.98, 1.0, 0.98, 0.98))
 	_summary_card = ensure_rect("SummaryCard", Rect2(638.0, 236.0, 180.0, 214.0), Color(0.94, 1.0, 0.96, 0.98))
-	_prompt_band = ensure_rect("PromptBand", FOOTER_RECT, Color(0.96, 1.0, 0.97, 0.99))
-	_backdrop.z_index = -9
-	_hero_glow.z_index = -8
-	_header_plate.z_index = -7
-	_panel.z_index = -6
-	_accent.z_index = -5
 	_header_band.z_index = -4
 	_profile_stage.z_index = -3
 	_menu_stage.z_index = -3
@@ -96,7 +92,6 @@ func _ensure_chrome() -> void:
 	_profile_card.z_index = -1
 	_menu_card.z_index = -1
 	_summary_card.z_index = -1
-	_prompt_band.z_index = -1
 
 func _ensure_header_labels() -> void:
 	_profile_label = ensure_label("ProfileLabel", Vector2.ZERO, Vector2.ZERO, 1)

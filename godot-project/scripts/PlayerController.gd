@@ -13,6 +13,7 @@ const ACTION_ATTACK = InputBindings.ACTION_ATTACK
 const ACTION_BOOST  = InputBindings.ACTION_BOOST
 const ACTION_START  = InputBindings.ACTION_START
 const INPUT_DEVICE_SAMPLER := preload("res://scripts/core/InputDeviceSampler.gd")
+const IMMEDIATE_MENU_KEY_ROUTER := preload("res://scripts/core/ImmediateMenuKeyRouter.gd")
 const MENU_INPUT_REPEATER := preload("res://scripts/core/MenuInputRepeater.gd")
 const MENU_INPUT_ROUTER := preload("res://scripts/core/MenuInputRouter.gd")
 
@@ -91,26 +92,7 @@ func _handle_key_event(event: InputEventKey) -> void:
 	# action there; Name Entry still handles X as a printable character below.
 	if (CoreBridge.is_options_main_screen() or CoreBridge.is_player_data_screen() or CoreBridge.is_language_screen() or CoreBridge.is_delete_confirm_screen() or CoreBridge.is_delete_final_confirm_screen()) and event.keycode == KEY_X:
 		return
-	if CoreBridge.is_name_entry_screen() and event.pressed and not event.echo:
-		if event.keycode == KEY_ESCAPE:
-			CoreBridge.cancel_save_selection()
-			return
-		if event.keycode == KEY_BACKSPACE or event.keycode == KEY_DELETE:
-			CoreBridge.trigger_save_secondary_action()
-			return
-		var typed_character := _get_name_entry_typed_character(event)
-		if not typed_character.is_empty() and CoreBridge.enter_name_entry_character(typed_character):
-			return
-	# Character select's confirm/back actions are immediate desktop commands.
-	# Handling them here avoids a buffered frame being lost while the carousel
-	# entrance animation or another Control is processing the same key event.
-	if CoreBridge.is_character_select() and event.pressed and not event.echo:
-		var keycode := event.keycode if event.keycode != KEY_NONE else event.physical_keycode
-		if keycode == KEY_ESCAPE and not CoreBridge.is_multiplayer_character_select_screen():
-			CoreBridge.cancel_character_selection()
-			return
-		if keycode == KEY_ENTER or keycode == KEY_KP_ENTER:
-			CoreBridge.confirm_character_selection()
+	if IMMEDIATE_MENU_KEY_ROUTER.handle(CoreBridge, event):
 			return
 	var bit := INPUT_DEVICE_SAMPLER.key_event_bit(event)
 	if bit == 0:
@@ -126,21 +108,6 @@ func _handle_key_event(event: InputEventKey) -> void:
 	if event.pressed:
 		_fallback_held_input |= bit
 		_fallback_frame_input |= bit
-
-func _get_name_entry_typed_character(event: InputEventKey) -> String:
-	if event.unicode > 0:
-		return char(event.unicode).to_upper()
-	match event.keycode:
-		KEY_MINUS:
-			return "-"
-		KEY_SLASH:
-			return "/"
-		KEY_PERIOD:
-			return "."
-		KEY_SPACE:
-			return " "
-		_:
-			return ""
 
 func _handle_joypad_event(event: InputEventJoypadButton) -> void:
 	var bit := INPUT_DEVICE_SAMPLER.joypad_button_bit(event.button_index)
