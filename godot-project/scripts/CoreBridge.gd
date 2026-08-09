@@ -127,8 +127,11 @@ const SAVE_OPTIONS_NAVIGATION := preload("res://scripts/core/SaveOptionsNavigati
 const SAVE_OPTIONS_ACTION_FLOW := preload("res://scripts/core/SaveOptionsActionFlow.gd")
 const SAVE_OPTIONS_TRANSITION_FLOW := preload("res://scripts/core/SaveOptionsTransitionFlow.gd")
 const TITLE_NAVIGATION_FLOW := preload("res://scripts/core/TitleNavigationFlow.gd")
+const TITLE_TRANSITION_FLOW := preload("res://scripts/core/TitleTransitionFlow.gd")
+const GAMEPLAY_LIFECYCLE_FLOW := preload("res://scripts/core/GameplayLifecycleFlow.gd")
 const MENU_INPUT_HELP := preload("res://scripts/ui/MenuInputHelp.gd")
 const RECORDS_MENU_PRESENTER := preload("res://scripts/ui/RecordsMenuPresenter.gd")
+const RECORDS_VIEW_MODEL := preload("res://scripts/ui/RecordsViewModel.gd")
 const TIME_ATTACK_RESULTS_PRESENTER := preload("res://scripts/ui/TimeAttackResultsPresenter.gd")
 const GAME_OVER_PRESENTER := preload("res://scripts/ui/GameOverPresenter.gd")
 const SPECIAL_STAGE_PRESENTER := preload("res://scripts/ui/SpecialStagePresenter.gd")
@@ -800,42 +803,20 @@ func reset_to_title() -> void:
 
 func open_title_screen_and_skip_intro() -> void:
 	reset_to_title()
-
 func open_press_start_screen(notice_text: String = "") -> void:
-	reset_to_title()
-	_title_notice_text = notice_text
-	_status_text = get_title_prompt_text()
-
+	TITLE_TRANSITION_FLOW.open_press_start(self, notice_text)
 func open_title_screen_at_play_mode_menu(selected_index: int = 0, notice_text: String = "", animate_intro: bool = false) -> void:
-	reset_to_title()
-	_title_phase = TITLE_PHASE_PLAY_MODE
-	_title_menu_index = clampi(selected_index, 0, max(get_title_menu_items().size() - 1, 0))
-	_play_mode_intro_timer = 16.0 / 60.0 if animate_intro else 0.0
-	_title_notice_text = notice_text
-	_status_text = get_title_prompt_text()
-
+	TITLE_TRANSITION_FLOW.open_menu(self, TITLE_PHASE_PLAY_MODE, selected_index, notice_text, 16.0 / 60.0 if animate_intro else 0.0)
 func is_play_mode_input_ready() -> bool:
 	return _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_PLAY_MODE and _play_mode_intro_timer <= 0.0
 
 func open_title_screen_at_single_player_menu(selected_index: int = 0, notice_text: String = "", animate_intro: bool = false) -> void:
-	reset_to_title()
-	_title_phase = TITLE_PHASE_SINGLE_PLAYER
-	_title_menu_index = clampi(selected_index, 0, max(get_title_menu_items().size() - 1, 0))
-	_single_player_intro_timer = 13.0 / 60.0 if animate_intro else 0.0
-	_title_notice_text = notice_text
-	_status_text = get_title_prompt_text()
-
+	TITLE_TRANSITION_FLOW.open_menu(self, TITLE_PHASE_SINGLE_PLAYER, selected_index, notice_text, 13.0 / 60.0 if animate_intro else 0.0)
 func is_single_player_input_ready() -> bool:
 	return _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_SINGLE_PLAYER and _single_player_intro_timer <= 0.0
 
 func open_title_screen_at_multiplayer_menu(selected_index: int = 0, notice_text: String = "") -> void:
-	reset_to_title()
-	_title_phase = TITLE_PHASE_MULTI_PLAYER
-	_title_menu_index = clampi(selected_index, 0, max(get_title_menu_items().size() - 1, 0))
-	_multiplayer_mode_intro_timer = 47.0 / 60.0
-	_title_notice_text = notice_text
-	_status_text = get_title_prompt_text()
-
+	TITLE_TRANSITION_FLOW.open_menu(self, TITLE_PHASE_MULTI_PLAYER, selected_index, notice_text, 47.0 / 60.0)
 func is_multiplayer_mode_input_ready() -> bool:
 	return _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_MULTI_PLAYER and _multiplayer_mode_intro_timer <= 0.0
 
@@ -850,13 +831,7 @@ func get_multiplayer_mode_intro_progress() -> float:
 	return clampf(1.0 - (_multiplayer_mode_intro_timer / (47.0 / 60.0)), 0.0, 1.0)
 
 func open_title_screen_at_time_attack_menu(selected_index: int = 0, notice_text: String = "") -> void:
-	reset_to_title()
-	_title_phase = TITLE_PHASE_TIME_ATTACK
-	_title_menu_index = clampi(selected_index, 0, max(get_title_menu_items().size() - 1, 0))
-	_time_attack_mode_intro_timer = 47.0 / 60.0
-	_title_notice_text = notice_text
-	_status_text = get_title_prompt_text()
-
+	TITLE_TRANSITION_FLOW.open_menu(self, TITLE_PHASE_TIME_ATTACK, selected_index, notice_text, 47.0 / 60.0)
 func is_time_attack_mode_input_ready() -> bool:
 	return _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_TIME_ATTACK and _time_attack_mode_intro_timer <= 0.0
 
@@ -871,76 +846,21 @@ func skip_time_attack_mode_intro() -> void:
 	_time_attack_mode_intro_timer = minf(_time_attack_mode_intro_timer, 32.0 / 60.0)
 
 func open_tiny_chao_garden_menu(selected_index: int = 0, notice_text: String = "") -> void:
-	_game_state = GAME_STATE_TITLE
-	_title_phase = TITLE_PHASE_TINY_CHAO_GARDEN
-	_title_menu_index = clampi(selected_index, 0, max(get_title_menu_items().size() - 1, 0))
-	_title_notice_text = notice_text
-	_status_text = get_title_prompt_text()
-
+	TITLE_TRANSITION_FLOW.open_tiny_chao_menu(self, TITLE_PHASE_TINY_CHAO_GARDEN, selected_index, notice_text)
 func open_tiny_chao_setup_menu(selected_index: int = 0, notice_text: String = "") -> void:
-	_game_state = GAME_STATE_TITLE
-	_title_phase = TITLE_PHASE_TINY_CHAO_SETUP
-	_title_menu_index = clampi(selected_index, 0, max(get_title_menu_items().size() - 1, 0))
-	_title_notice_text = notice_text
-	_status_text = get_title_prompt_text()
-
+	TITLE_TRANSITION_FLOW.open_tiny_chao_menu(self, TITLE_PHASE_TINY_CHAO_SETUP, selected_index, notice_text)
 func open_tiny_chao_garden_play() -> void:
-	_game_state = GAME_STATE_TITLE
-	_title_phase = TITLE_PHASE_TINY_CHAO_GARDEN_PLAY
-	_title_menu_index = 0
-	_title_notice_text = ""
-	_tiny_chao_play_x = 0.0
-	_tiny_chao_play_y = 0.0
-	_tiny_chao_action_text = "WELCOME TO THE GARDEN"
-	_tiny_chao_selected_index = clampi(_tiny_chao_selected_index, 0, _tiny_chao_roster.size() - 1)
-	_sync_tiny_chao_selection()
-	_status_text = "LEFT/RIGHT MOVE   A CARE   B EXIT"
-
+	TITLE_TRANSITION_FLOW.open_tiny_chao_play(self)
 func open_singlepak_results_screen(result_mode: int = MULTIPLAYER_RESULTS_MODE_COURSE_COMPLETE, cursor: int = 0, notice_text: String = "") -> void:
-	_game_state = GAME_STATE_TITLE
-	_multiplayer_result_mode = clampi(result_mode, MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION, MULTIPLAYER_RESULTS_MODE_COURSE_COMPLETE)
-	_title_phase = TITLE_PHASE_SINGLEPAK_RESULTS
-	_singlepak_results_cursor = clampi(cursor, 0, max(get_singlepak_results_items().size() - 1, 0))
-	_singlepak_results_timer = _singlepak_results_character_duration if _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION else _singlepak_results_course_duration
-	_title_notice_text = notice_text
-	_status_text = get_title_prompt_text()
-
+	TITLE_TRANSITION_FLOW.open_singlepak_results(self, result_mode, cursor, notice_text)
 func open_multiplayer_lobby_screen(cursor: int = 0, notice_text: String = "") -> void:
-	_game_state = GAME_STATE_TITLE
-	_title_phase = TITLE_PHASE_MULTIPLAYER_LOBBY
-	_multiplayer_lobby_cursor = clampi(cursor, 0, max(get_multiplayer_lobby_items().size() - 1, 0))
-	_multiplayer_lobby_waiting = false
-	_multiplayer_lobby_wait_timer = 0.0
-	_multiplayer_lobby_exit_timer = 0.0
-	_title_notice_text = notice_text
-	_status_text = get_title_prompt_text()
-
+	TITLE_TRANSITION_FLOW.open_multiplayer_lobby(self, cursor, notice_text)
 func open_multiplayer_comm_screen(pak_mode: int, cursor: int = 0, notice_text: String = "") -> void:
-	_game_state = GAME_STATE_TITLE
-	_multiplayer_pak_mode = clampi(pak_mode, 0, 1)
-	_multiplayer_disconnect_timer = 0.0
-	_title_phase = TITLE_PHASE_MULTI_CONNECT
-	_title_menu_index = clampi(cursor, 0, max(get_title_menu_items().size() - 1, 0))
-	_title_notice_text = notice_text
-	_status_text = get_title_prompt_text()
-
+	TITLE_TRANSITION_FLOW.open_multiplayer_comm(self, pak_mode, cursor, notice_text)
 func open_singlepak_sync_screen(cursor: int = 0, notice_text: String = "") -> void:
-	_game_state = GAME_STATE_TITLE
-	_title_phase = TITLE_PHASE_SINGLEPAK_SYNC
-	_title_menu_index = clampi(cursor, 0, max(get_title_menu_items().size() - 1, 0))
-	_title_notice_text = notice_text
-	_status_text = get_title_prompt_text()
-
+	TITLE_TRANSITION_FLOW.open_singlepak_sync(self, cursor, notice_text)
 func open_multiplayer_outcome_screen(outcome: int, return_phase: int, notice_text: String = "") -> void:
-	_game_state = GAME_STATE_TITLE
-	_multiplayer_outcome_type = clampi(outcome, 0, 1)
-	_multiplayer_outcome_return_phase = return_phase
-	_multiplayer_outcome_timer = _multiplayer_outcome_duration
-	_title_phase = TITLE_PHASE_MULTIPLAYER_OUTCOME
-	_title_menu_index = 0
-	_title_notice_text = notice_text
-	_status_text = get_title_prompt_text()
-
+	TITLE_TRANSITION_FLOW.open_multiplayer_outcome(self, outcome, return_phase, notice_text)
 func open_time_attack_level_select_screen(is_boss_mode: bool = _time_attack_boss_mode) -> void:
 	_game_state = GAME_STATE_SAVE_OPTIONS
 	_options_mode = OPTIONS_MODE_TIME_RECORDS
@@ -954,25 +874,7 @@ func open_time_attack_level_select_screen(is_boss_mode: bool = _time_attack_boss
 	update_save_menu_status()
 
 func open_course_select_screen(return_phase: int = TITLE_PHASE_TIME_ATTACK_LOBBY, notice_text: String = "", unlock_cutscene: bool = false) -> void:
-	_game_state = GAME_STATE_TITLE
-	_course_select_return_phase = return_phase
-	_title_phase = TITLE_PHASE_COURSE_SELECT
-	_course_select_travel_timer = 0.0
-	_course_select_settle_timer = 0.0
-	_course_select_confirm_pending = false
-	_course_select_unlock_phase = COURSE_UNLOCK_PHASE_PATH
-	_course_select_unlock_phase_timer = 0.0
-	_course_select_unlock_phase_duration = 0.0
-	_course_select_unlock_timer = 0.0
-	_course_select_intro_timer = _course_select_intro_duration
-	if unlock_cutscene:
-		_start_course_select_unlock_cutscene()
-	_course_select_start_timer = 0.0
-	_course_select_from_index = _selected_level_index
-	_course_select_to_index = _selected_level_index
-	_title_notice_text = notice_text if not notice_text.is_empty() else "COURSE READY: %s" % get_selected_level_text()
-	_status_text = get_title_prompt_text()
-
+	TITLE_TRANSITION_FLOW.open_course_select(self, return_phase, notice_text, unlock_cutscene)
 func open_multiplayer_outcome_return_phase(return_phase: int, notice_text: String = "") -> void:
 	match return_phase:
 		TITLE_PHASE_PRESS_START:
@@ -1001,104 +903,9 @@ func open_multiplayer_outcome_return_phase(return_phase: int, notice_text: Strin
 			open_press_start_screen(notice_text)
 
 func return_from_course_select(notice_text: String = "") -> void:
-	_title_notice_text = notice_text
-	match _course_select_return_phase:
-		TITLE_PHASE_PRESS_START:
-			open_press_start_screen(notice_text)
-		TITLE_PHASE_PLAY_MODE:
-			open_title_screen_at_play_mode_menu(0, notice_text)
-		TITLE_PHASE_SINGLE_PLAYER:
-			open_title_screen_at_single_player_menu(0, notice_text)
-		TITLE_PHASE_MULTI_PLAYER:
-			open_title_screen_at_multiplayer_menu(_multiplayer_pak_mode, notice_text)
-		TITLE_PHASE_TIME_ATTACK:
-			open_title_screen_at_time_attack_menu(1 if _time_attack_boss_mode else 0, notice_text)
-		TITLE_PHASE_SINGLEPAK_RESULTS:
-			open_singlepak_results_screen(_multiplayer_result_mode, 0, notice_text)
-		TITLE_PHASE_TIME_ATTACK_LOBBY:
-			open_time_attack_lobby(_time_attack_boss_mode)
-			_title_notice_text = notice_text
-			_status_text = get_title_prompt_text()
-		TITLE_PHASE_MULTI_CONNECT:
-			open_multiplayer_comm_screen(_multiplayer_pak_mode, _title_menu_index, notice_text)
-		TITLE_PHASE_SINGLEPAK_SYNC:
-			open_singlepak_sync_screen(_title_menu_index, notice_text)
-		TITLE_PHASE_TINY_CHAO_GARDEN:
-			open_tiny_chao_garden_menu(0, notice_text)
-		TITLE_PHASE_TINY_CHAO_SETUP:
-			open_tiny_chao_setup_menu(0, notice_text)
-		_:
-			open_press_start_screen(notice_text)
-
+	TITLE_TRANSITION_FLOW.return_from_course_select(self, notice_text)
 func init_level(level_id: int, from_time_attack: bool = false, from_multiplayer: bool = false) -> void:
-	level_id = clamp(level_id, 0, _unlocked_level_index)
-	_run_from_time_attack = from_time_attack
-	_run_from_multiplayer = from_multiplayer
-	if from_multiplayer:
-		_multiplayer_course_results_committed = false
-	_elapsed_time = 0.0
-	_velocity_y = 0.0
-	_level_complete = false
-	# Keep the stage-intro presentation and the course countdown as separate
-	# phases while retaining one timer for the compact Godot screen.
-	_intro_timer = STAGE_INTRO_DURATION if _is_boss_intro() else INTRO_TOTAL_TIME
-	_final_intro_timer = 0.0
-	_final_intro_pending = false
-	_intro_primed = false
-	_intro_speed_boost = false
-	_intro_boost_disabled = false
-	_race_start_message_timer = 0.0
-	_start_boost_timer = 0.0
-	_clear_time_snapshot = 0.0
-	_clear_score_snapshot = 0
-	_clear_final_score_snapshot = 0
-	_clear_rank_text = "D"
-	_clear_ring_snapshot = 0
-	_clear_special_ring_snapshot = 0
-	_clear_previous_best_time = -1.0
-	_clear_new_best_time = false
-	_clear_time_attack_record_rank = 0
-	_clear_time_bonus_remaining = 0
-	_clear_ring_bonus_remaining = 0
-	_clear_special_ring_bonus_remaining = 0
-	_clear_total_display_score = 0
-	_clear_count_step_accumulator = 0.0
-	_clear_count_delay_timer = 0.0
-	_clear_input_lock_timer = 0.0
-	_clear_counting_done = false
-	_clear_from_goal = false
-	_game_over_timer = 0.0
-	_game_over_input_lock_timer = 0.0
-	_game_over_time_over = false
-	_save_reset_pending = false
-	_status_text = "READY!"
-	_title_text = _level_names[level_id]
-	_source_map_manifest = SOURCE_MAP_LOADER.load_level(level_id, from_time_attack and _time_attack_boss_mode)
-	_pause_text = get_pause_text()
-	_level_state = _build_level(level_id)
-	_spawn_x = _level_state.spawn_x
-	_spawn_y = _level_state.spawn_y
-	_respawn_x = _spawn_x
-	_respawn_y = _spawn_y
-	_checkpoint_time = 0.0
-	_damage_cooldown = 0.0
-	_invincibility_timer = 0.0
-	_clear_screen_shake()
-	_reset_input_buffer()
-	_speed_up_timer = 0.0
-	_magnetic_shielded = false
-	_defeat_score_index = 0
-	_reset_player()
-	_player_state.is_alive = true
-	if _player_state.variant == 1 and not _run_from_multiplayer and level_id < 15:
-		_spawn_cheese_companion()
-	if level_id == _level_names.size() - 1 and not from_time_attack and not from_multiplayer:
-		_game_state = GAME_STATE_FINAL_INTRO
-		_final_intro_timer = 10.0
-		_final_intro_pending = true
-		_status_text = "TRUE AREA 53 INTRO"
-	else:
-		_game_state = GAME_STATE_INTRO
+	GAMEPLAY_LIFECYCLE_FLOW.initialize(self, level_id, from_time_attack, from_multiplayer)
 
 func _begin_level_run(level_id: int, from_time_attack: bool, from_multiplayer: bool = false) -> void:
 	init_level(level_id, from_time_attack, from_multiplayer)
@@ -6416,13 +6223,7 @@ func get_delete_confirm_chrome_colors() -> Dictionary:
 	return OPTIONS_PRESENTER.delete_confirm_chrome_colors(self)
 
 func get_time_records_summary_text() -> String:
-	var character_rows := get_time_records_character_rows()
-	var character_name: String = str(character_rows[clampi(_time_records_character_index, 0, character_rows.size() - 1)]) if not character_rows.is_empty() else "SONIC"
-	if _time_records_context == TIME_RECORDS_CONTEXT_TIME_ATTACK:
-		return "%s: %s\n%s: %s\n%s: %s" % [_language_text("MODE", "MODUS", "MODE", "MODO", "MODALITA"), _language_text("BOSS ATTACK", "BOSS-ANGRIFF", "ATTAQUE BOSS", "ATAQUE BOSS", "ATTACCO BOSS") if _time_records_boss_mode else _language_text("ZONE ATTACK", "ZONEN-ANGRIFF", "ATTAQUE ZONE", "ATAQUE ZONA", "ATTACCO ZONA"), _language_text("CHARACTER", "CHARAKTER", "PERSONNAGE", "PERSONAJE", "PERSONAGGIO"), character_name, _language_text("COURSE", "KURS", "PARCOURS", "FASE", "CORSO"), get_time_records_course_title_text()]
-	if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-		return "%s: %s\n%s\n%s: %s" % [_language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), get_profile_name_text(), _language_text("SELECT RECORD MODE", "REKORDMODUS WAEHLEN", "CHOISIR LE MODE", "ELEGIR MODO", "SCEGLI MODALITA RECORD"), _language_text("CURRENT", "AKTUELL", "ACTUEL", "ACTUAL", "ATTUALE"), _language_text("BOSS", "BOSS", "BOSS", "JEFE", "BOSS") if _time_records_boss_mode else _language_text("ZONE", "ZONE", "ZONE", "ZONA", "ZONA")]
-	return "%s: %s\n%s: %s\n%s: %s" % [_language_text("CHARACTER", "CHARAKTER", "PERSONNAGE", "PERSONAJE", "PERSONAGGIO"), character_name, _language_text("COURSE", "KURS", "PARCOURS", "FASE", "CORSO"), get_time_records_course_title_text(), _language_text("TYPE", "TYP", "TYPE", "TIPO", "TIPO"), _language_text("BOSS", "BOSS", "BOSS", "JEFE", "BOSS") if _time_records_boss_mode else _language_text("ACT", "AKT", "ACTE", "ACTO", "ATTO")]
+	return RECORDS_VIEW_MODEL.time_summary(self)
 
 func get_time_records_title_text() -> String:
 	return RECORDS_MENU_PRESENTER.time_records_title(self)
@@ -6449,16 +6250,10 @@ func get_time_records_best_label_text(index: int) -> String:
 	return RECORDS_MENU_PRESENTER.time_records_best_label(self, index)
 
 func get_multiplayer_records_summary_text() -> String:
-	var totals := get_multiplayer_records_player_totals()
-	var columns := get_multiplayer_records_column_header_text()
-	return "%s: %s\n%s\n%s %02d  %s %02d  %s %02d" % [_language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), get_profile_name_text(), _language_text("VERSUS TOTALS", "VERSUS-SUMME", "TOTAUX VS", "TOTALES VS", "TOTALI VS"), columns[0], totals["wins"], columns[1], totals["losses"], columns[2], totals["draws"]]
+	return RECORDS_VIEW_MODEL.multiplayer_summary(self)
 
 func get_multiplayer_records_column_header_text() -> Array:
-	return [
-		_language_text("W", "S", "V", "G", "V"),
-		_language_text("L", "N", "D", "P", "S"),
-		_language_text("D", "U", "N", "E", "P"),
-	]
+	return RECORDS_VIEW_MODEL.multiplayer_columns(self)
 
 func get_multiplayer_records_title_text() -> String:
 	return RECORDS_MENU_PRESENTER.multiplayer_records_title(self)
@@ -6476,30 +6271,13 @@ func get_multiplayer_records_player_totals() -> Dictionary:
 	return _multiplayer_record_totals.duplicate(true)
 
 func get_multiplayer_records_player_row() -> Dictionary:
-	var totals := get_multiplayer_records_player_totals()
-	return {
-		"name": get_profile_name_text(),
-		"wins": totals["wins"],
-		"losses": totals["losses"],
-		"draws": totals["draws"],
-	}
+	return RECORDS_VIEW_MODEL.multiplayer_player_row(self)
 
 func get_multiplayer_records_scroll_max() -> int:
-	return max(0, _multi_record_rows.size() - 4)
+	return RECORDS_VIEW_MODEL.multiplayer_scroll_max(self)
 
 func get_multiplayer_records_visible_rows() -> Array:
-	var rows: Array = []
-	var start: int = clampi(_multi_records_menu_index, 0, get_multiplayer_records_scroll_max())
-	var end: int = mini(start + 4, _multi_record_rows.size())
-	for i in range(start, end):
-		var row: Dictionary = _multi_record_rows[i] as Dictionary
-		rows.append({
-			"name": str(row.get("name", "")),
-			"wins": int(row.get("wins", 0)),
-			"losses": int(row.get("losses", 0)),
-			"draws": int(row.get("draws", 0)),
-		})
-	return rows
+	return RECORDS_VIEW_MODEL.multiplayer_visible_rows(self)
 
 func can_multiplayer_records_scroll_up() -> bool:
 	return _multi_records_menu_index > 0
@@ -6508,15 +6286,7 @@ func can_multiplayer_records_scroll_down() -> bool:
 	return _multi_records_menu_index < get_multiplayer_records_scroll_max()
 
 func get_multiplayer_records_scroll_hint_text() -> String:
-	if get_multiplayer_records_visible_rows().is_empty():
-		return _language_text("NO DATA", "KEINE DATEN", "AUCUNE DONNEE", "SIN DATOS", "NESSUN DATO")
-	if can_multiplayer_records_scroll_up() and can_multiplayer_records_scroll_down():
-		return _language_text("UP/DOWN", "HOCH/RUNTER", "HAUT/BAS", "ARRIBA/ABAJO", "SU/GIU")
-	if can_multiplayer_records_scroll_up():
-		return _language_text("UP", "HOCH", "HAUT", "ARRIBA", "SU")
-	if can_multiplayer_records_scroll_down():
-		return _language_text("DOWN", "RUNTER", "BAS", "ABAJO", "GIU")
-	return ""
+	return RECORDS_VIEW_MODEL.multiplayer_scroll_hint(self)
 
 func get_name_entry_summary_text() -> String:
 	return NAME_ENTRY_PRESENTER.summary_text(self)
