@@ -7,6 +7,25 @@ const MENU_INPUT_HELP := preload("res://scripts/ui/MenuInputHelp.gd")
 ## State changes remain owned by CoreBridge; these methods only format the
 ## current state for the screen views.
 
+static func language_rows(bridge: Object) -> Array:
+	var languages: Array = [
+		bridge._language_text("JAPANESE", "JAPANISCH", "JAPONAIS", "JAPONES", "GIAPPONESE"),
+		bridge._language_text("ENGLISH", "ENGLISCH", "ANGLAIS", "INGLES", "INGLESE"),
+		bridge._language_text("GERMAN", "DEUTSCH", "ALLEMAND", "ALEMAN", "TEDESCO"),
+		bridge._language_text("FRENCH", "FRANZOESISCH", "FRANCAIS", "FRANCES", "FRANCESE"),
+		bridge._language_text("SPANISH", "SPANISCH", "ESPAGNOL", "ESPANOL", "SPAGNOLO"),
+		bridge._language_text("ITALIAN", "ITALIENISCH", "ITALIEN", "ITALIANO", "ITALIANO"),
+	]
+	var rows: Array = []
+	for i in range(languages.size()):
+		rows.append({
+			"label": str(languages[i]),
+			"status": bridge._language_text("CURRENT", "AKTUELL", "ACTUEL", "ACTUAL", "ATTUALE") if i == bridge._language_index else bridge._language_text("AVAILABLE", "VERFUEGBAR", "DISPONIBLE", "DISPONIBLE", "DISPONIBILE"),
+			"current": i == bridge._language_index,
+			"selected": i == bridge._pending_language_index,
+		})
+	return rows
+
 static func menu_items(bridge: Object) -> Array:
 	var items := ["PLAYER DATA", "DIFFICULTY", "TIME LIMIT", "LANGUAGE", "BUTTON CONFIG", "DELETE GAME DATA", "EXIT"]
 	if bridge._sound_test_unlocked:

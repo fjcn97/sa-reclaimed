@@ -9,6 +9,7 @@ func _init() -> void:
 func _run() -> void:
 	var bridge: Node = preload("res://scripts/CoreBridge.gd").new()
 	get_root().add_child(bridge)
+	bridge._selected_character_index = 0
 	bridge._unlocked_level_index = bridge._level_names.size() - 1
 	bridge._selected_level_index = bridge._level_names.size() - 1
 	bridge._chaos_emerald_masks[0] = 127

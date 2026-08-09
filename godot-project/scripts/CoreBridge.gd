@@ -102,6 +102,9 @@ const STAGE_MECHANISM_STATE_SYSTEM := preload("res://scripts/core/StageMechanism
 const STAGE_TRAVERSAL_SYSTEM := preload("res://scripts/core/StageTraversalSystem.gd")
 const STAGE_INTERACTION_SYSTEM := preload("res://scripts/core/StageInteractionSystem.gd")
 const TINY_CHAO_GARDEN_SYSTEM := preload("res://scripts/core/TinyChaoGardenSystem.gd")
+const TITLE_FRONTEND_UPDATE_FLOW := preload("res://scripts/core/TitleFrontendUpdateFlow.gd")
+const ENDING_AND_MESSAGE_UPDATE_FLOW := preload("res://scripts/core/EndingAndMessageUpdateFlow.gd")
+const RESULTS_AND_SPECIAL_STAGE_UPDATE_FLOW := preload("res://scripts/core/ResultsAndSpecialStageUpdateFlow.gd")
 const STAGE_SURFACE_STATE_SYSTEM := preload("res://scripts/core/StageSurfaceStateSystem.gd")
 const STAGE_MOTION_SYSTEM := preload("res://scripts/core/StageMotionSystem.gd")
 const HUD_STATE_PRESENTER := preload("res://scripts/ui/HudStatePresenter.gd")
@@ -1228,190 +1231,11 @@ func physics_tick(held_input: int, frame_input: int, delta: float) -> void:
 func advance_ui_timers(delta: float, held_input: int = 0, frame_input: int = 0) -> void:
 	if FRONTEND_UPDATE_FLOW.advance_critical(self, delta, held_input, frame_input):
 		return
-	if _title_phase == TITLE_PHASE_COURSE_SELECT and _course_select_intro_timer > 0.0:
-		_course_select_intro_timer = maxf(0.0, _course_select_intro_timer - delta)
-	# Course Select is a menu state, so its map and launch timers must advance
-	# here rather than in the gameplay-only physics tick.
-	if _course_select_travel_timer > 0.0:
-		_course_select_travel_timer = maxf(0.0, _course_select_travel_timer - delta)
-		if _course_select_travel_timer <= 0.0:
-			_course_select_settle_timer = _course_select_settle_duration
-	if _course_select_settle_timer > 0.0:
-		_course_select_settle_timer = maxf(0.0, _course_select_settle_timer - delta)
-		if _course_select_settle_timer <= 0.0 and _course_select_confirm_pending:
-			_course_select_confirm_pending = false
-			_course_select_start_timer = _course_select_start_duration
-			_title_notice_text = "STARTING %s" % get_selected_level_text()
-			_status_text = get_title_prompt_text()
-	if _course_select_unlock_timer > 0.0:
-		_advance_course_select_unlock_cutscene(delta)
-	if _course_select_start_timer > 0.0:
-		_course_select_start_timer = maxf(0.0, _course_select_start_timer - delta)
-		if _course_select_start_timer <= 0.0 and _title_phase == TITLE_PHASE_COURSE_SELECT:
-			if _is_multiplayer_course_select():
-				_continue_multiplayer_after_course_select()
-			else:
-				var time_attack_course := _course_select_return_phase == TITLE_PHASE_TIME_ATTACK_LOBBY
-				_begin_level_run(_selected_level_index, time_attack_course)
-			return
-	if _multiplayer_outcome_timer > 0.0:
-		_multiplayer_outcome_timer = maxf(0.0, _multiplayer_outcome_timer - delta)
-		if _multiplayer_outcome_timer <= 0.0 and _title_phase == TITLE_PHASE_MULTIPLAYER_OUTCOME:
-			_resolve_multiplayer_outcome()
-			return
-	if _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_MULTIPLAYER_LOBBY and _multiplayer_lobby_exit_timer > 0.0:
-		_multiplayer_lobby_exit_timer = maxf(0.0, _multiplayer_lobby_exit_timer - delta)
-		if _multiplayer_lobby_exit_timer <= 0.0:
-			open_title_screen_and_skip_intro()
+	if TITLE_FRONTEND_UPDATE_FLOW.advance(self, delta, held_input, frame_input):
 		return
-	if _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_MULTI_CONNECT and _multiplayer_pak_mode == 1 and is_singlepak_transfer_started() and not is_singlepak_transfer_complete():
-		_singlepak_download_timer += delta
-		if _singlepak_download_timer >= 0.25:
-			_singlepak_download_timer = 0.0
-			_advance_singlepak_transfer_step()
-			return
-	if _multiplayer_lobby_wait_timer > 0.0:
-		_multiplayer_lobby_wait_timer = maxf(0.0, _multiplayer_lobby_wait_timer - delta)
-		if _multiplayer_lobby_wait_timer <= 0.0 and _title_phase == TITLE_PHASE_MULTIPLAYER_LOBBY and _multiplayer_lobby_waiting:
-			_resolve_multiplayer_lobby_choice()
-			return
-	if _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_MULTI_CONNECT and _multiplayer_disconnect_timer > 0.0:
-		_multiplayer_disconnect_timer = maxf(0.0, _multiplayer_disconnect_timer - delta)
-		if _multiplayer_disconnect_timer <= 0.0:
-			_multiplayer_link_ready = false
-			open_title_screen_at_multiplayer_menu(_multiplayer_pak_mode)
+	if RESULTS_AND_SPECIAL_STAGE_UPDATE_FLOW.advance(self, delta, held_input, frame_input):
 		return
-	if _singlepak_results_timer > 0.0:
-		_singlepak_results_timer = maxf(0.0, _singlepak_results_timer - delta)
-		if _singlepak_results_timer <= 0.0 and _title_phase == TITLE_PHASE_SINGLEPAK_RESULTS:
-			_advance_singlepak_results_flow()
-			return
-	if _game_state == GAME_STATE_CHARACTER_SELECT and _character_select_intro_timer > 0.0:
-		_character_select_intro_timer = maxf(0.0, _character_select_intro_timer - delta)
-	if _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_TIME_ATTACK and _time_attack_mode_intro_timer > 0.0:
-		_time_attack_mode_intro_timer = maxf(0.0, _time_attack_mode_intro_timer - delta)
-	if _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_PLAY_MODE and _play_mode_intro_timer > 0.0:
-		_play_mode_intro_timer = maxf(0.0, _play_mode_intro_timer - delta)
-	if _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_SINGLE_PLAYER and _single_player_intro_timer > 0.0:
-		_single_player_intro_timer = maxf(0.0, _single_player_intro_timer - delta)
-	if _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_MULTI_PLAYER and _multiplayer_mode_intro_timer > 0.0:
-		_multiplayer_mode_intro_timer = maxf(0.0, _multiplayer_mode_intro_timer - delta)
-	if _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_TINY_CHAO_GARDEN_PLAY:
-		_update_tiny_chao_garden(held_input, frame_input, delta)
-		_update_camera()
-		return
-	if _demo_mode and (_game_state == GAME_STATE_CLEAR or _game_state == GAME_STATE_GAME_OVER):
-		open_press_start_screen()
-		return
-	if _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_PRESS_START:
-		if held_input != 0:
-			_title_idle_timer = 0.0
-		else:
-			_title_idle_timer += delta
-		if _title_idle_timer >= 15.0:
-			_start_title_demo()
-			return
-	if _game_state == GAME_STATE_CLEAR:
-		_clear_input_lock_timer = maxf(0.0, _clear_input_lock_timer - delta)
-		_clear_count_delay_timer = maxf(0.0, _clear_count_delay_timer - delta)
-		if _run_from_multiplayer:
-			# mp_finish.c transitions multiplayer clears to its dedicated results task;
-			# they do not use the single-player bonus counter or course chain.
-			_prepare_multiplayer_results_snapshot(MULTIPLAYER_RESULTS_MODE_COURSE_COMPLETE)
-			open_singlepak_results_screen(MULTIPLAYER_RESULTS_MODE_COURSE_COMPLETE, 0)
-			return
-		if _run_from_time_attack:
-			if _time_attack_exit_timer > 0.0:
-				_time_attack_exit_timer = maxf(0.0, _time_attack_exit_timer - delta)
-				if _time_attack_exit_timer <= 0.0:
-					open_time_attack_lobby(_time_attack_boss_mode)
-				return
-			_time_attack_result_timer += delta
-			if _time_attack_result_timer >= 10.0:
-				open_time_attack_lobby(_time_attack_boss_mode)
-				return
-		if not _run_from_time_attack and not _clear_counting_done and _clear_count_delay_timer <= 0.0:
-			# stage_results.c drains each bonus by 100 points on every game
-			# frame after its 150-frame opening delay. The source's 4-frame
-			# cadence only controls the counter sound effect.
-			_advance_clear_count_step()
-		elif not _run_from_time_attack and not _run_from_multiplayer and _clear_counting_done and _clear_input_lock_timer <= 0.0:
-			if _character_unlock_pending >= 0:
-				_open_character_unlock()
-			elif _special_stage_pending:
-				_open_special_stage()
-			elif _should_show_to_be_continued():
-				_open_to_be_continued()
-			elif _should_show_chaos_emeralds_message():
-				if get_chaos_emerald_count() >= 7:
-					_open_chaos_emeralds_message()
-				else:
-					_open_missing_emeralds_message()
-			else:
-				_open_next_single_player_course()
-	if _game_state == GAME_STATE_TO_BE_CONTINUED:
-		_to_be_continued_timer = maxf(0.0, _to_be_continued_timer - delta)
-		if _to_be_continued_timer <= 0.0:
-			_resolve_to_be_continued()
-	if _game_state == GAME_STATE_SEGA_LOGO:
-		_sega_logo_timer = maxf(0.0, _sega_logo_timer - delta)
-		if _sega_logo_timer <= 0.0:
-			_resolve_sega_logo()
-	if _game_state == GAME_STATE_SONIC_TEAM:
-		_sonic_team_timer = maxf(0.0, _sonic_team_timer - delta)
-		if _sonic_team_timer <= 0.0:
-			_resolve_sonic_team_logo()
-	if _game_state == GAME_STATE_CREDITS:
-		_credits_timer = maxf(0.0, _credits_timer - delta)
-		if _credits_timer <= 0.0:
-			_advance_credits_page()
-	if _game_state == GAME_STATE_COPYRIGHT:
-		_copyright_timer = maxf(0.0, _copyright_timer - delta)
-		if _copyright_timer <= 0.0:
-			_resolve_copyright()
-	if _game_state == GAME_STATE_CREDITS_END:
-		_advance_credits_end_story(delta)
-		_credits_end_timer = maxf(0.0, _credits_end_timer - delta)
-		if _credits_end_timer <= 0.0:
-			_resolve_credits_end()
-	if _game_state == GAME_STATE_CHARACTER_UNLOCK:
-		_character_unlock_timer = maxf(0.0, _character_unlock_timer - delta)
-		_character_unlock_scene_frame += delta * 60.0
-		# level_endings.c holds four dialogue/slide segments at 341 frames
-		# each, then a 301-frame final message before the fade out.
-		if _character_unlock_segment < CHARACTER_UNLOCK_SEGMENT_COUNT:
-			if _character_unlock_scene_frame > CHARACTER_UNLOCK_SEGMENT_FRAMES:
-				_character_unlock_segment += 1
-				_character_unlock_scene_frame = 0.0
-		elif _character_unlock_scene_frame > CHARACTER_UNLOCK_FINAL_FRAMES:
-			_resolve_character_unlock()
-	if _game_state == GAME_STATE_SPECIAL_STAGE:
-		if _special_stage_paused:
-			return
-		if _special_stage_phase == 1:
-			_update_special_stage_guard_robo(delta)
-			_update_special_stage_run(delta, held_input, frame_input)
-		elif _special_stage_phase == 2:
-			_update_special_stage_results(delta)
-		_special_stage_timer = maxf(0.0, _special_stage_timer - delta)
-		if _special_stage_timer <= 0.0:
-			# The source result task owns its counter loop; do not interpret a
-			# zero timer as A/fast-forward while points are still being counted.
-			if _special_stage_phase != 2 or (_special_stage_points_remaining == 0 and _special_stage_bonus_remaining == 0):
-				_advance_special_stage()
-	if _game_state == GAME_STATE_CHAOS_EMERALDS:
-		_chaos_emeralds_timer = maxf(0.0, _chaos_emeralds_timer - delta)
-		if _chaos_emeralds_timer <= 0.0:
-			_resolve_chaos_emeralds_message()
-	if _game_state == GAME_STATE_MISSING_EMERALDS:
-		_missing_emeralds_timer = maxf(0.0, _missing_emeralds_timer - delta)
-		if _missing_emeralds_timer <= 0.0:
-			_resolve_missing_emeralds_message()
-	if _game_state == GAME_STATE_GAME_OVER:
-		_game_over_input_lock_timer = maxf(0.0, _game_over_input_lock_timer - delta)
-		_game_over_timer = maxf(0.0, _game_over_timer - delta)
-		if _game_over_timer <= 0.0:
-			_resolve_game_over_timeout()
+	ENDING_AND_MESSAGE_UPDATE_FLOW.advance(self, delta)
 
 func _update_pause_menu_input(held_input: int, frame_input: int) -> void:
 	var a_held := bool(held_input & A_BUTTON)
@@ -6953,23 +6777,7 @@ func _get_time_attack_record_table(record_key: String) -> Array:
 	return TIME_ATTACK_RECORD_SYSTEM.record_table(_time_attack_record_tables, _time_attack_best_times, record_key)
 
 func get_language_rows() -> Array:
-	var rows: Array = []
-	var languages := [
-		_language_text("JAPANESE", "JAPANISCH", "JAPONAIS", "JAPONES", "GIAPPONESE"),
-		_language_text("ENGLISH", "ENGLISCH", "ANGLAIS", "INGLES", "INGLESE"),
-		_language_text("GERMAN", "DEUTSCH", "ALLEMAND", "ALEMAN", "TEDESCO"),
-		_language_text("FRENCH", "FRANZOESISCH", "FRANCAIS", "FRANCES", "FRANCESE"),
-		_language_text("SPANISH", "SPANISCH", "ESPAGNOL", "ESPANOL", "SPAGNOLO"),
-		_language_text("ITALIAN", "ITALIENISCH", "ITALIEN", "ITALIANO", "ITALIANO"),
-	]
-	for i in range(languages.size()):
-		rows.append({
-			"label": str(languages[i]),
-			"status": _language_text("CURRENT", "AKTUELL", "ACTUEL", "ACTUAL", "ATTUALE") if i == _language_index else _language_text("AVAILABLE", "VERFUEGBAR", "DISPONIBLE", "DISPONIBLE", "DISPONIBILE"),
-			"current": i == _language_index,
-			"selected": i == _pending_language_index,
-		})
-	return rows
+	return OPTIONS_PRESENTER.language_rows(self)
 
 func get_button_config_rows() -> Array:
 	var rows: Array = []
@@ -8222,6 +8030,9 @@ func load_completed_save_game() -> void:
 	var true_area_index := maxi(0, _level_names.size() - 1)
 	_unlocked_level_index = true_area_index
 	_character_unlocked_level_indices = [true_area_index, final_zone_index, final_zone_index, final_zone_index, final_zone_index]
+	# Completed-save generation starts from Sonic's fully cleared route; do not
+	# inherit a previously selected character and clamp to that route's limit.
+	_selected_character_index = 0
 	_selected_level_index = 0
 	_profile_score = 0
 	_extra_zone_status = 2

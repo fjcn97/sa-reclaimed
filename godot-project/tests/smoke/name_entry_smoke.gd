@@ -24,7 +24,7 @@ func _run() -> void:
 	bridge._language_index = 2
 	var localized_name_rows: Array = bridge.get_name_entry_rows()
 	_check(str(localized_name_rows[0]["label"]).begins_with("BUCHSTABE"), "name entry rows use the selected language")
-	_check(bridge.get_name_entry_guide_text() == "CHARAKTERTAFEL   Q/E SLOT WECHSELN", "name entry guide follows the saved language")
+	_check(bridge.get_name_entry_guide_text().is_empty(), "name entry hides the removed board guide")
 	_check(bridge.get_name_entry_preview_title_text() == "NAMENSVORSCHAU", "name preview title follows the saved language")
 	bridge._language_index = 1
 
@@ -42,6 +42,7 @@ func _run() -> void:
 	bridge.adjust_save_selection(1)
 	_check(bridge._name_entry_cursor_col == 0, "right wraps controls to matrix")
 
+	bridge._player_profile_name = ["S", "O", "N", "I", "C", " "]
 	bridge._name_entry_menu_index = 5
 	bridge._delete_name_entry_character()
 	_check(bridge.get_profile_name_text() == "SONI  ", "delete shifts name and preserves terminator")

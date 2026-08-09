@@ -2,7 +2,10 @@ extends RefCounted
 class_name SystemMenuInputRouter
 
 ## Handles non-title front-end and paused-game input.
-func handle(frame_input: int) -> void:
+func handle(bridge: Object, frame_input: int) -> void:
+	# Input routing must not depend on the global autoload so smoke tests can
+	# exercise an isolated state owner.
+	var CoreBridge: Object = bridge
 	if CoreBridge.is_intro_screen():
 		if frame_input & CoreBridge.A_BUTTON:
 			CoreBridge.skip_intro()
@@ -113,5 +116,4 @@ func handle(frame_input: int) -> void:
 		if frame_input & CoreBridge.B_BUTTON:
 			CoreBridge.cancel_pause_selection()
 		return
-
 

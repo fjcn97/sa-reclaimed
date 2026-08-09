@@ -16,7 +16,8 @@ static func prompt_text(bridge: Object) -> String:
 	return ""
 
 static func guide_text(bridge: Object) -> String:
-	return bridge._language_text("CHARACTER BOARD", "CHARAKTERTAFEL", "TABLEAU CARACTERES", "TABLERO DE CARACTERES", "TAVOLA CARATTERI")
+	# The streamlined keyboard has no secondary board heading.
+	return ""
 
 static func preview_title_text(bridge: Object) -> String:
 	return bridge._language_text("LIVE NAME PREVIEW", "NAMENSVORSCHAU", "APERCU DU NOM", "VISTA PREVIA DEL NOMBRE", "ANTEPRIMA NOME")

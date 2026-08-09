@@ -146,7 +146,7 @@ func _poll_physical_keys() -> int:
 	return InputBindings.sample_physical_keys()
 
 func _handle_menu_input(frame_input: int) -> void:
-	_menu_router.handle(frame_input)
+	_menu_router.handle(CoreBridge, frame_input)
 
 func _get_menu_frame_input(delta: float) -> int:
 	return _menu_repeater.sample(delta, _held_input, _frame_input, CoreBridge.is_name_entry_screen())

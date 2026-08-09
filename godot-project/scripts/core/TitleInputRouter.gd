@@ -2,7 +2,10 @@ extends RefCounted
 class_name TitleInputRouter
 
 ## Owns title-front-end input precedence and delegates transitions to CoreBridge.
-func handle(frame_input: int) -> void:
+func handle(bridge: Object, frame_input: int) -> void:
+	# Keep the router testable against an isolated bridge instance. The local
+	# compatibility alias avoids changing the well-audited input-precedence body.
+	var CoreBridge: Object = bridge
 	if CoreBridge.is_title_screen():
 		if CoreBridge.is_play_mode_screen() and not CoreBridge.is_play_mode_input_ready():
 			return
@@ -54,7 +57,7 @@ func handle(frame_input: int) -> void:
 		if CoreBridge.is_time_attack_lobby_screen():
 			# time_attack_lobby.c falls through from a blocked Up to Down,
 			# allowing Up+Down at the top edge to move downward.
-			var time_attack_cursor := CoreBridge.get_time_attack_lobby_cursor()
+			var time_attack_cursor: int = CoreBridge.get_time_attack_lobby_cursor()
 			if frame_input & CoreBridge.DPAD_UP and time_attack_cursor != 0:
 				CoreBridge.move_title_selection(-1)
 			elif frame_input & CoreBridge.DPAD_DOWN and time_attack_cursor != 3:
@@ -131,12 +134,11 @@ func handle(frame_input: int) -> void:
 				return
 		# Course Select reserves a Left/Right frame for map travel; the original
 		# ignores confirmation when directional travel is pressed simultaneously.
-		var title_direction_busy := CoreBridge.is_course_select_screen() and bool(frame_input & (CoreBridge.DPAD_LEFT | CoreBridge.DPAD_RIGHT))
-		var title_confirmed := bool(frame_input & CoreBridge.A_BUTTON)
+		var title_direction_busy: bool = CoreBridge.is_course_select_screen() and bool(frame_input & (CoreBridge.DPAD_LEFT | CoreBridge.DPAD_RIGHT))
+		var title_confirmed: bool = bool(frame_input & CoreBridge.A_BUTTON)
 		if title_confirmed and not title_direction_busy:
 			CoreBridge.start_title_selection()
 			return
 		if frame_input & CoreBridge.B_BUTTON:
 			CoreBridge.open_save_options_from_title()
 		return
-

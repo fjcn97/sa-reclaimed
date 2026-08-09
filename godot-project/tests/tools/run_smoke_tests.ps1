@@ -14,13 +14,18 @@ if (-not (Test-Path -LiteralPath $Godot)) {
 }
 
 $tests = Get-ChildItem -LiteralPath (Join-Path $projectRoot 'tests\smoke') -Filter $Filter | Sort-Object Name
+$timeoutOverrides = @{
+    # This integration sweep builds every zone and boss runtime map.
+    'runtime_source_smoke.gd' = 90
+}
 $failed = @()
 foreach ($test in $tests) {
     $resourcePath = 'res://tests/smoke/' + $test.Name
     $process = Start-Process -FilePath $Godot -ArgumentList '--headless','--path',$projectRoot,'--script',$resourcePath -PassThru
-    if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+	$testTimeoutSeconds = if ($timeoutOverrides.ContainsKey($test.Name)) { [int]$timeoutOverrides[$test.Name] } else { $TimeoutSeconds }
+    if (-not $process.WaitForExit($testTimeoutSeconds * 1000)) {
         Stop-Process -Id $process.Id -Force
-        Write-Error "TIMEOUT: $($test.Name) exceeded $TimeoutSeconds seconds"
+        Write-Error "TIMEOUT: $($test.Name) exceeded $testTimeoutSeconds seconds"
         $failed += $test.Name
         continue
     }
