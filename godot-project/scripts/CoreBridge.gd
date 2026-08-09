@@ -122,6 +122,7 @@ const INPUT_BUFFER_SYSTEM := preload("res://scripts/core/InputBufferSystem.gd")
 const PLAYER_VISUAL_PRESENTER := preload("res://scripts/ui/PlayerVisualPresenter.gd")
 const TIME_ATTACK_LOBBY_PRESENTER := preload("res://scripts/ui/TimeAttackLobbyPresenter.gd")
 const OPTIONS_PRESENTER := preload("res://scripts/ui/OptionsPresenter.gd")
+const OPTIONS_SETTINGS_SYSTEM := preload("res://scripts/core/OptionsSettingsSystem.gd")
 const TIME_ATTACK_RESULTS_PRESENTER := preload("res://scripts/ui/TimeAttackResultsPresenter.gd")
 const GAME_OVER_PRESENTER := preload("res://scripts/ui/GameOverPresenter.gd")
 const SPECIAL_STAGE_PRESENTER := preload("res://scripts/ui/SpecialStagePresenter.gd")
@@ -491,6 +492,7 @@ var _difficulty_before_edit: int = 0
 var _time_limit_enabled: bool = true
 var _time_limit_before_edit: bool = true
 var _language_index: int = 1
+var _pending_language_index: int = 1
 var _language_index_before_edit: int = 1
 var _button_config_index: int = 0
 var _button_bindings_before_edit: Array = PROFILE_CATALOG.default_button_bindings()
@@ -5040,24 +5042,7 @@ func open_options_screen() -> void:
 	_return_to_multiplayer_after_name_entry = false
 	_return_to_title_after_new_profile = false
 	_return_to_multiplayer_menu_index = 0
-	_options_menu_index = 0
-	_player_data_menu_index = 0
-	_button_config_index = 0
-	_sound_test_menu_index = 0
-	_sound_test_state = SOUND_TEST_STATE_STOPPED
-	_time_records_menu_index = 0
-	_time_records_view = TIME_RECORDS_VIEW_MODE_CHOICE
-	_time_records_context = TIME_RECORDS_CONTEXT_OPTIONS
-	_time_records_boss_mode = false
-	_time_records_character_index = 0
-	_time_records_course_index = 0
-	_time_records_act_index = 0
-	_multi_records_menu_index = 0
-	_name_entry_menu_index = 0
-	_name_entry_cursor_col = 0
-	_name_entry_cursor_row = 0
-	_name_entry_matrix_page_index = 0
-	_delete_confirm_index = 1
+	OPTIONS_SETTINGS_SYSTEM.reset_menu_context(self)
 	_save_reset_pending = false
 	_status_text = "OPTIONS"
 
@@ -5069,6 +5054,7 @@ func open_profile_name_from_multiplayer() -> void:
 	if not has_profile_name():
 		_creating_new_profile = true
 		_language_index_before_edit = _language_index
+		_pending_language_index = _language_index
 		_options_mode = OPTIONS_MODE_LANGUAGE
 		_status_text = "SELECT PROFILE LANGUAGE"
 		return
@@ -5084,6 +5070,7 @@ func open_profile_name_from_game_start() -> void:
 	_return_to_title_after_new_profile = true
 	_creating_new_profile = true
 	_language_index_before_edit = _language_index
+	_pending_language_index = _language_index
 	_options_mode = OPTIONS_MODE_LANGUAGE
 	_status_text = "SELECT PROFILE LANGUAGE"
 
@@ -5132,7 +5119,7 @@ func move_save_selection(direction: int) -> void:
 		OPTIONS_MODE_PLAYER_DATA:
 			_player_data_menu_index = wrapi(_player_data_menu_index + direction, 0, items.size())
 		OPTIONS_MODE_LANGUAGE:
-			_language_index = wrapi(_language_index + direction, 0, get_language_items().size())
+			OPTIONS_SETTINGS_SYSTEM.move_language_preview(self, direction)
 		OPTIONS_MODE_BUTTON_CONFIG:
 			return
 		OPTIONS_MODE_SOUND_TEST:
@@ -5236,15 +5223,15 @@ func accept_save_selection() -> void:
 					_player_data_menu_index = 0
 				1:
 					# Difficulty cycles directly on the Options list.
-					_difficulty_index = wrapi(_difficulty_index + 1, 0, 3)
+					OPTIONS_SETTINGS_SYSTEM.cycle_difficulty(self)
 					_status_text = "OPTIONS"
 				2:
 					# Time Limit is an immediate toggle on the main Options list;
 					# it no longer opens a separate switch submenu.
-					_time_limit_enabled = not _time_limit_enabled
+					OPTIONS_SETTINGS_SYSTEM.toggle_time_limit(self)
 					_status_text = "OPTIONS"
 				3:
-					_language_index_before_edit = _language_index
+					OPTIONS_SETTINGS_SYSTEM.begin_language_preview(self)
 					_options_mode = OPTIONS_MODE_LANGUAGE
 				4:
 					_options_mode = OPTIONS_MODE_BUTTON_CONFIG
@@ -5294,7 +5281,7 @@ func accept_save_selection() -> void:
 					_options_mode = OPTIONS_MODE_MAIN
 					_options_menu_index = 0
 		OPTIONS_MODE_LANGUAGE:
-			_language_index_before_edit = _language_index
+			OPTIONS_SETTINGS_SYSTEM.commit_language_preview(self)
 			if _creating_new_profile:
 				_player_profile_name = [" ", " ", " ", " ", " ", " "]
 				_name_entry_snapshot = _player_profile_name.duplicate()
@@ -5405,7 +5392,7 @@ func cancel_save_selection() -> void:
 			_options_menu_index = 0
 			update_save_menu_status()
 		OPTIONS_MODE_LANGUAGE:
-			_language_index = _language_index_before_edit
+			OPTIONS_SETTINGS_SYSTEM.cancel_language_preview(self)
 			if _creating_new_profile:
 				_creating_new_profile = false
 				if _return_to_multiplayer_after_name_entry:
@@ -7844,7 +7831,7 @@ func get_language_rows() -> Array:
 			"label": str(languages[i]),
 			"status": _language_text("CURRENT", "AKTUELL", "ACTUEL", "ACTUAL", "ATTUALE") if i == _language_index else _language_text("AVAILABLE", "VERFUEGBAR", "DISPONIBLE", "DISPONIBLE", "DISPONIBILE"),
 			"current": i == _language_index,
-			"selected": i == _language_index,
+			"selected": i == _pending_language_index,
 		})
 	return rows
 
@@ -8012,7 +7999,8 @@ func get_language_items() -> Array:
 	return LOCALIZATION_CATALOG.language_items()
 
 func _language_text(english: String, german: String, french: String, spanish: String, italian: String) -> String:
-	return LOCALIZATION_CATALOG.text(_language_index, english, german, french, spanish, italian)
+	var display_index := _pending_language_index if is_language_screen() else _language_index
+	return LOCALIZATION_CATALOG.text(display_index, english, german, french, spanish, italian)
 
 func get_profile_name_text() -> String:
 	var result := ""
@@ -9092,6 +9080,7 @@ func _load_save_data() -> void:
 	_time_limit_enabled = true
 	_time_limit_before_edit = _time_limit_enabled
 	_language_index = 1
+	_pending_language_index = _language_index
 	_language_index_before_edit = _language_index
 	_button_bindings = PROFILE_CATALOG.default_button_bindings()
 	_button_bindings_before_edit = _button_bindings.duplicate()
@@ -9167,6 +9156,7 @@ func _load_save_data() -> void:
 		_time_limit_enabled = bool(parsed["time_limit_enabled"])
 	if parsed.has("language_index"):
 		_language_index = clampi(int(parsed["language_index"]), 0, get_language_items().size() - 1)
+	_pending_language_index = _language_index
 	_language_index_before_edit = _language_index
 	if parsed.has("button_bindings"):
 		_button_bindings = _sanitize_button_bindings(parsed["button_bindings"])
@@ -9242,6 +9232,7 @@ func _reset_progress() -> void:
 	_time_limit_enabled = true
 	_time_limit_before_edit = _time_limit_enabled
 	_language_index = preserved_language
+	_pending_language_index = _language_index
 	_button_bindings = PROFILE_CATALOG.default_button_bindings()
 	_button_bindings_before_edit = _button_bindings.duplicate()
 	_sound_test_track_index = 0

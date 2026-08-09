@@ -1,6 +1,6 @@
 # LanguageScreen.gd
 # Presents an original-inspired dedicated language selection screen.
-extends ScreenBase
+extends SimpleListMenuScreen
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -66,14 +66,14 @@ func _ensure_chrome() -> void:
 	_header_plate = ensure_rect("HeaderPlate", Rect2(150.0, 68.0, 980.0, 82.0), Color(1.0, 1.0, 1.0, 0.98))
 	_panel = ensure_rect("Panel", Rect2(118.0, 170.0, 1044.0, 400.0), Color(0.98, 1.0, 1.0, 0.99))
 	_accent = ensure_rect("AccentBar", Rect2(118.0, 150.0, 1044.0, 10.0), Color(0.24, 0.80, 0.96, 0.96))
-	_header_band = ensure_rect("HeaderBand", Rect2(260.0, 212.0, 760.0, 330.0), Color(0.90, 0.97, 1.0, 0.98))
-	_language_stage = ensure_rect("LanguageStage", Rect2(260.0, 212.0, 760.0, 330.0), Color(0.90, 0.97, 1.0, 0.98))
+	_header_band = ensure_rect("HeaderBand", LIST_STAGE_RECT, Color(0.90, 0.97, 1.0, 0.98))
+	_language_stage = ensure_rect("LanguageStage", LIST_STAGE_RECT, Color(0.90, 0.97, 1.0, 0.98))
 	_summary_stage = ensure_rect("SummaryStage", Rect2(610.0, 214.0, 236.0, 258.0), Color(0.24, 0.80, 0.96, 0.94))
 	_badge_ring = ensure_rect("BadgeRing", Rect2(892.0, 224.0, 220.0, 220.0), Color(0.24, 0.80, 0.96, 0.22))
 	_badge_core = ensure_rect("BadgeCore", Rect2(954.0, 286.0, 96.0, 96.0), Color(1.0, 1.0, 1.0, 0.96))
 	_language_card = ensure_rect("LanguageCard", Rect2(184.0, 236.0, 364.0, 214.0), Color(0.96, 0.99, 1.0, 0.98))
 	_summary_card = ensure_rect("SummaryCard", Rect2(638.0, 236.0, 180.0, 214.0), Color(0.96, 0.99, 1.0, 0.98))
-	_prompt_band = ensure_rect("PromptBand", Rect2(118.0, 580.0, 1044.0, 102.0), Color(0.96, 0.99, 1.0, 0.99))
+	_prompt_band = ensure_rect("PromptBand", FOOTER_RECT, Color(0.96, 0.99, 1.0, 0.99))
 	_backdrop.z_index = -9
 	_hero_glow.z_index = -8
 	_header_plate.z_index = -7
@@ -98,8 +98,8 @@ func _ensure_rows() -> void:
 		return
 	for i in range(6):
 		var top := 236.0 + float(i) * 40.0
-		var card := ensure_rect("RowCard%d" % i, Rect2(280.0, top, 720.0, 36.0), Color(0.88, 0.95, 1.0, 1.0))
-		var row := ensure_label("RowLabel%d" % i, Vector2(306.0, top - 1.0), Vector2(668.0, 36.0), 20)
+		var card := ensure_rect("RowCard%d" % i, Rect2(LIST_ROW_X, top, LIST_ROW_WIDTH, 36.0), Color(0.88, 0.95, 1.0, 1.0))
+		var row := ensure_label("RowLabel%d" % i, Vector2(LIST_LABEL_X, top - 1.0), Vector2(LIST_VALUE_WIDTH + 302.0, 36.0), 20)
 		var status := ensure_label("StatusLabel%d" % i, Vector2.ZERO, Vector2.ZERO, 1)
 		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -151,7 +151,7 @@ func _update_rows() -> void:
 		var top := 236.0 + float(i) * 40.0
 		var lift := 0.0
 		_row_cards[i].position.y = top + lift
-		_row_cards[i].size = Vector2(720.0, 36.0)
+		_row_cards[i].size = Vector2(LIST_ROW_WIDTH, 36.0)
 		_row_labels[i].position.y = top - 1.0 + lift
 		_status_labels[i].visible = false
 		_row_cards[i].color = Color(0.24, 0.80, 0.96, 0.98) if is_selected else Color(0.88, 0.95, 1.0, 1.0)

@@ -1,6 +1,8 @@
 class_name PlayModePresenter
 extends RefCounted
 
+const MENU_INPUT_HELP := preload("res://scripts/ui/MenuInputHelp.gd")
+
 ## Presentation model for the Play Mode menu.
 
 static func rows(bridge: Object) -> Array:
@@ -15,7 +17,7 @@ static func prompt_text(bridge: Object) -> String:
 	return bridge._language_text("SELECT A PLAY STYLE", "SPIELART AUSWAEHLEN", "CHOISIR UN MODE", "SELECCIONA UN MODO", "SCEGLI UNA MODALITA")
 
 static func detail_text(bridge: Object) -> String:
-	return "%s TO SELECT   %s TO CONFIRM" % [bridge.get_navigation_label(), bridge.get_confirm_label()]
+	return MENU_INPUT_HELP.select_confirm(bridge)
 
 static func info_text(bridge: Object) -> String:
 	if bridge._title_menu_index == 0:

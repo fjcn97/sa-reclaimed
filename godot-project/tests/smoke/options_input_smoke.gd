@@ -57,17 +57,20 @@ func _run() -> void:
 	_check(bridge.is_language_screen(), "options opens language screen")
 	var language_before_edit: int = bridge._language_index
 	bridge.move_save_selection(1)
-	_check(bridge._language_index != language_before_edit, "language selection changes")
+	_check(bridge._pending_language_index != language_before_edit, "language preview selection changes")
+	_check(bridge._language_index == language_before_edit, "language preview leaves committed language unchanged")
 	bridge.cancel_save_selection()
 	_check(bridge.is_options_main_screen(), "B exits existing language edit")
-	_check(bridge._language_index == language_before_edit, "B restores language selection")
+	_check(bridge._language_index == language_before_edit and bridge._pending_language_index == language_before_edit, "B discards language preview")
 	bridge.open_options_screen()
 	for _step in range(3):
 		bridge.move_save_selection(1)
 	bridge.accept_save_selection()
 	bridge.move_save_selection(1)
+	var pending_language: int = bridge._pending_language_index
 	bridge.accept_save_selection()
 	_check(bridge.is_options_main_screen(), "A commits language edit")
+	_check(bridge._language_index == pending_language, "A commits the pending language preview")
 	bridge.open_options_screen()
 	bridge.accept_save_selection()
 	_check(bridge.is_player_data_screen(), "A wins over D-pad on options main")
@@ -108,6 +111,7 @@ func _run() -> void:
 	bridge.cancel_save_selection()
 	_check(bridge.is_options_main_screen() and bridge._options_menu_index == 5, "Sound Test back returns to its dynamic slot")
 	bridge._language_index = original_language
+	bridge._pending_language_index = original_language
 	bridge._language_index_before_edit = original_language
 	bridge.open_title_screen_and_skip_intro()
 	print("OPTIONS_INPUT_CHECKS=%d" % checks)

@@ -1,4 +1,4 @@
-extends ScreenBase
+extends SimpleListMenuScreen
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -65,13 +65,13 @@ func _ensure_chrome() -> void:
 	_header_plate = ensure_rect("SinglePlayerHeaderPlate", Rect2(150.0, 68.0, 980.0, 82.0), Color(1.0, 1.0, 1.0, 0.98))
 	_panel = ensure_rect("SinglePlayerPanel", Rect2(118.0, 170.0, 1044.0, 400.0), Color(0.98, 0.99, 1.0, 0.99))
 	_accent = ensure_rect("SinglePlayerAccent", Rect2(118.0, 150.0, 1044.0, 10.0), Color(0.18, 0.54, 0.94, 0.96))
-	_header_band = ensure_rect("SinglePlayerHeaderBand", Rect2(260.0, 212.0, 760.0, 330.0), Color(0.90, 0.95, 1.0, 0.98))
-	_menu_stage = ensure_rect("SinglePlayerMenuStage", Rect2(260.0, 212.0, 760.0, 330.0), Color(0.90, 0.95, 1.0, 0.98))
+	_header_band = ensure_rect("SinglePlayerHeaderBand", LIST_STAGE_RECT, Color(0.90, 0.95, 1.0, 0.98))
+	_menu_stage = ensure_rect("SinglePlayerMenuStage", LIST_STAGE_RECT, Color(0.90, 0.95, 1.0, 0.98))
 	_summary_stage = ensure_rect("SinglePlayerSummaryStage", Rect2(610.0, 214.0, 236.0, 258.0), Color(0.20, 0.54, 0.96, 0.94))
 	_badge_ring = ensure_rect("SinglePlayerBadgeRing", Rect2(890.0, 224.0, 224.0, 224.0), Color(0.22, 0.58, 0.98, 0.24))
 	_badge_core = ensure_rect("SinglePlayerBadgeCore", Rect2(952.0, 286.0, 100.0, 100.0), Color(1.0, 1.0, 1.0, 0.96))
 	_summary_card = ensure_rect("SinglePlayerSummary", Rect2(638.0, 236.0, 180.0, 214.0), Color(0.96, 0.98, 1.0, 0.98))
-	_prompt_band = ensure_rect("SinglePlayerPromptBand", Rect2(118.0, 580.0, 1044.0, 102.0), Color(0.96, 0.98, 1.0, 0.99))
+	_prompt_band = ensure_rect("SinglePlayerPromptBand", FOOTER_RECT, Color(0.96, 0.98, 1.0, 0.99))
 	_backdrop.z_index = -9
 	_hero_glow.z_index = -8
 	_header_plate.z_index = -7
@@ -90,9 +90,9 @@ func _ensure_menu_rows() -> void:
 		return
 	for i in range(4):
 		var top := 236.0 + float(i) * 48.0
-		var card := ensure_rect("SinglePlayerCard%d" % i, Rect2(280.0, top, 720.0, 42.0), Color(0.88, 0.93, 1.0, 1.0))
-		var title := ensure_label("SinglePlayerOption%d" % i, Vector2(306.0, top + 1.0), Vector2(276.0, 40.0), 20)
-		var meta := ensure_label("SinglePlayerMeta%d" % i, Vector2(608.0, top + 1.0), Vector2(366.0, 40.0), 14)
+		var card := ensure_rect("SinglePlayerCard%d" % i, Rect2(LIST_ROW_X, top, LIST_ROW_WIDTH, 42.0), Color(0.88, 0.93, 1.0, 1.0))
+		var title := ensure_label("SinglePlayerOption%d" % i, Vector2(LIST_LABEL_X, top + 1.0), Vector2(276.0, 40.0), 20)
+		var meta := ensure_label("SinglePlayerMeta%d" % i, Vector2(LIST_VALUE_X, top + 1.0), Vector2(LIST_VALUE_WIDTH, 40.0), 14)
 		var status := ensure_label("SinglePlayerStatus%d" % i, Vector2.ZERO, Vector2.ZERO, 1)
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -158,7 +158,7 @@ func _update_menu_rows() -> void:
 		var top := 236.0 + float(i) * 48.0
 		var lift := 0.0
 		_menu_cards[i].position.y = top + lift
-		_menu_cards[i].size = Vector2(720.0, 42.0)
+		_menu_cards[i].size = Vector2(LIST_ROW_WIDTH, 42.0)
 		_menu_labels[i].position.y = top + 1.0 + lift
 		_meta_labels[i].position.y = top + 1.0 + lift
 		_status_labels[i].visible = false

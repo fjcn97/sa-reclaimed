@@ -1,6 +1,8 @@
 class_name OptionsPresenter
 extends RefCounted
 
+const MENU_INPUT_HELP := preload("res://scripts/ui/MenuInputHelp.gd")
+
 ## Presentation data for the options and player-data screens.
 ## State changes remain owned by CoreBridge; these methods only format the
 ## current state for the screen views.
@@ -128,7 +130,7 @@ static func main_prompt(bridge: Object) -> String:
 	return bridge._language_text("SELECT AN OPTION", "OPTION WAEHLEN", "CHOISIR UNE OPTION", "ELIGE UNA OPCION", "SCEGLI UN'OPZIONE")
 
 static func main_detail(bridge: Object) -> String:
-	return "%s TO SELECT   %s TO CONFIRM   ESC TO GO BACK" % [bridge.get_navigation_label(), bridge.get_confirm_label()]
+	return MENU_INPUT_HELP.select_confirm(bridge)
 
 static func player_data_title(bridge: Object) -> String:
 	return bridge._language_text("PLAYER DATA", "SPIELERDATEN", "DONNEES JOUEUR", "DATOS DEL JUGADOR", "DATI GIOCATORE")
@@ -137,7 +139,7 @@ static func player_data_prompt(bridge: Object) -> String:
 	return bridge._language_text("SELECT PLAYER DATA", "SPIELERDATEN WAEHLEN", "CHOISIR LES DONNEES", "ELIGE DATOS", "SCEGLI DATI GIOCATORE")
 
 static func player_data_detail(bridge: Object) -> String:
-	return "%s TO SELECT   %s TO CONFIRM   ESC TO GO BACK" % [bridge.get_navigation_label(), bridge.get_confirm_label()]
+	return MENU_INPUT_HELP.select_confirm(bridge)
 
 static func player_data_header(bridge: Object) -> String:
 	return "%s  %s" % [bridge._language_text("PROFILE NAME", "PROFILNAME", "NOM DU PROFIL", "NOMBRE DEL PERFIL", "NOME PROFILO"), bridge.get_profile_name_text()]
@@ -202,7 +204,7 @@ static func delete_confirm_summary(bridge: Object) -> String:
 	return "%s\n%s" % [bridge._language_text("ERASE PROFILE", "PROFIL LOESCHEN", "EFFACER LE PROFIL", "BORRAR PERFIL", "CANCELLA PROFILO"), bridge.get_profile_name_text()]
 
 static func delete_confirm_detail(bridge: Object) -> String:
-	return "%s TO CHOOSE   %s TO CONFIRM   ESC TO GO BACK" % [bridge._language_text("UP/DOWN", "HOCH/RUNTER", "HAUT/BAS", "ARRIBA/ABAJO", "SU/GIU"), bridge.get_confirm_label()]
+	return MENU_INPUT_HELP.choose_confirm(bridge)
 
 static func delete_confirm_rows(bridge: Object) -> Array:
 	return [{"label": bridge._language_text("YES", "JA", "OUI", "SI", "SI"), "status": bridge._language_text("ERASE SAVE DATA", "SPEICHERDATEN LOESCHEN", "EFFACER LES DONNEES", "BORRAR DATOS", "CANCELLA DATI"), "selected": bridge._delete_confirm_index == 0}, {"label": bridge._language_text("NO", "NEIN", "NON", "NO", "NO"), "status": bridge._language_text("KEEP CURRENT DATA", "AKTUELLE DATEN BEHALTEN", "GARDER LES DONNEES", "CONSERVAR DATOS", "MANTIENI DATI"), "selected": bridge._delete_confirm_index == 1}]
@@ -222,7 +224,7 @@ static func language_prompt(bridge: Object) -> String:
 	return bridge._language_text("SELECT A LANGUAGE", "SPRACHE AUSWAEHLEN", "CHOISIR UNE LANGUE", "SELECCIONA UN IDIOMA", "SCEGLI UNA LINGUA")
 
 static func language_detail(bridge: Object) -> String:
-	return "%s %s   %s %s   ESC %s" % [bridge._language_text("UP/DOWN", "HOCH/RUNTER", "HAUT/BAS", "ARRIBA/ABAJO", "SU/GIU"), bridge._language_text("TO CHANGE", "ZUM AENDERN", "POUR CHANGER", "PARA CAMBIAR", "PER CAMBIARE"), bridge.get_confirm_label(), bridge._language_text("TO CONFIRM", "ZUM BESTAETIGEN", "POUR CONFIRMER", "PARA CONFIRMAR", "PER CONFERMARE"), bridge._language_text("TO GO BACK", "ZURUECK", "RETOUR", "PARA VOLVER", "PER TORNARE")]
+	return MENU_INPUT_HELP.language_preview(bridge)
 
 static func language_chrome_colors(_bridge: Object) -> Dictionary:
 	return {"accent": Color(0.24, 0.80, 0.96, 1.0), "card": Color(0.86, 0.94, 1.0, 0.98)}

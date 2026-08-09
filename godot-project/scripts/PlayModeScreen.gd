@@ -1,4 +1,4 @@
-extends ScreenBase
+extends SimpleListMenuScreen
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -67,17 +67,17 @@ func _ensure_chrome() -> void:
 	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.98, 0.99, 1.0, 1.0))
 	_hero_glow = ensure_rect("PlayModeHeroGlow", Rect2(104.0, 96.0, 1072.0, 504.0), Color(0.24, 0.54, 0.96, 0.10))
 	_header_plate = ensure_rect("PlayModeHeaderPlate", Rect2(150.0, 68.0, 980.0, 82.0), Color(1.0, 1.0, 1.0, 0.98))
-	_header_band = ensure_rect("PlayModeHeaderBand", Rect2(260.0, 212.0, 760.0, 330.0), Color(0.90, 0.95, 1.0, 0.98))
+	_header_band = ensure_rect("PlayModeHeaderBand", LIST_STAGE_RECT, Color(0.90, 0.95, 1.0, 0.98))
 	_panel = ensure_rect("PlayModePanel", Rect2(118.0, 170.0, 1044.0, 400.0), Color(0.98, 0.99, 1.0, 0.99))
 	_accent = ensure_rect("PlayModeAccent", Rect2(118.0, 150.0, 1044.0, 10.0), Color(0.18, 0.54, 0.94, 0.96))
 	_header_glow = ensure_rect("PlayModeHeaderGlow", Rect2(150.0, 62.0, 980.0, 6.0), Color(0.16, 0.26, 0.46, 0.16))
-	_left_stage = ensure_rect("PlayModeLeftStage", Rect2(260.0, 212.0, 760.0, 330.0), Color(0.90, 0.95, 1.0, 0.98))
+	_left_stage = ensure_rect("PlayModeLeftStage", LIST_STAGE_RECT, Color(0.90, 0.95, 1.0, 0.98))
 	_right_stage = ensure_rect("PlayModeRightStage", Rect2(610.0, 214.0, 236.0, 258.0), Color(0.20, 0.54, 0.96, 0.94))
-	_option_stage = ensure_rect("PlayModeOptionStage", Rect2(260.0, 212.0, 760.0, 330.0), Color(0.94, 0.97, 1.0, 0.99))
+	_option_stage = ensure_rect("PlayModeOptionStage", LIST_STAGE_RECT, Color(0.94, 0.97, 1.0, 0.99))
 	_badge_ring = ensure_rect("PlayModeBadgeRing", Rect2(890.0, 224.0, 224.0, 224.0), Color(0.24, 0.54, 0.96, 0.24))
 	_badge = ensure_rect("PlayModeBadge", Rect2(952.0, 286.0, 100.0, 100.0), Color(1.0, 1.0, 1.0, 0.96))
 	_summary_card = ensure_rect("PlayModeSummaryCard", Rect2(638.0, 236.0, 180.0, 214.0), Color(0.96, 0.98, 1.0, 0.98))
-	_prompt_band = ensure_rect("PlayModePromptBand", Rect2(118.0, 580.0, 1044.0, 102.0), Color(0.96, 0.98, 1.0, 0.99))
+	_prompt_band = ensure_rect("PlayModePromptBand", FOOTER_RECT, Color(0.96, 0.98, 1.0, 0.99))
 	_badge_label = ensure_label("PlayModeBadgeLabel", Vector2(902.0, 316.0), Vector2(200.0, 34.0), 24)
 	_badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_summary_label = ensure_label("PlayModeSummaryLabel", Vector2(280.0, 414.0), Vector2(720.0, 104.0), 17)
@@ -103,9 +103,9 @@ func _ensure_option_rows() -> void:
 		return
 	for i in range(2):
 		var top := 250.0 + float(i) * 58.0
-		var card := ensure_rect("PlayModeCard%d" % i, Rect2(280.0, top, 720.0, 52.0), Color(0.88, 0.93, 1.0, 1.0))
-		var option := ensure_label("PlayModeOption%d" % i, Vector2(306.0, top + 2.0), Vector2(276.0, 48.0), 22)
-		var meta := ensure_label("PlayModeMeta%d" % i, Vector2(608.0, top + 2.0), Vector2(366.0, 48.0), 14)
+		var card := ensure_rect("PlayModeCard%d" % i, Rect2(LIST_ROW_X, top, LIST_ROW_WIDTH, 52.0), Color(0.88, 0.93, 1.0, 1.0))
+		var option := ensure_label("PlayModeOption%d" % i, Vector2(LIST_LABEL_X, top + 2.0), Vector2(276.0, 48.0), 22)
+		var meta := ensure_label("PlayModeMeta%d" % i, Vector2(LIST_VALUE_X, top + 2.0), Vector2(LIST_VALUE_WIDTH, 48.0), 14)
 		var status := ensure_label("PlayModeStatus%d" % i, Vector2.ZERO, Vector2.ZERO, 1)
 		option.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -130,10 +130,10 @@ func _update_option_rows() -> void:
 		var available := bool(row.get("available", true))
 		var top := 250.0 + float(i) * 58.0
 		var lift := 0.0
-		_option_cards[i].position = Vector2(280.0, top + lift)
-		_option_cards[i].size = Vector2(720.0, 52.0)
-		_option_labels[i].position = Vector2(306.0, top + 2.0 + lift)
-		_meta_labels[i].position = Vector2(608.0, top + 2.0 + lift)
+		_option_cards[i].position = Vector2(LIST_ROW_X, top + lift)
+		_option_cards[i].size = Vector2(LIST_ROW_WIDTH, 52.0)
+		_option_labels[i].position = Vector2(LIST_LABEL_X, top + 2.0 + lift)
+		_meta_labels[i].position = Vector2(LIST_VALUE_X, top + 2.0 + lift)
 		_status_labels[i].visible = false
 		_option_cards[i].color = _get_card_color(available, selected)
 		_option_labels[i].text = str(row.get("name", ""))
