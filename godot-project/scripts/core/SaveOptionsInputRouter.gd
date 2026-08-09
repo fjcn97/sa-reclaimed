@@ -2,6 +2,8 @@ class_name SaveOptionsInputRouter
 extends RefCounted
 
 const NAVIGATION := preload("res://scripts/core/SaveOptionsNavigation.gd")
+const MENU_COMMAND := preload("res://scripts/core/MenuCommand.gd")
+const COMMAND_POLICY := preload("res://scripts/core/SaveOptionsCommandPolicy.gd")
 
 ## Routes only the save/options front end. The generic router delegates here
 ## before considering unrelated title or gameplay states.
@@ -9,6 +11,9 @@ const NAVIGATION := preload("res://scripts/core/SaveOptionsNavigation.gd")
 static func handle(bridge: Object, frame_input: int) -> bool:
 	if not bridge.is_save_options():
 		return false
+	var command := _single_command(bridge, frame_input)
+	if not command.is_empty():
+		return COMMAND_POLICY.execute(bridge, command)
 	if bridge.handle_save_shoulder_input(frame_input):
 		return true
 	if bridge.is_save_main_menu_screen():
@@ -88,3 +93,10 @@ static func handle(bridge: Object, frame_input: int) -> bool:
 		if not bridge.trigger_save_secondary_action():
 			bridge.cancel_save_selection()
 	return true
+
+static func _single_command(bridge: Object, frame_input: int) -> String:
+	var input_mask := bridge.DPAD_UP | bridge.DPAD_DOWN | bridge.DPAD_LEFT | bridge.DPAD_RIGHT | bridge.A_BUTTON | bridge.B_BUTTON | bridge.START_BUTTON | bridge.SELECT_BUTTON | bridge.L_BUTTON | bridge.R_BUTTON
+	var active := frame_input & input_mask
+	if active == 0 or active & (active - 1):
+		return MENU_COMMAND.NONE
+	return MENU_COMMAND.from_input_bit(active, bridge)
