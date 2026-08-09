@@ -1,108 +1,81 @@
-# Windows image file caches
-Thumbs.db
-ehthumbs.db
-
-# Visual Studio folder
-.vs
-*.pdb
-
-# Folder config file
-Desktop.ini
-
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
-
-# Windows Installer files
-*.cab
-*.msi
-*.msm
-*.msp
-
-# Windows shortcuts
-*.lnk
-
-# =========================
-# Operating System Files
-# =========================
-
-# OSX
-# =========================
-
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Thumbnails
+# Operating-system and desktop metadata
 ._*
-
-# Files that might appear in the root of a volume
+.apdisk
+.AppleDB
+.AppleDesktop
+.AppleDouble
 .DocumentRevisions-V100
+.DS_Store
 .fseventsd
+.LSOverride
 .Spotlight-V100
 .TemporaryItems
 .Trashes
 .VolumeIcon.icns
-
-# Directories potentially created on remote AFP share
-.AppleDB
-.AppleDesktop
 Network Trash Folder
 Temporary Items
-.apdisk
 
-# =========================
-# Build Outputs
-# =========================
-
-*.gba
-*.sav
-*.elf
-*.map
-*.bin
-
-*.a
-
-*.hex
-*.o
-*.dump
-build
-tools/agbcc
-# **/sound/*/songs/midi/*.s
-**/songs/midi/*.s
-**/ctx.c
-**/ctx.h
-reports
+# Windows metadata and editor files
+.vs/
 .vscode/*.log
-*.gbapal
-*.lz
-*.rl
-*.gba
-./maps
+*.cab
+*.lnk
+*.msi
+*.msm
+*.msp
+*.pdb
+$RECYCLE.BIN/
+Desktop.ini
+ehthumbs.db
+Thumbs.db
+
+# Build outputs and generated binaries
 *.4bpp
 *.8bpp
+*.a
+*.bin
+*.dll
+*.dump
+*.elf
+*.exe
+*.gba
+*.gbapal
+*.hex
+*.iso
+*.lz
+*.map
+*.o
+*.rl
+*.sav
+*.sdl
+build/
+reports/
+
+# Generated source and asset data
+!data/*/maps/*/*/tilemaps/*/*.bin
+**/ctx.c
+**/ctx.h
+**/songs/midi/*.s
+/maps/
 libagbsyscall/*.s
 
-!data/*/maps/*/*/tilemaps/*/*.bin
-*.exe
-*.dll
-*.sdl
-*.iso
+# Project dependencies and tool outputs
+/ext/
+/tools/agbcc/
 
 # PSP build outputs
 EBOOT.PBP
 PARAM.SFO
-sa2_debug.log
 
-# third party deps
-/ext
+# Logs and generated metadata
+*.gd.uid
+*.log
 
-# Godot-generated caches and local application data
-.godot/
+# Godot local data and smoke-test logs
 .godot-appdata/
 .godot-local/
+.godot/
 .tmp_appdata/
 .tmp_localappdata/
-*.gd.uid
-
-# Log files
-*.log
+godot-project/Godot/app_userdata/
+godot-project/tests/.logs/
