@@ -101,6 +101,17 @@ func _handle_key_event(event: InputEventKey) -> void:
 		var typed_character := _get_name_entry_typed_character(event)
 		if not typed_character.is_empty() and CoreBridge.enter_name_entry_character(typed_character):
 			return
+	# Character select's confirm/back actions are immediate desktop commands.
+	# Handling them here avoids a buffered frame being lost while the carousel
+	# entrance animation or another Control is processing the same key event.
+	if CoreBridge.is_character_select() and event.pressed and not event.echo:
+		var keycode := event.keycode if event.keycode != KEY_NONE else event.physical_keycode
+		if keycode == KEY_ESCAPE and not CoreBridge.is_multiplayer_character_select_screen():
+			CoreBridge.cancel_character_selection()
+			return
+		if keycode == KEY_ENTER or keycode == KEY_KP_ENTER:
+			CoreBridge.confirm_character_selection()
+			return
 	var bit := INPUT_DEVICE_SAMPLER.key_event_bit(event)
 	if bit == 0:
 		return

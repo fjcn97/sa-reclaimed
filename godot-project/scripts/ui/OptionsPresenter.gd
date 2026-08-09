@@ -157,7 +157,7 @@ static func difficulty_title(bridge: Object) -> String:
 	return bridge._language_text("DIFFICULTY", "SCHWIERIGKEIT", "DIFFICULTE", "DIFICULTAD", "DIFFICOLTA")
 
 static func difficulty_prompt(bridge: Object) -> String:
-	return bridge._language_text("LEFT/RIGHT CHANGE, ENTER CONFIRM, X BACK", "LINKS/RECHTS AENDERN, ENTER BESTAETIGEN, X ZURUECK", "GAUCHE/DROITE CHANGER, ENTREE VALIDER, X RETOUR", "IZQ/DER CAMBIAR, ENTER CONFIRMAR, X ATRAS", "SINISTRA/DESTRA CAMBIA, INVIO CONFERMA, X INDIETRO")
+	return MENU_INPUT_HELP.horizontal_switch(bridge)
 
 static func difficulty_summary(bridge: Object) -> String:
 	return "%s\n%s\n\n%s\n%s" % [bridge._language_text("PROFILE", "PROFIL", "PROFIL", "PERFIL", "PROFILO"), bridge.get_profile_name_text(), bridge._language_text("CURRENT", "AKTUELL", "ACTUEL", "ACTUAL", "ATTUALE"), bridge.get_difficulty_text()]
@@ -194,9 +194,7 @@ static func delete_confirm_title(bridge: Object) -> String:
 	return bridge._language_text("DELETE GAME DATA", "SPIELDATEN LOESCHEN", "SUPPRIMER DONNEES", "BORRAR DATOS", "CANCELLA DATI")
 
 static func delete_confirm_prompt(bridge: Object) -> String:
-	if bridge._options_mode == bridge.OPTIONS_MODE_DELETE_CONFIRM_FINAL:
-		return bridge._language_text("LEFT/RIGHT CHOOSE, ENTER ERASE, X BACK", "LINKS/RECHTS WAEHLEN, ENTER LOESCHEN, X ZURUECK", "GAUCHE/DROITE CHOISIR, ENTREE EFFACER, X RETOUR", "IZQ/DER ELEGIR, ENTER BORRAR, X ATRAS", "SINISTRA/DESTRA SCEGLI, INVIO CANCELLA, X INDIETRO")
-	return bridge._language_text("LEFT/RIGHT CHOOSE, ENTER CONTINUE, X BACK", "LINKS/RECHTS WAEHLEN, ENTER FORTFAHREN, X ZURUECK", "GAUCHE/DROITE CHOISIR, ENTREE CONTINUER, X RETOUR", "IZQ/DER CHOISIR, ENTER CONTINUER, X RETOUR", "SINISTRA/DESTRA SCEGLI, INVIO CONTINUA, X INDIETRO")
+	return MENU_INPUT_HELP.choose_confirm(bridge)
 
 static func delete_confirm_summary(bridge: Object) -> String:
 	if bridge._options_mode == bridge.OPTIONS_MODE_DELETE_CONFIRM_FINAL:
@@ -236,7 +234,7 @@ static func button_config_title(bridge: Object) -> String:
 	return bridge._language_text("BUTTON CONFIG", "TASTENBELEGUNG", "CONFIG BOUTONS", "CONFIG BOTONES", "CONFIG TASTI")
 
 static func button_config_prompt(bridge: Object) -> String:
-	return bridge._language_text("LEFT/RIGHT SWITCH, ENTER ACCEPT, X BACK", "LINKS/RECHTS WECHSELN, ENTER ANNEHMEN, X ZURUECK", "GAUCHE/DROITE CHANGER, ENTREE ACCEPTER, X RETOUR", "IZQ/DER CAMBIAR, ENTER ACEPTAR, X ATRAS", "SINISTRA/DESTRA CAMBIA, INVIO ACCETTA, X INDIETRO")
+	return MENU_INPUT_HELP.horizontal_switch(bridge)
 
 static func button_config_detail(bridge: Object) -> String:
 	return "%s %s   %s   %s = %s   %s = %s" % [bridge._language_text("LAYOUT", "LAYOUT", "CONFIGURATION", "CONFIGURACION", "LAYOUT"), bridge.get_button_config_focus_label(), bridge._language_text("LEFT/RIGHT = SWITCH", "LINKS/RECHTS = WECHSELN", "GAUCHE/DROITE = CHANGER", "IZQ/DER = CAMBIAR", "SINISTRA/DESTRA = CAMBIA"), bridge.get_confirm_label(), bridge._language_text("ACCEPT", "ANNEHMEN", "ACCEPTER", "ACEPTAR", "ACCETTA"), bridge.get_secondary_label(), bridge._language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")]

@@ -14,6 +14,18 @@ func _run() -> void:
 	_check(controller._keycode_to_bit(KEY_ESCAPE) == CoreBridge.B_BUTTON, "Escape backs out of menus")
 	_check(controller._keycode_to_bit(KEY_Z) == CoreBridge.A_BUTTON, "Z remains A")
 	_check(controller._keycode_to_bit(KEY_X) == CoreBridge.B_BUTTON, "X remains B")
+	CoreBridge.open_character_select(CoreBridge.CHARACTER_SELECT_CONTEXT_GAME_START)
+	var character_back := InputEventKey.new()
+	character_back.keycode = KEY_ESCAPE
+	character_back.pressed = true
+	controller._handle_key_event(character_back)
+	_check(not CoreBridge.is_character_select(), "Escape immediately backs out of character select")
+	CoreBridge.open_character_select(CoreBridge.CHARACTER_SELECT_CONTEXT_GAME_START)
+	var character_confirm := InputEventKey.new()
+	character_confirm.keycode = KEY_ENTER
+	character_confirm.pressed = true
+	controller._handle_key_event(character_confirm)
+	_check(not CoreBridge.is_character_select(), "Enter immediately confirms character select")
 	var stick := InputEventJoypadMotion.new()
 	stick.axis = JOY_AXIS_LEFT_X
 	stick.axis_value = -0.8

@@ -1,6 +1,8 @@
 class_name CharacterSelectPresenter
 extends RefCounted
 
+const MENU_INPUT_HELP := preload("res://scripts/ui/MenuInputHelp.gd")
+
 ## Presentation model for the character carousel.
 
 static func selected_name(bridge: Object) -> String:
@@ -75,10 +77,10 @@ static func prompt_text(bridge: Object) -> String:
 			return bridge._language_text("SELECT A BOSS CHALLENGER", "WAHLE EINEN BOSS-HELDEN", "CHOISISSEZ UN DEFI BOSS", "ELIGE UN RETADOR", "SCEGLI UNO SFIDANTE BOSS")
 		bridge.CHARACTER_SELECT_CONTEXT_MULTIPLAYER:
 			return bridge._language_text("SELECT A REMATCH RUNNER", "WAHLE EINEN RUCKKAMPF-LAUFER", "CHOISISSEZ UN COUREUR POUR LA REVANCHE", "ELIGE UN CORREDOR PARA LA REVANCHA", "SCEGLI UN CORRIDORE PER LA RIVINCITA")
-	return bridge._language_text("SELECT YOUR CHARACTER", "WAHLE DEINEN CHARAKTER", "CHOISISSEZ VOTRE PERSONNAGE", "ELIGE TU PERSONAJE", "SCEGLI IL PERSONAGGIO")
+	return ""
 
 static func detail_text(bridge: Object) -> String:
-	var action_text: String = "%s = %s   %s = %s" % [bridge.get_confirm_label(), bridge._language_text("CONFIRM", "BESTATIGEN", "VALIDER", "CONFIRMAR", "CONFERMA"), bridge.get_secondary_label(), bridge._language_text("BACK", "ZURUCK", "RETOUR", "ATRAS", "INDIETRO")]
+	var action_text := MENU_INPUT_HELP.confirm_back(bridge)
 	var description_text: String = description(bridge, bridge._selected_character_index)
 	match bridge._character_select_context:
 		bridge.CHARACTER_SELECT_CONTEXT_TIME_ATTACK_ZONE:

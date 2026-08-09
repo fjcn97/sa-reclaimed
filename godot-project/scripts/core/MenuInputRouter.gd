@@ -1,6 +1,8 @@
 extends RefCounted
 class_name MenuInputRouter
 
+const SAVE_OPTIONS_INPUT_ROUTER := preload("res://scripts/core/SaveOptionsInputRouter.gd")
+
 func handle(frame_input: int) -> void:
 	if CoreBridge.is_tiny_chao_garden_play_screen():
 		# Garden input is consumed by advance_ui_timers before generic menu input.
@@ -143,119 +145,19 @@ func handle(frame_input: int) -> void:
 			CoreBridge.open_save_options_from_title()
 		return
 
-	if CoreBridge.is_save_options():
-		if CoreBridge.handle_save_shoulder_input(frame_input):
-			return
-		# Options' top-level screen checks confirm/back before directional input.
-		if CoreBridge.is_save_main_menu_screen():
-			if frame_input & CoreBridge.A_BUTTON:
-				CoreBridge.accept_save_selection()
-				return
-			if frame_input & CoreBridge.B_BUTTON:
-				if not CoreBridge.trigger_save_secondary_action():
-					CoreBridge.cancel_save_selection()
-				return
-		# These source tasks consume the first matching D-pad direction even
-		# when the cursor wraps or stays on the same active name slot.
-		if CoreBridge.is_name_entry_screen():
-			if frame_input & CoreBridge.DPAD_UP:
-				CoreBridge.move_save_selection(-1)
-				return
-			elif frame_input & CoreBridge.DPAD_DOWN:
-				CoreBridge.move_save_selection(1)
-				return
-			elif frame_input & CoreBridge.DPAD_LEFT:
-				CoreBridge.adjust_save_selection(-1)
-				return
-			elif frame_input & CoreBridge.DPAD_RIGHT:
-				CoreBridge.adjust_save_selection(1)
-				return
-		if CoreBridge.is_player_data_screen():
-			if frame_input & CoreBridge.DPAD_UP:
-				CoreBridge.move_save_selection(-1)
-				return
-			elif frame_input & CoreBridge.DPAD_DOWN:
-				CoreBridge.move_save_selection(1)
-				return
-		if CoreBridge.is_language_screen():
-			if frame_input & CoreBridge.DPAD_DOWN:
-				CoreBridge.move_save_selection(1)
-				return
-			elif frame_input & CoreBridge.DPAD_UP:
-				CoreBridge.move_save_selection(-1)
-				return
-		# Task_OptionsScreenMain checks A/B before its D-pad branches. Keep
-		# simultaneous confirm-and-direction input on the current item.
-		if CoreBridge.is_options_main_screen():
-			if frame_input & CoreBridge.A_BUTTON:
-				CoreBridge.accept_save_selection()
-				return
-			if frame_input & CoreBridge.B_BUTTON:
-				CoreBridge.cancel_save_selection()
-				return
-		# sound_test.c evaluates all four directions independently, then A and
-		# B independently. Preserve that order for simultaneous input frames.
-		if CoreBridge.is_sound_test_screen():
-			if frame_input & CoreBridge.DPAD_LEFT:
-				CoreBridge.adjust_save_selection(-1)
-			if frame_input & CoreBridge.DPAD_RIGHT:
-				CoreBridge.adjust_save_selection(1)
-			if frame_input & CoreBridge.DPAD_UP:
-				CoreBridge.move_save_selection(-1)
-			if frame_input & CoreBridge.DPAD_DOWN:
-				CoreBridge.move_save_selection(1)
-			if frame_input & CoreBridge.A_BUTTON:
-				CoreBridge.accept_save_selection()
-			if frame_input & CoreBridge.B_BUTTON:
-				CoreBridge.cancel_save_selection()
-			return
-		# options_screen.c uses Down-first on its main menu and language
-		# screen, but Up-first on Player Data and profile name entry.
-		var save_vertical_up_first := CoreBridge.is_player_data_screen() or CoreBridge.is_name_entry_screen() or CoreBridge.is_multiplayer_records_screen() or CoreBridge.is_time_records_courses_view()
-		if save_vertical_up_first and frame_input & CoreBridge.DPAD_UP:
-			CoreBridge.move_save_selection(-1)
-			return
-		if not save_vertical_up_first and frame_input & CoreBridge.DPAD_DOWN:
-			CoreBridge.move_save_selection(1)
-			return
-		if save_vertical_up_first and frame_input & CoreBridge.DPAD_DOWN:
-			CoreBridge.move_save_selection(1)
-			return
-		if not save_vertical_up_first and frame_input & CoreBridge.DPAD_UP:
-			CoreBridge.move_save_selection(-1)
-			return
-		if frame_input & CoreBridge.DPAD_LEFT:
-			CoreBridge.adjust_save_selection(-1)
-		elif frame_input & CoreBridge.DPAD_RIGHT:
-			CoreBridge.adjust_save_selection(1)
-		if CoreBridge.save_direction_consumes_action(frame_input):
-			return
-		# Converted options tasks handle A before all later actions and return,
-		# so simultaneous A+START/B/Select cannot commit twice.
-		if frame_input & CoreBridge.A_BUTTON:
-			CoreBridge.accept_save_selection()
-			return
-		if frame_input & CoreBridge.START_BUTTON:
-			var start_handled := CoreBridge.trigger_save_start_action()
-			# options_screen.c accepts A or START on the language screen,
-			# including edits to an existing profile.
-			var start_can_confirm := CoreBridge.is_name_entry_screen() or CoreBridge.is_language_screen()
-			if not start_handled and start_can_confirm:
-				CoreBridge.accept_save_selection()
-		if frame_input & CoreBridge.SELECT_BUTTON:
-			# options_screen.c handles Select only in Button Config; all
-			# other submenu tasks ignore it.
-			if CoreBridge.is_button_config_screen():
-				CoreBridge.trigger_save_special_action()
-		if frame_input & CoreBridge.B_BUTTON:
-			if not CoreBridge.trigger_save_secondary_action():
-				CoreBridge.cancel_save_selection()
+	if SAVE_OPTIONS_INPUT_ROUTER.handle(CoreBridge, frame_input):
 		return
 
 	if CoreBridge.is_character_select():
 		if not CoreBridge.is_character_select_input_ready():
-			if frame_input & CoreBridge.A_BUTTON and not CoreBridge.is_multiplayer_character_select_screen():
-				CoreBridge.skip_character_select_intro()
+			# The displayed desktop guidance is actionable immediately. Do not
+			# consume Enter merely to skip the carousel animation: it must confirm
+			# the selected character, while Esc returns to the previous screen.
+			if frame_input & CoreBridge.B_BUTTON and not CoreBridge.is_multiplayer_character_select_screen():
+				CoreBridge.cancel_character_selection()
+				return
+			if frame_input & CoreBridge.A_BUTTON:
+				CoreBridge.confirm_character_selection()
 			return
 		var character_direction := 0
 		if frame_input & CoreBridge.DPAD_LEFT or frame_input & CoreBridge.DPAD_UP:

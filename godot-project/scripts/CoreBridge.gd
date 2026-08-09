@@ -123,6 +123,8 @@ const PLAYER_VISUAL_PRESENTER := preload("res://scripts/ui/PlayerVisualPresenter
 const TIME_ATTACK_LOBBY_PRESENTER := preload("res://scripts/ui/TimeAttackLobbyPresenter.gd")
 const OPTIONS_PRESENTER := preload("res://scripts/ui/OptionsPresenter.gd")
 const OPTIONS_SETTINGS_SYSTEM := preload("res://scripts/core/OptionsSettingsSystem.gd")
+const SAVE_OPTIONS_NAVIGATION := preload("res://scripts/core/SaveOptionsNavigation.gd")
+const MENU_INPUT_HELP := preload("res://scripts/ui/MenuInputHelp.gd")
 const TIME_ATTACK_RESULTS_PRESENTER := preload("res://scripts/ui/TimeAttackResultsPresenter.gd")
 const GAME_OVER_PRESENTER := preload("res://scripts/ui/GameOverPresenter.gd")
 const SPECIAL_STAGE_PRESENTER := preload("res://scripts/ui/SpecialStagePresenter.gd")
@@ -5108,100 +5110,16 @@ func _start_multiplayer_mode(pak_mode: int) -> void:
 	open_multiplayer_comm_screen(_multiplayer_pak_mode, 0)
 
 func move_save_selection(direction: int) -> void:
-	if _game_state != GAME_STATE_SAVE_OPTIONS:
-		return
-	var items: Array = get_options_active_items()
-	if items.is_empty():
-		return
-	match _options_mode:
-		OPTIONS_MODE_MAIN:
-			_options_menu_index = wrapi(_options_menu_index + direction, 0, items.size())
-		OPTIONS_MODE_PLAYER_DATA:
-			_player_data_menu_index = wrapi(_player_data_menu_index + direction, 0, items.size())
-		OPTIONS_MODE_LANGUAGE:
-			OPTIONS_SETTINGS_SYSTEM.move_language_preview(self, direction)
-		OPTIONS_MODE_BUTTON_CONFIG:
-			return
-		OPTIONS_MODE_SOUND_TEST:
-			_move_sound_test_vertical(direction)
-			if _sound_test_state == SOUND_TEST_STATE_STOPPED:
-				_status_text = get_sound_test_status_text()
-		OPTIONS_MODE_DIFFICULTY:
-			# The original switch menu only reacts to Left/Right.
-			return
-		OPTIONS_MODE_TIME_LIMIT:
-			# The original switch menu only reacts to Left/Right.
-			return
-		OPTIONS_MODE_MULTI_RECORDS:
-			var next_index := clampi(_multi_records_menu_index + direction, 0, get_multiplayer_records_scroll_max())
-			if next_index != _multi_records_menu_index:
-				_multi_records_menu_index = next_index
-				_status_text = "VERSUS RECORDS"
-		OPTIONS_MODE_DELETE_CONFIRM, OPTIONS_MODE_DELETE_CONFIRM_FINAL:
-			_delete_confirm_index = wrapi(_delete_confirm_index + direction, 0, 2)
-		OPTIONS_MODE_TIME_RECORDS:
-			if _time_records_context == TIME_RECORDS_CONTEXT_OPTIONS and _time_records_view == TIME_RECORDS_VIEW_COURSES:
-				_time_records_character_index = wrapi(_time_records_character_index + direction, 0, get_time_records_character_rows().size())
-		OPTIONS_MODE_NAME_ENTRY:
-			_move_name_entry_cursor_vertical(direction)
+	SAVE_OPTIONS_NAVIGATION.move_vertical(self, direction)
 
 func is_save_main_menu_screen() -> bool:
 	return _game_state == GAME_STATE_SAVE_OPTIONS and _options_mode == OPTIONS_MODE_MAIN
 
 func save_direction_consumes_action(frame_input: int) -> bool:
-	if _game_state != GAME_STATE_SAVE_OPTIONS:
-		return false
-	var vertical := bool(frame_input & (DPAD_UP | DPAD_DOWN))
-	var horizontal := bool(frame_input & (DPAD_LEFT | DPAD_RIGHT))
-	if _options_mode == OPTIONS_MODE_SOUND_TEST:
-		# sound_test.c handles the pad first, then still reads A/B in that frame.
-		return false
-	match _options_mode:
-		OPTIONS_MODE_PLAYER_DATA, OPTIONS_MODE_LANGUAGE, OPTIONS_MODE_NAME_ENTRY:
-			return vertical
-		OPTIONS_MODE_BUTTON_CONFIG, OPTIONS_MODE_DIFFICULTY, OPTIONS_MODE_TIME_LIMIT:
-			return horizontal
-		OPTIONS_MODE_DELETE_CONFIRM, OPTIONS_MODE_DELETE_CONFIRM_FINAL:
-			return vertical
-		OPTIONS_MODE_TIME_RECORDS:
-			# The mode-choice task only returns after Left/Right. Up/Down
-			# does not block A/B on that frame, unlike the courses view.
-			if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-				return horizontal
-			return vertical or horizontal
-	return false
+	return SAVE_OPTIONS_NAVIGATION.direction_consumes_action(self, frame_input)
 
 func adjust_save_selection(direction: int) -> void:
-	if _game_state != GAME_STATE_SAVE_OPTIONS:
-		return
-	match _options_mode:
-		OPTIONS_MODE_MAIN:
-			# The original top-level screen only moves its cursor vertically.
-			# Settings change inside their dedicated submenus after confirmation.
-			return
-		OPTIONS_MODE_LANGUAGE:
-			# The original language screen only moves on the vertical pad.
-			return
-		OPTIONS_MODE_BUTTON_CONFIG:
-			_cycle_button_config_binding(direction)
-		OPTIONS_MODE_SOUND_TEST:
-			_sound_test_track_index = wrapi(_sound_test_track_index + direction, 0, get_sound_test_track_count())
-			if _sound_test_state == SOUND_TEST_STATE_STOPPED:
-				_status_text = get_sound_test_status_text()
-		OPTIONS_MODE_DIFFICULTY:
-			_difficulty_index = wrapi(_difficulty_index + direction, 0, 3)
-		OPTIONS_MODE_TIME_LIMIT:
-			# The original submenu treats either shoulder direction as a switch.
-			_time_limit_enabled = not _time_limit_enabled
-		OPTIONS_MODE_DELETE_CONFIRM, OPTIONS_MODE_DELETE_CONFIRM_FINAL:
-			return
-		OPTIONS_MODE_TIME_RECORDS:
-			if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-				_time_records_boss_mode = direction > 0
-				return
-			_advance_time_records_course(direction)
-		OPTIONS_MODE_NAME_ENTRY:
-			_move_name_entry_cursor_horizontal(direction)
+	SAVE_OPTIONS_NAVIGATION.adjust_horizontal(self, direction)
 
 func accept_save_selection() -> void:
 	if _game_state != GAME_STATE_SAVE_OPTIONS:
@@ -7015,10 +6933,10 @@ func get_time_records_title_text() -> String:
 
 func get_time_records_prompt_text() -> String:
 	if _time_records_context == TIME_RECORDS_CONTEXT_TIME_ATTACK:
-		return _language_text("LEFT/RIGHT COURSE, ENTER START, X BACK", "LINKS/RECHTS KURS, ENTER START, X ZURUECK", "GAUCHE/DROITE PARCOURS, ENTREE DEMARRER, X RETOUR", "IZQ/DER FASE, ENTER INICIAR, X ATRAS", "SINISTRA/DESTRA CORSO, INVIO AVVIA, X INDIETRO")
+		return MENU_INPUT_HELP.records_course_start(self)
 	if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-		return _language_text("LEFT/RIGHT MODE, ENTER OPEN, X BACK", "LINKS/RECHTS MODUS, ENTER OEFFNEN, X ZURUECK", "GAUCHE/DROITE MODE, ENTREE OUVRIR, X RETOUR", "IZQ/DER MODO, ENTER ABRIR, X ATRAS", "SINISTRA/DESTRA MODALITA, INVIO APRI, X INDIETRO")
-	return _language_text("UP/DOWN CHARACTER, LEFT/RIGHT COURSE, X BACK", "HOCH/RUNTER CHARAKTER, LINKS/RECHTS KURS, X ZURUECK", "HAUT/BAS PERSONNAGE, GAUCHE/DROITE PARCOURS, X RETOUR", "ARRIBA/ABAJO PERSONAJE, IZQ/DER FASE, X ATRAS", "SU/GIU PERSONAGGIO, SINISTRA/DESTRA CORSO, X INDIETRO")
+		return MENU_INPUT_HELP.records_mode_open(self)
+	return MENU_INPUT_HELP.records_character_course(self)
 
 func get_time_records_detail_text() -> String:
 	if _time_records_context == TIME_RECORDS_CONTEXT_TIME_ATTACK:
@@ -7087,7 +7005,7 @@ func get_multiplayer_records_title_text() -> String:
 	return _language_text("VS RECORDS", "VS-REKORDE", "RECORDS VS", "RECORDS VS", "RECORD VS")
 
 func get_multiplayer_records_prompt_text() -> String:
-	return _language_text("UP/DOWN SCROLL TABLE, X BACK", "HOCH/RUNTER TABELLE, X ZURUECK", "HAUT/BAS DEFILER, X RETOUR", "ARRIBA/ABAJO TABLA, X ATRAS", "SU/GIU SCORRI TABELLA, X INDIETRO")
+	return MENU_INPUT_HELP.scroll_back(self)
 
 func get_multiplayer_records_detail_text() -> String:
 	return "%s   %s = %s" % [_language_text("UP/DOWN = SCROLL TABLE", "HOCH/RUNTER = TABELLE", "HAUT/BAS = DEFILER", "ARRIBA/ABAJO = TABLA", "SU/GIU = SCORRI TABELLA"), get_secondary_label(), _language_text("BACK", "ZURUECK", "RETOUR", "ATRAS", "INDIETRO")]

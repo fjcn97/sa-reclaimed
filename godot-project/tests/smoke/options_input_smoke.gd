@@ -1,5 +1,7 @@
 extends SceneTree
 
+const SAVE_OPTIONS_INPUT_ROUTER := preload("res://scripts/core/SaveOptionsInputRouter.gd")
+
 var checks: int = 0
 var failed: bool = false
 
@@ -13,6 +15,19 @@ func _run() -> void:
 		bridge.name = "CoreBridge"
 		get_root().add_child(bridge)
 	var original_language: int = bridge._language_index
+	bridge.open_options_screen()
+	var routed_difficulty_before: int = bridge._difficulty_index
+	_check(SAVE_OPTIONS_INPUT_ROUTER.handle(bridge, bridge.DPAD_DOWN), "save-options router claims options input")
+	_check(bridge._options_menu_index == 1, "save-options router moves the options cursor")
+	SAVE_OPTIONS_INPUT_ROUTER.handle(bridge, bridge.A_BUTTON)
+	_check(bridge._difficulty_index == wrapi(routed_difficulty_before + 1, 0, 3), "save-options router confirms the focused option")
+	bridge._options_menu_index = 3
+	SAVE_OPTIONS_INPUT_ROUTER.handle(bridge, bridge.A_BUTTON)
+	var routed_language_before: int = bridge._language_index
+	SAVE_OPTIONS_INPUT_ROUTER.handle(bridge, bridge.DPAD_DOWN)
+	_check(bridge._pending_language_index != routed_language_before and bridge._language_index == routed_language_before, "save-options router keeps language navigation in preview state")
+	SAVE_OPTIONS_INPUT_ROUTER.handle(bridge, bridge.B_BUTTON)
+	_check(bridge.is_options_main_screen() and bridge._language_index == routed_language_before, "save-options router cancels the language preview")
 	bridge.open_options_screen()
 	bridge._language_index = 2
 	var localized_options: Array = bridge.get_options_main_rows()
