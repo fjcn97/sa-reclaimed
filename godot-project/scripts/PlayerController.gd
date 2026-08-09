@@ -76,7 +76,9 @@ func _sample_input() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey:
-		_handle_key_event(event)
+		if _handle_key_event(event):
+			get_viewport().set_input_as_handled()
+			return
 		# Menu navigation is implemented by MenuInputRouter. Consume mapped
 		# desktop keys here so Godot's built-in Control focus navigation cannot
 		# also move/focus hidden or visible menu buttons on the same event.
@@ -87,27 +89,29 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventJoypadMotion:
 		_handle_joypad_motion(event)
 
-func _handle_key_event(event: InputEventKey) -> void:
+func _handle_key_event(event: InputEventKey) -> bool:
 	# The Options overview uses Escape for back. Do not turn X into a menu
 	# action there; Name Entry still handles X as a printable character below.
 	if (CoreBridge.is_options_main_screen() or CoreBridge.is_player_data_screen() or CoreBridge.is_language_screen() or CoreBridge.is_delete_confirm_screen() or CoreBridge.is_delete_final_confirm_screen()) and event.keycode == KEY_X:
-		return
+		return true
 	if IMMEDIATE_MENU_KEY_ROUTER.handle(CoreBridge, event):
-			return
+		return true
 	var bit := INPUT_DEVICE_SAMPLER.key_event_bit(event)
 	if bit == 0:
-		return
+		return false
 	# Always process release events. Some desktop backends can mark a key-up
 	# event as an echo; ignoring it leaves the D-pad bit stuck and makes menu
 	# repeat continue after the user has released the key.
 	if not event.pressed:
 		_fallback_held_input &= ~bit
-		return
+		return false
 	if event.echo:
-		return
+		return false
 	if event.pressed:
 		_fallback_held_input |= bit
 		_fallback_frame_input |= bit
+	return false
+
 
 func _handle_joypad_event(event: InputEventJoypadButton) -> void:
 	var bit := INPUT_DEVICE_SAMPLER.joypad_button_bit(event.button_index)

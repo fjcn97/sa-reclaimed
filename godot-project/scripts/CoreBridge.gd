@@ -125,6 +125,8 @@ const OPTIONS_PRESENTER := preload("res://scripts/ui/OptionsPresenter.gd")
 const OPTIONS_SETTINGS_SYSTEM := preload("res://scripts/core/OptionsSettingsSystem.gd")
 const SAVE_OPTIONS_NAVIGATION := preload("res://scripts/core/SaveOptionsNavigation.gd")
 const SAVE_OPTIONS_ACTION_FLOW := preload("res://scripts/core/SaveOptionsActionFlow.gd")
+const SAVE_OPTIONS_TRANSITION_FLOW := preload("res://scripts/core/SaveOptionsTransitionFlow.gd")
+const TITLE_NAVIGATION_FLOW := preload("res://scripts/core/TitleNavigationFlow.gd")
 const MENU_INPUT_HELP := preload("res://scripts/ui/MenuInputHelp.gd")
 const RECORDS_MENU_PRESENTER := preload("res://scripts/ui/RecordsMenuPresenter.gd")
 const TIME_ATTACK_RESULTS_PRESENTER := preload("res://scripts/ui/TimeAttackResultsPresenter.gd")
@@ -4737,32 +4739,7 @@ func get_press_start_chrome_colors() -> Dictionary:
 	}
 
 func adjust_title_selection(direction: int) -> void:
-	if _game_state != GAME_STATE_TITLE:
-		return
-	if _title_phase == TITLE_PHASE_SINGLEPAK_RESULTS:
-		_singlepak_results_cursor = wrapi(_singlepak_results_cursor + direction, 0, get_singlepak_results_items().size())
-		_status_text = get_title_prompt_text()
-		return
-	if _title_phase == TITLE_PHASE_MULTIPLAYER_LOBBY:
-		if _multiplayer_lobby_waiting:
-			_title_notice_text = "WAITING FOR ALL LINKED PLAYERS"
-			_status_text = get_title_prompt_text()
-			return
-		_multiplayer_lobby_cursor = wrapi(_multiplayer_lobby_cursor + direction, 0, get_multiplayer_lobby_items().size())
-		_title_notice_text = "REMATCH SELECTED" if _multiplayer_lobby_cursor == 0 else "EXIT TO TITLE SELECTED"
-		_status_text = get_title_prompt_text()
-		return
-	if _title_phase == TITLE_PHASE_COURSE_SELECT:
-		_start_course_select_travel(direction)
-		return
-	if _title_phase != TITLE_PHASE_TIME_ATTACK_LOBBY:
-		return
-	if _time_attack_lobby_cursor != 2:
-		return
-	_selected_level_index = clampi(_selected_level_index + direction, 0, _unlocked_level_index)
-	_title_notice_text = "COURSE SET TO %s" % get_selected_level_text()
-	_status_text = get_title_prompt_text()
-	_save_save_data()
+	TITLE_NAVIGATION_FLOW.adjust(self, direction)
 
 func _start_course_select_travel(direction: int) -> void:
 	if _title_phase != TITLE_PHASE_COURSE_SELECT:
@@ -4782,201 +4759,10 @@ func _start_course_select_travel(direction: int) -> void:
 	_save_save_data()
 
 func move_title_selection(direction: int) -> void:
-	if _game_state != GAME_STATE_TITLE:
-		return
-	_title_notice_text = ""
-	match _title_phase:
-		TITLE_PHASE_PRESS_START:
-			return
-		TITLE_PHASE_PLAY_MODE:
-			_title_menu_index = wrapi(_title_menu_index + direction, 0, get_title_menu_items().size())
-		TITLE_PHASE_SINGLE_PLAYER:
-			_title_menu_index = wrapi(_title_menu_index + direction, 0, get_title_menu_items().size())
-		TITLE_PHASE_MULTI_PLAYER:
-			_title_menu_index = wrapi(_title_menu_index + direction, 0, get_title_menu_items().size())
-		TITLE_PHASE_TIME_ATTACK:
-			_title_menu_index = wrapi(_title_menu_index + direction, 0, get_title_menu_items().size())
-		TITLE_PHASE_TINY_CHAO_GARDEN:
-			_title_menu_index = wrapi(_title_menu_index + direction, 0, get_title_menu_items().size())
-		TITLE_PHASE_MULTI_CONNECT:
-			# The original link screen has no cursor; it waits for START/B only.
-			return
-		TITLE_PHASE_TINY_CHAO_SETUP:
-			_title_menu_index = wrapi(_title_menu_index + direction, 0, get_title_menu_items().size())
-		TITLE_PHASE_SINGLEPAK_SYNC:
-			_title_menu_index = wrapi(_title_menu_index + direction, 0, get_title_menu_items().size())
-		TITLE_PHASE_SINGLEPAK_RESULTS:
-			# Multiplayer results are an automatic presentation in the original.
-			return
-		TITLE_PHASE_MULTIPLAYER_LOBBY:
-			# The original rematch lobby is horizontal: Up/Down do not move YES/NO.
-			return
-		TITLE_PHASE_TIME_ATTACK_LOBBY:
-			# The original lobby keeps the cursor within its four fixed rows.
-			_time_attack_lobby_cursor = clampi(_time_attack_lobby_cursor + signi(direction), 0, get_time_attack_lobby_rows().size() - 1)
-		TITLE_PHASE_COURSE_SELECT:
-			if not is_course_select_busy():
-				_start_course_select_travel(direction)
-		TITLE_PHASE_MULTIPLAYER_OUTCOME:
-			return
-	_status_text = get_title_prompt_text()
-	_save_save_data()
+	TITLE_NAVIGATION_FLOW.move(self, direction)
 
 func start_title_selection() -> void:
-	if _game_state != GAME_STATE_TITLE:
-		return
-	_title_notice_text = ""
-	match _title_phase:
-		TITLE_PHASE_PRESS_START:
-			open_title_screen_at_play_mode_menu(0, "", true)
-			return
-		TITLE_PHASE_PLAY_MODE:
-			match _title_menu_index:
-				0:
-					open_title_screen_at_single_player_menu(0, "", true)
-					return
-				1:
-					open_title_screen_at_multiplayer_menu(0)
-					return
-		TITLE_PHASE_SINGLE_PLAYER:
-			match _title_menu_index:
-				0:
-					if not has_profile_name():
-						open_profile_name_from_game_start()
-						return
-					open_character_select(CHARACTER_SELECT_CONTEXT_GAME_START)
-				1:
-					open_title_screen_at_time_attack_menu(0)
-					return
-				2:
-					open_options_screen()
-					return
-				3:
-					open_tiny_chao_garden_menu(0)
-					return
-		TITLE_PHASE_MULTI_PLAYER:
-			match _title_menu_index:
-				0:
-					if not has_profile_name():
-						open_profile_name_from_multiplayer()
-						return
-					_start_multiplayer_mode(0)
-				1:
-					if not has_profile_name():
-						open_profile_name_from_multiplayer()
-						return
-					_start_multiplayer_mode(1)
-		TITLE_PHASE_TIME_ATTACK:
-			match _title_menu_index:
-				0:
-					# time_attack_mode_select.c creates the carousel at Sonic.
-					open_character_select(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_ZONE, 0)
-					return
-				1:
-					if not _boss_time_attack_unlocked:
-						_title_notice_text = "BOSS TIME ATTACK LOCKED"
-						return
-					open_character_select(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_BOSS, 0)
-					return
-		TITLE_PHASE_TIME_ATTACK_LOBBY:
-			match _time_attack_lobby_cursor:
-				0:
-					_begin_level_run(_selected_level_index, true)
-					return
-				1:
-					# time_attack_lobby.c resets gCurrentLevel to Zone 1 Act 1
-					# before opening character select.
-					_selected_level_index = 0
-					open_character_select(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_BOSS if _time_attack_boss_mode else CHARACTER_SELECT_CONTEXT_TIME_ATTACK_ZONE)
-					return
-				2:
-					open_course_select(TITLE_PHASE_TIME_ATTACK_LOBBY)
-					return
-				3:
-					open_title_screen_and_skip_intro()
-					return
-		TITLE_PHASE_COURSE_SELECT:
-			if is_course_select_starting():
-				return
-			if is_course_select_busy():
-				if not _is_multiplayer_course_select():
-					_course_select_confirm_pending = true
-					_title_notice_text = "COURSE LOCKED IN"
-				_status_text = get_title_prompt_text()
-				return
-			_course_select_start_timer = _course_select_start_duration
-			_title_notice_text = "STARTING %s" % get_selected_level_text()
-			_status_text = get_title_prompt_text()
-			return
-		TITLE_PHASE_TINY_CHAO_GARDEN:
-			match _title_menu_index:
-				0:
-					open_tiny_chao_setup_menu(0, "TINY CHAO GARDEN READY")
-					return
-				1:
-					open_title_screen_at_single_player_menu(3)
-					return
-		TITLE_PHASE_MULTI_CONNECT:
-			# Connection is automatic in the original; START only begins the
-			# host-side handshake once a client is visible.
-			advance_multiplayer_link_state()
-			if get_multiplayer_link_count() < 2:
-				_title_notice_text = "WAITING FOR %s LINK" % ["MULTI-PAK" if _multiplayer_pak_mode == 0 else "SINGLE-PAK"]
-				return
-			if _multiplayer_pak_mode == 0:
-				_open_multiplayer_outcome(0, TITLE_PHASE_MULTI_CONNECT)
-				return
-			_singlepak_download_timer = 0.0
-			_advance_singlepak_transfer_step()
-			return
-		TITLE_PHASE_MULTIPLAYER_OUTCOME:
-			_resolve_multiplayer_outcome()
-			return
-		TITLE_PHASE_SINGLEPAK_SYNC:
-			match _title_menu_index:
-				0:
-					if is_singlepak_sync_ready():
-						_begin_level_run(_selected_level_index, false, true)
-						return
-					advance_singlepak_sync_state()
-				1:
-					if is_singlepak_sync_ready():
-						_prepare_multiplayer_results_snapshot(MULTIPLAYER_RESULTS_MODE_COURSE_COMPLETE)
-						open_singlepak_results_screen(MULTIPLAYER_RESULTS_MODE_COURSE_COMPLETE, 0)
-					else:
-						_title_notice_text = "CLIENTS STILL SYNCHRONIZING"
-				2:
-					if is_singlepak_transfer_started():
-						_title_notice_text = "WAIT FOR CLIENT BOOT TO FINISH"
-					else:
-						open_title_screen_at_multiplayer_menu(1)
-					return
-		TITLE_PHASE_SINGLEPAK_RESULTS:
-			# The source has no input handler on this screen; the timer advances it.
-			return
-		TITLE_PHASE_MULTIPLAYER_LOBBY:
-			if _multiplayer_lobby_waiting:
-				_title_notice_text = "WAITING FOR ALL LINKED PLAYERS"
-				return
-			_multiplayer_lobby_waiting = true
-			_multiplayer_lobby_wait_timer = _multiplayer_lobby_wait_duration
-			_title_notice_text = "WAITING FOR REMATCH CONFIRMATIONS" if _multiplayer_lobby_cursor == 0 else "WAITING FOR EXIT CONFIRMATIONS"
-			_status_text = get_title_prompt_text()
-			return
-		TITLE_PHASE_TINY_CHAO_SETUP:
-			match _title_menu_index:
-				0:
-					if _tiny_chao_session_id == "TCG-0000":
-						_generate_tiny_chao_session_id()
-					open_tiny_chao_garden_play()
-					return
-				1:
-					_generate_tiny_chao_session_id()
-					_title_notice_text = "NEW SESSION ID READY"
-				2:
-					open_tiny_chao_garden_menu(0)
-					return
-	_status_text = get_title_prompt_text()
+	TITLE_NAVIGATION_FLOW.start(self)
 
 func open_save_options_from_title() -> void:
 	if _game_state != GAME_STATE_TITLE:
@@ -5124,265 +4910,10 @@ func adjust_save_selection(direction: int) -> void:
 	SAVE_OPTIONS_NAVIGATION.adjust_horizontal(self, direction)
 
 func accept_save_selection() -> void:
-	if _game_state != GAME_STATE_SAVE_OPTIONS:
-		return
-	if _save_reset_pending:
-		_reset_progress()
-		_save_reset_pending = false
-		_options_mode = OPTIONS_MODE_PLAYER_DATA
-		_player_data_menu_index = 0
-		_status_text = "PLAYER DATA"
-		return
-	match _options_mode:
-		OPTIONS_MODE_MAIN:
-			# Keep the action semantic. Display labels are localized and must not
-			# be used as control-flow keys.
-			match _options_menu_index:
-				0:
-					_options_mode = OPTIONS_MODE_PLAYER_DATA
-					_player_data_menu_index = 0
-				1:
-					# Difficulty cycles directly on the Options list.
-					OPTIONS_SETTINGS_SYSTEM.cycle_difficulty(self)
-					_status_text = "OPTIONS"
-				2:
-					# Time Limit is an immediate toggle on the main Options list;
-					# it no longer opens a separate switch submenu.
-					OPTIONS_SETTINGS_SYSTEM.toggle_time_limit(self)
-					_status_text = "OPTIONS"
-				3:
-					OPTIONS_SETTINGS_SYSTEM.begin_language_preview(self)
-					_options_mode = OPTIONS_MODE_LANGUAGE
-				4:
-					_options_mode = OPTIONS_MODE_BUTTON_CONFIG
-					_button_config_index = 0
-					_button_bindings_before_edit = _button_bindings.duplicate()
-				5:
-					if _sound_test_unlocked:
-						_options_mode = OPTIONS_MODE_SOUND_TEST
-						_sound_test_menu_index = 0
-						_sound_test_state = SOUND_TEST_STATE_STOPPED
-					else:
-						_options_mode = OPTIONS_MODE_DELETE_CONFIRM
-						_delete_confirm_index = 1
-				6:
-					if _sound_test_unlocked:
-						_options_mode = OPTIONS_MODE_DELETE_CONFIRM
-						_delete_confirm_index = 1
-					else:
-						_persist_frontend_state()
-						open_title_screen_at_single_player_menu(0)
-						return
-				7:
-					_persist_frontend_state()
-					open_title_screen_at_single_player_menu(0)
-					return
-		OPTIONS_MODE_PLAYER_DATA:
-			match _player_data_menu_index:
-				0:
-					_options_mode = OPTIONS_MODE_NAME_ENTRY
-					_reset_name_entry_navigation()
-					_name_entry_snapshot = _player_profile_name.duplicate()
-				1:
-					_options_mode = OPTIONS_MODE_TIME_RECORDS
-					_time_records_menu_index = 0
-					_time_records_context = TIME_RECORDS_CONTEXT_OPTIONS
-					# The source skips the mode-choice screen until Boss Time
-					# Attack has been unlocked.
-					_time_records_view = TIME_RECORDS_VIEW_MODE_CHOICE if _boss_time_attack_unlocked else TIME_RECORDS_VIEW_COURSES
-					_time_records_boss_mode = false
-					_time_records_character_index = 0
-					_time_records_course_index = 0
-					_time_records_act_index = 0
-				2:
-					_options_mode = OPTIONS_MODE_MULTI_RECORDS
-					_multi_records_menu_index = 0
-				3:
-					_options_mode = OPTIONS_MODE_MAIN
-					_options_menu_index = 0
-		OPTIONS_MODE_LANGUAGE:
-			OPTIONS_SETTINGS_SYSTEM.commit_language_preview(self)
-			if _creating_new_profile:
-				_player_profile_name = [" ", " ", " ", " ", " ", " "]
-				_name_entry_snapshot = _player_profile_name.duplicate()
-				_multiplayer_name_entry_snapshot = _player_profile_name.duplicate()
-				_reset_name_entry_navigation()
-				_options_mode = OPTIONS_MODE_NAME_ENTRY
-				_status_text = "NAME ENTRY"
-			else:
-				_options_mode = OPTIONS_MODE_MAIN
-				_options_menu_index = 3
-		OPTIONS_MODE_BUTTON_CONFIG:
-			match _button_config_index:
-				0:
-					_finalize_button_config_a_stage()
-				1:
-					_finalize_button_config_b_stage()
-				2:
-					_commit_button_config_bindings()
-					_options_mode = OPTIONS_MODE_MAIN
-					_options_menu_index = 4
-		OPTIONS_MODE_SOUND_TEST:
-			_sound_test_state = SOUND_TEST_STATE_PLAYING
-			_status_text = get_sound_test_status_text()
-			return
-		OPTIONS_MODE_DIFFICULTY:
-			_options_mode = OPTIONS_MODE_MAIN
-			_options_menu_index = 1
-		OPTIONS_MODE_TIME_LIMIT:
-			_options_mode = OPTIONS_MODE_MAIN
-			_options_menu_index = 2
-		OPTIONS_MODE_DELETE_CONFIRM:
-			if _delete_confirm_index == 0:
-				_options_mode = OPTIONS_MODE_DELETE_CONFIRM_FINAL
-				_delete_confirm_index = 1
-			else:
-				_options_mode = OPTIONS_MODE_MAIN
-				_options_menu_index = _get_options_item_index("DELETE GAME DATA")
-		OPTIONS_MODE_DELETE_CONFIRM_FINAL:
-			if _delete_confirm_index == 0:
-				_reset_progress()
-				_options_mode = OPTIONS_MODE_MAIN
-				_options_menu_index = 0
-				_status_text = "SAVE DATA DELETED"
-				return
-			_options_mode = OPTIONS_MODE_MAIN
-			_options_menu_index = _get_options_item_index("DELETE GAME DATA")
-		OPTIONS_MODE_TIME_RECORDS:
-			if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-				_time_records_view = TIME_RECORDS_VIEW_COURSES
-				_time_records_menu_index = 0
-			else:
-				if _time_records_context == TIME_RECORDS_CONTEXT_TIME_ATTACK:
-					_selected_character_index = _time_records_character_index
-					_player_state.variant = _selected_character_index
-					_time_attack_boss_mode = _time_records_boss_mode
-					_selected_level_index = _get_time_records_level_index()
-					_begin_level_run(_selected_level_index, true)
-					return
-				update_save_menu_status()
-				return
-		OPTIONS_MODE_MULTI_RECORDS:
-			# The original screen is a browse-only table; A does not open a row.
-			_status_text = "VERSUS RECORDS"
-			return
-		OPTIONS_MODE_NAME_ENTRY:
-			if _is_name_entry_control_cursor():
-				match _name_entry_cursor_row:
-					NAME_ENTRY_CONTROL_ROW_BACK:
-						_move_name_entry_active_slot(-1)
-					NAME_ENTRY_CONTROL_ROW_FORWARD:
-						_move_name_entry_active_slot(1)
-					NAME_ENTRY_CONTROL_ROW_END:
-						if not has_profile_name():
-							_status_text = "PROFILE NAME REQUIRED"
-							return
-						_name_entry_snapshot = _player_profile_name.duplicate()
-						_save_save_data()
-						if _return_to_multiplayer_after_name_entry:
-							_return_from_name_entry_to_multiplayer(true)
-						elif _return_to_title_after_new_profile:
-							_return_to_title_after_new_profile = false
-							_creating_new_profile = false
-							open_title_screen_at_single_player_menu(0, "PROFILE SAVED")
-						else:
-							_options_mode = OPTIONS_MODE_PLAYER_DATA
-							_player_data_menu_index = 0
-							_status_text = "NAME SAVED"
-						return
-			else:
-				_apply_name_entry_selected_cell()
-				update_save_menu_status()
-				return
-	update_save_menu_status()
+	SAVE_OPTIONS_TRANSITION_FLOW.accept(self)
 
 func cancel_save_selection() -> void:
-	if _game_state != GAME_STATE_SAVE_OPTIONS:
-		return
-	if _save_reset_pending:
-		_save_reset_pending = false
-		update_save_menu_status()
-		return
-	match _options_mode:
-		OPTIONS_MODE_MAIN:
-			_persist_frontend_state()
-			open_title_screen_at_single_player_menu(0)
-		OPTIONS_MODE_PLAYER_DATA:
-			_options_mode = OPTIONS_MODE_MAIN
-			_options_menu_index = 0
-			update_save_menu_status()
-		OPTIONS_MODE_LANGUAGE:
-			OPTIONS_SETTINGS_SYSTEM.cancel_language_preview(self)
-			if _creating_new_profile:
-				_creating_new_profile = false
-				if _return_to_multiplayer_after_name_entry:
-					_return_to_multiplayer_after_name_entry = false
-					open_title_screen_at_multiplayer_menu(clampi(_return_to_multiplayer_menu_index, 0, 1), "PROFILE CREATION CANCELED")
-				else:
-					_return_to_title_after_new_profile = false
-					open_title_screen_at_single_player_menu(0, "PROFILE CREATION CANCELED")
-				return
-			_options_mode = OPTIONS_MODE_MAIN
-			_options_menu_index = 3
-			update_save_menu_status()
-		OPTIONS_MODE_BUTTON_CONFIG:
-			match _button_config_index:
-				0:
-					_button_bindings = _button_bindings_before_edit.duplicate()
-					_options_mode = OPTIONS_MODE_MAIN
-					_options_menu_index = 4
-				1:
-					# The original B stage starts the configuration over at A.
-					_button_config_index = 0
-				2:
-					# The original R stage returns to the B stage, preserving the
-					# preview so the last assignment can still be adjusted.
-					_button_config_index = 1
-			update_save_menu_status()
-		OPTIONS_MODE_SOUND_TEST:
-			if _sound_test_state == SOUND_TEST_STATE_PLAYING:
-				_sound_test_state = SOUND_TEST_STATE_STOPPED
-			else:
-				_options_mode = OPTIONS_MODE_MAIN
-				_options_menu_index = 5
-			update_save_menu_status()
-		OPTIONS_MODE_DIFFICULTY:
-			_difficulty_index = _difficulty_before_edit
-			_options_mode = OPTIONS_MODE_MAIN
-			_options_menu_index = 1
-			update_save_menu_status()
-		OPTIONS_MODE_TIME_LIMIT:
-			_time_limit_enabled = _time_limit_before_edit
-			_options_mode = OPTIONS_MODE_MAIN
-			_options_menu_index = 2
-			update_save_menu_status()
-		OPTIONS_MODE_DELETE_CONFIRM, OPTIONS_MODE_DELETE_CONFIRM_FINAL:
-			_options_mode = OPTIONS_MODE_MAIN
-			_options_menu_index = _get_options_item_index("DELETE GAME DATA")
-			update_save_menu_status()
-		OPTIONS_MODE_TIME_RECORDS:
-			if _time_records_context == TIME_RECORDS_CONTEXT_TIME_ATTACK:
-				open_character_select(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_BOSS if _time_records_boss_mode else CHARACTER_SELECT_CONTEXT_TIME_ATTACK_ZONE, _time_records_character_index)
-			else:
-				_options_mode = OPTIONS_MODE_PLAYER_DATA
-				_player_data_menu_index = 1
-			update_save_menu_status()
-		OPTIONS_MODE_MULTI_RECORDS:
-			_options_mode = OPTIONS_MODE_PLAYER_DATA
-			_player_data_menu_index = 2
-			update_save_menu_status()
-		OPTIONS_MODE_NAME_ENTRY:
-			_player_profile_name = _name_entry_snapshot.duplicate()
-			if _return_to_multiplayer_after_name_entry:
-				_return_from_name_entry_to_multiplayer(false)
-			elif _return_to_title_after_new_profile:
-				_return_to_title_after_new_profile = false
-				_creating_new_profile = false
-				open_title_screen_at_single_player_menu(0, "PROFILE CREATION CANCELED")
-			else:
-				_options_mode = OPTIONS_MODE_PLAYER_DATA
-				_player_data_menu_index = 0
-			update_save_menu_status()
+	SAVE_OPTIONS_TRANSITION_FLOW.cancel(self)
 
 func trigger_save_special_action() -> bool:
 	return SAVE_OPTIONS_ACTION_FLOW.trigger_special(self)
@@ -6894,7 +6425,7 @@ func get_time_records_summary_text() -> String:
 	return "%s: %s\n%s: %s\n%s: %s" % [_language_text("CHARACTER", "CHARAKTER", "PERSONNAGE", "PERSONAJE", "PERSONAGGIO"), character_name, _language_text("COURSE", "KURS", "PARCOURS", "FASE", "CORSO"), get_time_records_course_title_text(), _language_text("TYPE", "TYP", "TYPE", "TIPO", "TIPO"), _language_text("BOSS", "BOSS", "BOSS", "JEFE", "BOSS") if _time_records_boss_mode else _language_text("ACT", "AKT", "ACTE", "ACTO", "ATTO")]
 
 func get_time_records_title_text() -> String:
-	return _language_text("TIME RECORDS", "ZEITREKORDE", "RECORDS DE TEMPS", "RECORDS DE TIEMPO", "RECORD TEMPI")
+	return RECORDS_MENU_PRESENTER.time_records_title(self)
 
 func get_time_records_prompt_text() -> String:
 	return RECORDS_MENU_PRESENTER.time_records_prompt(self)
@@ -6903,48 +6434,19 @@ func get_time_records_detail_text() -> String:
 	return RECORDS_MENU_PRESENTER.time_records_detail(self)
 
 func get_time_records_chrome_colors() -> Dictionary:
-	if _time_records_context == TIME_RECORDS_CONTEXT_TIME_ATTACK:
-		return {
-			"accent": Color(0.92, 0.60, 0.22, 1.0),
-			"card": Color(0.98, 0.94, 0.86, 0.98),
-			"stage": Color(0.20, 0.12, 0.10, 0.94),
-		}
-	if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-		return {
-			"accent": Color(0.26, 0.52, 0.96, 1.0),
-			"card": Color(0.88, 0.93, 1.0, 0.98),
-			"stage": Color(0.08, 0.12, 0.22, 0.94),
-		}
-	return {
-		"accent": Color(0.20, 0.38, 0.86, 1.0),
-		"card": Color(0.92, 0.96, 1.0, 0.98),
-		"stage": Color(0.08, 0.12, 0.22, 0.94),
-	}
+	return RECORDS_MENU_PRESENTER.time_records_chrome(self)
 
 func get_time_records_character_text() -> String:
-	var rows := get_time_records_character_rows()
-	if rows.is_empty():
-		return "SONIC"
-	return rows[clampi(_time_records_character_index, 0, rows.size() - 1)]
+	return RECORDS_MENU_PRESENTER.time_records_character(self)
 
 func get_time_records_course_heading_text() -> String:
-	if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-		return _language_text("MODE SELECT", "MODUS WAEHLEN", "CHOIX DU MODE", "ELEGIR MODO", "SCELTA MODALITA")
-	var zone_number := _time_records_course_index + 1
-	if _time_records_boss_mode:
-		return "%s %d   %s" % [_language_text("ZONE", "ZONE", "ZONE", "ZONA", "ZONA"), zone_number, _language_text("BOSS", "BOSS", "BOSS", "JEFE", "BOSS")]
-	return "%s %d   %s %d" % [_language_text("ZONE", "ZONE", "ZONE", "ZONA", "ZONA"), zone_number, _language_text("ACT", "AKT", "ACTE", "ACTO", "ATTO"), _time_records_act_index + 1]
+	return RECORDS_MENU_PRESENTER.time_records_course_heading(self)
 
 func get_time_records_course_subtitle_text() -> String:
-	if _time_records_view == TIME_RECORDS_VIEW_MODE_CHOICE:
-		return _language_text("CHOOSE ZONE OR BOSS RECORDS", "ZONEN- ODER BOSS-REKORDE WAEHLEN", "CHOISIR RECORDS ZONE OU BOSS", "ELEGIR RECORDS DE ZONA O JEFE", "SCEGLI RECORD ZONA O BOSS")
-	var course_name := get_level_name_by_index(_get_time_records_level_index())
-	if _time_records_boss_mode:
-		return "%s %s" % [course_name, _language_text("BOSS ROUTE", "BOSS-ROUTE", "PARCOURS BOSS", "RUTA DE JEFE", "PERCORSO BOSS")]
-	return course_name
+	return RECORDS_MENU_PRESENTER.time_records_course_subtitle(self)
 
 func get_time_records_best_label_text(index: int) -> String:
-	return "%s %d" % [_language_text("BEST", "BESTE", "MEILLEUR", "MEJOR", "MIGLIORE"), index + 1]
+	return RECORDS_MENU_PRESENTER.time_records_best_label(self, index)
 
 func get_multiplayer_records_summary_text() -> String:
 	var totals := get_multiplayer_records_player_totals()
@@ -6959,7 +6461,7 @@ func get_multiplayer_records_column_header_text() -> Array:
 	]
 
 func get_multiplayer_records_title_text() -> String:
-	return _language_text("VS RECORDS", "VS-REKORDE", "RECORDS VS", "RECORDS VS", "RECORD VS")
+	return RECORDS_MENU_PRESENTER.multiplayer_records_title(self)
 
 func get_multiplayer_records_prompt_text() -> String:
 	return RECORDS_MENU_PRESENTER.multiplayer_records_prompt(self)
@@ -6968,10 +6470,7 @@ func get_multiplayer_records_detail_text() -> String:
 	return RECORDS_MENU_PRESENTER.multiplayer_records_detail(self)
 
 func get_multiplayer_records_chrome_colors() -> Dictionary:
-	return {
-		"accent": Color(0.92, 0.48, 0.20, 1.0),
-		"card": Color(0.98, 0.90, 0.84, 0.98),
-	}
+	return RECORDS_MENU_PRESENTER.multiplayer_records_chrome(self)
 
 func get_multiplayer_records_player_totals() -> Dictionary:
 	return _multiplayer_record_totals.duplicate(true)

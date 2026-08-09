@@ -34,8 +34,20 @@ static func handle(bridge: Object, event: InputEventKey) -> bool:
 	return false
 
 static func _handle_save_options_key(bridge: Object, keycode: int) -> bool:
-	var bit := INPUT_BINDINGS.keycode_to_bit(keycode)
-	return SAVE_OPTIONS_COMMAND_POLICY.execute(bridge, MENU_COMMAND.from_input_bit(bit, bridge))
+	var command := MENU_COMMAND.NONE
+	match keycode:
+		KEY_W, KEY_UP: command = MENU_COMMAND.MOVE_UP
+		KEY_S, KEY_DOWN: command = MENU_COMMAND.MOVE_DOWN
+		KEY_A, KEY_LEFT: command = MENU_COMMAND.MOVE_LEFT
+		KEY_D, KEY_RIGHT: command = MENU_COMMAND.MOVE_RIGHT
+		KEY_ENTER, KEY_KP_ENTER, KEY_Z: command = MENU_COMMAND.CONFIRM
+		KEY_ESCAPE, KEY_SPACE: command = MENU_COMMAND.BACK
+		KEY_Q: command = MENU_COMMAND.SLOT_PREVIOUS
+		KEY_E: command = MENU_COMMAND.SLOT_NEXT
+		KEY_INSERT: command = MENU_COMMAND.SPECIAL
+		KEY_PAUSE: command = MENU_COMMAND.START
+		_: command = MENU_COMMAND.from_input_bit(INPUT_BINDINGS.keycode_to_bit(keycode), bridge)
+	return SAVE_OPTIONS_COMMAND_POLICY.execute(bridge, command)
 
 static func _typed_name_character(event: InputEventKey) -> String:
 	if event.unicode > 0:
