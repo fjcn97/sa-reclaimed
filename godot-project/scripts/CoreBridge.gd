@@ -129,6 +129,8 @@ const SAVE_OPTIONS_TRANSITION_FLOW := preload("res://scripts/core/SaveOptionsTra
 const TITLE_NAVIGATION_FLOW := preload("res://scripts/core/TitleNavigationFlow.gd")
 const TITLE_TRANSITION_FLOW := preload("res://scripts/core/TitleTransitionFlow.gd")
 const GAMEPLAY_LIFECYCLE_FLOW := preload("res://scripts/core/GameplayLifecycleFlow.gd")
+const SAVE_LIFECYCLE_FLOW := preload("res://scripts/core/SaveLifecycleFlow.gd")
+const FRONTEND_UPDATE_FLOW := preload("res://scripts/core/FrontendUpdateFlow.gd")
 const MENU_INPUT_HELP := preload("res://scripts/ui/MenuInputHelp.gd")
 const RECORDS_MENU_PRESENTER := preload("res://scripts/ui/RecordsMenuPresenter.gd")
 const RECORDS_VIEW_MODEL := preload("res://scripts/ui/RecordsViewModel.gd")
@@ -1224,17 +1226,7 @@ func physics_tick(held_input: int, frame_input: int, delta: float) -> void:
 	_update_camera()
 
 func advance_ui_timers(delta: float, held_input: int = 0, frame_input: int = 0) -> void:
-	_update_screen_fade(delta)
-	_race_start_message_timer = maxf(0.0, _race_start_message_timer - delta)
-	# Paused gameplay does not enter physics_tick in PlayerController; its
-	# release-sensitive pause task must advance on this UI path instead.
-	if _game_state == GAME_STATE_PAUSED:
-		_update_pause_menu_input(held_input, frame_input)
-		return
-	if _game_state == GAME_STATE_FINAL_INTRO:
-		_final_intro_timer = maxf(0.0, _final_intro_timer - delta)
-		if _final_intro_timer <= 0.0:
-			skip_final_intro()
+	if FRONTEND_UPDATE_FLOW.advance_critical(self, delta, held_input, frame_input):
 		return
 	if _title_phase == TITLE_PHASE_COURSE_SELECT and _course_select_intro_timer > 0.0:
 		_course_select_intro_timer = maxf(0.0, _course_select_intro_timer - delta)
@@ -8211,190 +8203,16 @@ func _sanitize_tiny_chao_roster(raw_value: Variant) -> Array:
 	return SAVE_PROFILE_SANITIZER.tiny_chao_roster(raw_value, _get_default_tiny_chao_roster())
 
 func _load_save_data() -> void:
-	_save_id = 0
-	_unlocked_level_index = 0
-	_character_unlocked_level_indices = [0, 0, 0, 0, 0]
-	_best_scores = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-	_profile_score = 0
-	_level_cleared_flags = [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
-	_time_attack_best_times = {}
-	_time_attack_record_tables = {}
-	_difficulty_index = 0
-	_difficulty_before_edit = _difficulty_index
-	_time_limit_enabled = true
-	_time_limit_before_edit = _time_limit_enabled
-	_language_index = 1
-	_pending_language_index = _language_index
-	_language_index_before_edit = _language_index
-	_button_bindings = PROFILE_CATALOG.default_button_bindings()
-	_button_bindings_before_edit = _button_bindings.duplicate()
-	_sound_test_track_index = 0
-	_sound_test_state = SOUND_TEST_STATE_STOPPED
-	_sound_test_unlocked = false
-	_player_profile_name = [" ", " ", " ", " ", " ", " "]
-	_multi_record_rows = _get_default_multiplayer_record_rows()
-	_multiplayer_record_totals = _get_default_multiplayer_record_totals()
-	_boss_time_attack_unlocked = false
-	_selected_character_index = 0
-	_chaos_emeralds_message_seen = false
-	_chaos_emerald_mask = 0
-	_chaos_emerald_masks = [0, 0, 0, 0, 0]
-	_character_unlocked = [true, false, false, false, false]
-	_completed_character_routes = [false, false, false, false, false]
-	_extra_ending_credits_played = false
-	_tiny_chao_roster = _get_default_tiny_chao_roster()
-	_true_area_unlocked = false
-	_extra_zone_status = 0
-	var parsed = _read_save_dictionary(_save_path)
-	if typeof(parsed) != TYPE_DICTIONARY:
-		# save.c keeps older flash sectors available when the newest sector is
-		# corrupt. The backup provides the same recovery property for JSON saves.
-		parsed = _read_save_dictionary(_save_path + ".bak")
-	if typeof(parsed) != TYPE_DICTIONARY:
-		return
-	if parsed.has("save_id"):
-		_save_id = maxi(0, int(parsed["save_id"]))
-	if parsed.has("unlocked_level_index"):
-		_unlocked_level_index = clamp(int(parsed["unlocked_level_index"]), 0, _level_names.size() - 1)
-	if parsed.has("character_unlocked_level_indices") and parsed["character_unlocked_level_indices"] is Array:
-		var character_levels: Array = parsed["character_unlocked_level_indices"]
-		for i in range(min(character_levels.size(), _character_unlocked_level_indices.size())):
-			_character_unlocked_level_indices[i] = clampi(int(character_levels[i]), 0, _level_names.size() - 1)
-	else:
-		_character_unlocked_level_indices[0] = _unlocked_level_index
-	if parsed.has("true_area_unlocked"):
-		_true_area_unlocked = bool(parsed["true_area_unlocked"])
-	elif parsed.has("unlocked_level_index"):
-		_true_area_unlocked = int(parsed["unlocked_level_index"]) >= _level_names.size() - 1
-	if parsed.has("extra_zone_status"):
-		_extra_zone_status = clampi(int(parsed["extra_zone_status"]), 0, 2)
-	else:
-		_extra_zone_status = 2 if _true_area_unlocked else 0
-	if parsed.has("selected_level_index"):
-		_selected_level_index = clamp(int(parsed["selected_level_index"]), 0, _unlocked_level_index)
-	if parsed.has("best_scores") and parsed["best_scores"] is Array:
-		var scores: Array = parsed["best_scores"]
-		for i in range(min(scores.size(), _best_scores.size())):
-			_best_scores[i] = int(scores[i])
-	if parsed.has("profile_score"):
-		_profile_score = maxi(0, int(parsed["profile_score"]))
-	if parsed.has("level_cleared_flags") and parsed["level_cleared_flags"] is Array:
-		var flags: Array = parsed["level_cleared_flags"]
-		for i in range(min(flags.size(), _level_cleared_flags.size())):
-			_level_cleared_flags[i] = bool(flags[i])
-	if parsed.has("time_attack_best_times"):
-		_time_attack_best_times = _sanitize_time_attack_best_times(parsed["time_attack_best_times"])
-	if parsed.has("time_attack_record_tables"):
-		_time_attack_record_tables = _sanitize_time_attack_record_tables(parsed["time_attack_record_tables"])
-	for key in _time_attack_best_times.keys():
-		if not _time_attack_record_tables.has(key):
-			_time_attack_record_tables[key] = [float(_time_attack_best_times[key])]
-	if parsed.has("tiny_chao_unlocked"):
-		_tiny_chao_unlocked = bool(parsed["tiny_chao_unlocked"])
-	if parsed.has("tiny_chao_roster"):
-		_tiny_chao_roster = _sanitize_tiny_chao_roster(parsed["tiny_chao_roster"])
-	_sync_tiny_chao_selection()
-	if parsed.has("difficulty_index"):
-		_difficulty_index = clampi(int(parsed["difficulty_index"]), 0, 2)
-	if parsed.has("time_limit_enabled"):
-		_time_limit_enabled = bool(parsed["time_limit_enabled"])
-	if parsed.has("language_index"):
-		_language_index = clampi(int(parsed["language_index"]), 0, get_language_items().size() - 1)
-	_pending_language_index = _language_index
-	_language_index_before_edit = _language_index
-	if parsed.has("button_bindings"):
-		_button_bindings = _sanitize_button_bindings(parsed["button_bindings"])
-	_button_bindings_before_edit = _button_bindings.duplicate()
-	if parsed.has("sound_test_track_index"):
-		_sound_test_track_index = clampi(int(parsed["sound_test_track_index"]), 0, _sound_test_tracks.size() - 1)
-	if parsed.has("sound_test_unlocked"):
-		_sound_test_unlocked = bool(parsed["sound_test_unlocked"])
-	if parsed.has("player_profile_name"):
-		_player_profile_name = _sanitize_profile_name(parsed["player_profile_name"])
-	if parsed.has("multi_record_rows"):
-		_multi_record_rows = _sanitize_multiplayer_record_rows(parsed["multi_record_rows"])
-	if parsed.has("multiplayer_record_totals"):
-		_multiplayer_record_totals = _sanitize_multiplayer_record_totals(parsed["multiplayer_record_totals"])
-	if parsed.has("boss_time_attack_unlocked"):
-		_boss_time_attack_unlocked = bool(parsed["boss_time_attack_unlocked"])
-	if not parsed.has("sound_test_unlocked") and _boss_time_attack_unlocked:
-		_sound_test_unlocked = true
-	if parsed.has("selected_character_index"):
-		_selected_character_index = clampi(int(parsed["selected_character_index"]), 0, _character_names.size() - 1)
-	if parsed.has("character_unlocked") and parsed["character_unlocked"] is Array:
-		var characters: Array = parsed["character_unlocked"]
-		for i in range(min(characters.size(), _character_unlocked.size())):
-			_character_unlocked[i] = bool(characters[i])
-	elif _unlocked_level_index > 0 or (_level_cleared_flags.size() > 0 and _level_cleared_flags[0]):
-		_character_unlocked[1] = true
-	if parsed.has("completed_character_routes") and parsed["completed_character_routes"] is Array:
-		var completed_routes: Array = parsed["completed_character_routes"]
-		for i in range(min(completed_routes.size(), _completed_character_routes.size())):
-			_completed_character_routes[i] = bool(completed_routes[i])
-	if parsed.has("extra_ending_credits_played"):
-		_extra_ending_credits_played = bool(parsed["extra_ending_credits_played"])
-	if parsed.has("chaos_emeralds_message_seen"):
-		_chaos_emeralds_message_seen = bool(parsed["chaos_emeralds_message_seen"])
-	if parsed.has("chaos_emerald_masks") and parsed["chaos_emerald_masks"] is Array:
-		var emerald_masks: Array = parsed["chaos_emerald_masks"]
-		for i in range(min(emerald_masks.size(), _chaos_emerald_masks.size())):
-			_chaos_emerald_masks[i] = clampi(int(emerald_masks[i]), 0, 127)
-	elif parsed.has("chaos_emerald_mask"):
-		# Older Godot saves had one global mask; preserve it for Sonic.
-		_chaos_emerald_masks[0] = clampi(int(parsed["chaos_emerald_mask"]), 0, 127)
-	_chaos_emerald_mask = _get_selected_chaos_emerald_mask()
-	_sync_active_character_level_progress()
+	SAVE_LIFECYCLE_FLOW.load(self)
 
 func _save_save_data() -> void:
-	if _save_id == 0:
-		_save_id = randi()
-		if _save_id == 0:
-			_save_id = 1
-	var payload := SAVE_PROFILE_CODEC.build_payload(self)
-	SAVE_FILE_STORE.write_json_with_backup(_save_path, payload)
+	SAVE_LIFECYCLE_FLOW.save(self)
 
 func _read_save_dictionary(path: String) -> Variant:
-	return SAVE_FILE_STORE.read_json_dictionary(path)
+	return SAVE_LIFECYCLE_FLOW.read_dictionary(self, path)
 
 func _reset_progress() -> void:
-	# save.c preserves the selected language when it creates a fresh save.
-	var preserved_language := clampi(_language_index, 0, get_language_items().size() - 1)
-	_unlocked_level_index = 0
-	_character_unlocked_level_indices = [0, 0, 0, 0, 0]
-	_selected_level_index = 0
-	_best_scores = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-	_profile_score = 0
-	_level_cleared_flags = [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
-	_time_attack_best_times = {}
-	_time_attack_record_tables = {}
-	_tiny_chao_unlocked = false
-	_tiny_chao_roster = _get_default_tiny_chao_roster()
-	_true_area_unlocked = false
-	_extra_zone_status = 0
-	_difficulty_index = 0
-	_difficulty_before_edit = _difficulty_index
-	_time_limit_enabled = true
-	_time_limit_before_edit = _time_limit_enabled
-	_language_index = preserved_language
-	_pending_language_index = _language_index
-	_button_bindings = PROFILE_CATALOG.default_button_bindings()
-	_button_bindings_before_edit = _button_bindings.duplicate()
-	_sound_test_track_index = 0
-	_sound_test_state = SOUND_TEST_STATE_STOPPED
-	_sound_test_unlocked = false
-	_player_profile_name = [" ", " ", " ", " ", " ", " "]
-	_multi_record_rows = _get_cleared_multiplayer_record_rows()
-	_multiplayer_record_totals = _get_default_multiplayer_record_totals()
-	_boss_time_attack_unlocked = false
-	_selected_character_index = 0
-	_character_unlocked = [true, false, false, false, false]
-	_completed_character_routes = [false, false, false, false, false]
-	_extra_ending_credits_played = false
-	_chaos_emeralds_message_seen = false
-	_chaos_emerald_mask = 0
-	_chaos_emerald_masks = [0, 0, 0, 0, 0]
-	_save_reset_pending = false
-	_save_save_data()
+	SAVE_LIFECYCLE_FLOW.reset(self)
 
 func load_completed_save_game() -> void:
 	# save.c's GenerateCompletedSaveGame builds a profile with every route,

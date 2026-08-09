@@ -32,7 +32,7 @@ func _run() -> void:
 	bridge._status_text = "TO BE CONTINUED"
 	_check(bridge.get_status_text() == "FORTSETZUNG FOLGT", "presentation status follows localization")
 	bridge._status_text = "CONFIRM RESET? A YES, B NO"
-	_check(bridge.get_status_text() == "RESET BESTAETIGEN? ENTER JA X NEIN", "confirmation status follows localization")
+	_check(bridge.get_status_text() == "RESET BESTAETIGEN? ENTER JA ESC NEIN", "confirmation status follows localization")
 	bridge._status_text = "PLAYER LAYER: BACK"
 	_check(bridge.get_status_text() == "SPIELEREBENE: HINTEN", "dynamic gameplay status follows localization")
 	print("HUD_TIME_CHECKS=%d" % checks)

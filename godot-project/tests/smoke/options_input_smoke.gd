@@ -54,7 +54,7 @@ func _run() -> void:
 	_check(localized_button_rows[0]["status"] == "AKTIV" and bool(localized_button_rows[0].get("active", false)), "button state is localized and semantic")
 	_check(bridge.get_difficulty_rows()[2]["status"] == "WENIGER GEGNERDRUCK", "difficulty row status follows localization")
 	_check(bridge.get_sound_test_status_text().begins_with("TITEL WAEHLEN"), "sound test status follows localization")
-	_check(bridge.get_name_entry_prompt_text().contains("BEWEGEN"), "name entry prompt follows localization")
+	_check(bridge.get_name_entry_prompt_text().is_empty(), "name entry prompt remains intentionally empty")
 	bridge._options_mode = bridge.OPTIONS_MODE_DELETE_CONFIRM
 	var localized_delete_rows: Array = bridge.get_delete_confirm_rows()
 	_check(localized_delete_rows[0]["label"] == "JA", "delete confirmation choices follow localization")

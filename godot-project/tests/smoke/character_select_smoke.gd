@@ -1,6 +1,6 @@
 extends SceneTree
 
-const MENU_INPUT_ROUTER := preload("res://scripts/core/MenuInputRouter.gd")
+const CHARACTER_SELECT_INPUT_ROUTER := preload("res://scripts/core/CharacterSelectInputRouter.gd")
 
 var checks: int = 0
 var failed: bool = false
@@ -16,11 +16,11 @@ func _run() -> void:
 	bridge._player_state.variant = 0
 	bridge.open_character_select(bridge.CHARACTER_SELECT_CONTEXT_GAME_START)
 	_check(bridge.get_character_select_intro_progress() == 0.0, "character intro starts closed")
-	var router := MENU_INPUT_ROUTER.new()
-	router.handle(bridge.B_BUTTON)
+	var router := CHARACTER_SELECT_INPUT_ROUTER.new()
+	router.handle(bridge, bridge.B_BUTTON)
 	_check(not bridge.is_character_select(), "back cancels character select during its intro")
 	bridge.open_character_select(bridge.CHARACTER_SELECT_CONTEXT_GAME_START)
-	router.handle(bridge.A_BUTTON)
+	router.handle(bridge, bridge.A_BUTTON)
 	_check(not bridge.is_character_select(), "confirm accepts character select during its intro")
 	bridge.open_character_select(bridge.CHARACTER_SELECT_CONTEXT_GAME_START)
 	bridge.advance_ui_timers(24.0 / 60.0)

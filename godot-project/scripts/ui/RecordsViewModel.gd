@@ -37,8 +37,8 @@ static func multiplayer_visible_rows(bridge: Object) -> Array:
 
 static func multiplayer_scroll_hint(bridge: Object) -> String:
 	if multiplayer_visible_rows(bridge).is_empty(): return bridge._language_text("NO DATA", "KEINE DATEN", "AUCUNE DONNEE", "SIN DATOS", "NESSUN DATO")
-	var up := bridge._multi_records_menu_index > 0
-	var down := bridge._multi_records_menu_index < multiplayer_scroll_max(bridge)
+	var up: bool = bridge._multi_records_menu_index > 0
+	var down: bool = bridge._multi_records_menu_index < multiplayer_scroll_max(bridge)
 	if up and down: return bridge._language_text("UP/DOWN", "HOCH/RUNTER", "HAUT/BAS", "ARRIBA/ABAJO", "SU/GIU")
 	if up: return bridge._language_text("UP", "HOCH", "HAUT", "ARRIBA", "SU")
 	if down: return bridge._language_text("DOWN", "RUNTER", "BAS", "ABAJO", "GIU")
