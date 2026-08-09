@@ -1,4 +1,4 @@
-extends CanvasLayer
+extends ScreenBase
 
 const SourceTilemapTextureImpl = preload("res://scripts/SourceTilemapTexture.gd")
 
@@ -53,9 +53,9 @@ func _process(delta: float) -> void:
 	_update_source_logo()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.04, 0.11, 0.96))
-	_panel = _ensure_rect("Panel", Rect2(180.0, 210.0, 920.0, 230.0), Color(0.08, 0.16, 0.30, 0.90))
-	_accent = _ensure_rect("Accent", Rect2(220.0, 462.0, 840.0, 6.0), Color(0.30, 0.76, 1.0, 0.44))
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.04, 0.11, 0.96))
+	_panel = ensure_rect("Panel", Rect2(180.0, 210.0, 920.0, 230.0), Color(0.08, 0.16, 0.30, 0.90))
+	_accent = ensure_rect("Accent", Rect2(220.0, 462.0, 840.0, 6.0), Color(0.30, 0.76, 1.0, 0.44))
 	_source_logo = TextureRect.new()
 	_source_logo.name = "OriginalCreatedBySonicTeam"
 	_source_logo.position = Vector2(400.0, 200.0)
@@ -68,17 +68,6 @@ func _ensure_chrome() -> void:
 	_backdrop.z_index = -3
 	_panel.z_index = -2
 	_accent.z_index = -1
-
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
 
 func _update_chrome() -> void:
 	if _accent:

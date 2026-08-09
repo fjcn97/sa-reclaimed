@@ -3,6 +3,9 @@
 extends Node2D
 class_name StageBackdrop
 
+const SOURCE_DATA_PATHS := preload("res://scripts/core/SourceDataPaths.gd")
+const SOURCE_TILE_GRAPHICS := preload("res://scripts/core/SourceTileGraphics.gd")
+
 var _time: float = 0.0
 var _source_bg_texture: Texture2D = null
 var _source_bg_level_id := -1
@@ -147,8 +150,9 @@ func get_source_background_profile(level_id: int) -> Dictionary:
 func _build_source_background(manifest: Dictionary) -> Texture2D:
 	if manifest.is_empty() or not bool(manifest.get("valid", false)):
 		return null
-	var atlas_path := ProjectSettings.globalize_path("res://../data/sa2/maps/%s/%s/tilemaps/bg/tiles.png" % [manifest.zone, manifest.act])
-	var map_path := ProjectSettings.globalize_path("res://../data/sa2/maps/%s/%s/tilemaps/bg/tilemap.tilemap2" % [manifest.zone, manifest.act])
+	var background_root := SOURCE_DATA_PATHS.background_root(manifest.zone, manifest.act)
+	var atlas_path := SOURCE_DATA_PATHS.globalize(background_root.path_join("tiles.png"))
+	var map_path := SOURCE_DATA_PATHS.globalize(background_root.path_join("tilemap.tilemap2"))
 	var atlas := Image.load_from_file(atlas_path)
 	if atlas == null or atlas.is_empty() or not FileAccess.file_exists(map_path):
 		return null
@@ -160,21 +164,14 @@ func _build_source_background(manifest: Dictionary) -> Texture2D:
 	image.fill(Color(0.0, 0.0, 0.0, 0.0))
 	for tile_y in range(30):
 		for tile_x in range(32):
-			var tile_value := _read_u16(map_bytes, (tile_y * 32 + tile_x) * 2)
+			var tile_value := SOURCE_TILE_GRAPHICS.read_u16(map_bytes, (tile_y * 32 + tile_x) * 2)
 			var tile_index := tile_value & 0x03ff
-			var atlas_y := tile_index * 8
-			if atlas_y + 8 > atlas.get_height():
-				continue
-			var tile_image := atlas.get_region(Rect2i(0, atlas_y, 8, 8))
-			tile_image.convert(Image.FORMAT_RGBA8)
-			if tile_value & 0x0400:
-				tile_image.flip_x()
-			if tile_value & 0x0800:
-				tile_image.flip_y()
-			image.blit_rect(tile_image, Rect2i(0, 0, 8, 8), Vector2i(tile_x * 8, tile_y * 8))
+			SOURCE_TILE_GRAPHICS.blit_atlas_tile(
+				image,
+				atlas,
+				tile_index,
+				Vector2i(tile_x * 8, tile_y * 8),
+				bool(tile_value & 0x0400),
+				bool(tile_value & 0x0800)
+			)
 	return ImageTexture.create_from_image(image)
-
-func _read_u16(bytes: PackedByteArray, offset: int) -> int:
-	if offset < 0 or offset + 1 >= bytes.size():
-		return 0
-	return int(bytes[offset]) | (int(bytes[offset + 1]) << 8)

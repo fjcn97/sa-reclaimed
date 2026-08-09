@@ -112,3 +112,4 @@ renderer/texture_filter/force_nearest_without_mipmaps=false
 [sa_reclaimed]
 
 debug/show_touch_controls_on_desktop=false
+source_data_root="res://../data"

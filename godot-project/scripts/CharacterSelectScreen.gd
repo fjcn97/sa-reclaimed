@@ -1,4 +1,6 @@
-extends CanvasLayer
+extends ScreenBase
+
+const CHARACTER_WHEEL_VIEW := preload("res://scripts/ui/CharacterWheelView.gd")
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -35,9 +37,8 @@ var _status_labels: Array[Label] = []
 var _wheel_nodes: Array[ColorRect] = []
 var _wheel_node_labels: Array[Label] = []
 var _selected_node_ring: ColorRect = null
-var _node_positions: Array[Vector2] = []
 var _wheel_time: float = 0.0
-var _selected_wheel_pos: Vector2 = Vector2.ZERO
+var _wheel_view := CHARACTER_WHEEL_VIEW.new()
 
 func _ready() -> void:
 	set_process(true)
@@ -50,7 +51,10 @@ func _ready() -> void:
 	_ensure_chrome()
 	_ensure_header_labels()
 	_ensure_rows()
-	_ensure_wheel()
+	var wheel_nodes := _wheel_view.setup(self)
+	_wheel_nodes.assign(wheel_nodes["wheel_nodes"])
+	_wheel_node_labels.assign(wheel_nodes["wheel_node_labels"])
+	_selected_node_ring = wheel_nodes["selected_node_ring"] as ColorRect
 	_set_screen_visible(CoreBridge.is_character_select())
 
 func _process(delta: float) -> void:
@@ -97,25 +101,25 @@ func _process(delta: float) -> void:
 		_context_chip.position.x = 602.0 + side_shift
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.05, 0.10, 0.68))
-	_hero_glow = _ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.12, 0.24, 0.56, 0.18))
-	_header_plate = _ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.08, 0.10, 0.18, 0.94))
-	_panel = _ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.05, 0.09, 0.17, 0.96))
-	_accent = _ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.18, 0.48, 0.86, 0.72))
-	_header_band = _ensure_rect("HeaderBand", Rect2(210.0, 246.0, 326.0, 254.0), Color(0.08, 0.15, 0.30, 0.92))
-	_left_stage = _ensure_rect("LeftStage", Rect2(204.0, 246.0, 346.0, 254.0), Color(0.08, 0.12, 0.24, 0.94))
-	_right_stage = _ensure_rect("RightStage", Rect2(576.0, 246.0, 498.0, 254.0), Color(0.10, 0.16, 0.28, 0.94))
-	_prompt_band = _ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.92))
-	_title_rule = _ensure_rect("TitleRule", Rect2(238.0, 202.0, 804.0, 5.0), Color(0.86, 0.90, 1.0, 0.34))
-	_wheel_shadow = _ensure_rect("WheelShadow", Rect2(184.0, 258.0, 238.0, 210.0), Color(0.00, 0.04, 0.10, 0.26))
-	_wheel_ring = _ensure_rect("WheelRing", Rect2(214.0, 274.0, 152.0, 152.0), Color(0.16, 0.28, 0.52, 0.94))
-	_wheel_core = _ensure_rect("WheelCore", Rect2(246.0, 306.0, 88.0, 88.0), Color(0.09, 0.14, 0.24, 1.0))
-	_portrait_ring = _ensure_rect("PortraitRing", Rect2(392.0, 270.0, 122.0, 122.0), Color(0.92, 0.76, 0.24, 0.20))
-	_portrait_card = _ensure_rect("PortraitCard", Rect2(362.0, 304.0, 174.0, 166.0), Color(0.08, 0.14, 0.24, 0.98))
-	_portrait_glow = _ensure_rect("PortraitGlow", Rect2(382.0, 320.0, 134.0, 102.0), Color(0.30, 0.78, 0.98, 0.28))
-	_summary_card = _ensure_rect("SummaryCard", Rect2(230.0, 450.0, 296.0, 58.0), Color(0.07, 0.13, 0.23, 0.95))
-	_roster_card = _ensure_rect("RosterCard", Rect2(602.0, 274.0, 446.0, 194.0), Color(0.07, 0.13, 0.23, 0.95))
-	_context_chip = _ensure_rect("ContextChip", Rect2(602.0, 252.0, 164.0, 30.0), Color(0.18, 0.38, 0.86, 0.96))
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.05, 0.10, 0.68))
+	_hero_glow = ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.12, 0.24, 0.56, 0.18))
+	_header_plate = ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.08, 0.10, 0.18, 0.94))
+	_panel = ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.05, 0.09, 0.17, 0.96))
+	_accent = ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.18, 0.48, 0.86, 0.72))
+	_header_band = ensure_rect("HeaderBand", Rect2(210.0, 246.0, 326.0, 254.0), Color(0.08, 0.15, 0.30, 0.92))
+	_left_stage = ensure_rect("LeftStage", Rect2(204.0, 246.0, 346.0, 254.0), Color(0.08, 0.12, 0.24, 0.94))
+	_right_stage = ensure_rect("RightStage", Rect2(576.0, 246.0, 498.0, 254.0), Color(0.10, 0.16, 0.28, 0.94))
+	_prompt_band = ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.92))
+	_title_rule = ensure_rect("TitleRule", Rect2(238.0, 202.0, 804.0, 5.0), Color(0.86, 0.90, 1.0, 0.34))
+	_wheel_shadow = ensure_rect("WheelShadow", Rect2(184.0, 258.0, 238.0, 210.0), Color(0.00, 0.04, 0.10, 0.26))
+	_wheel_ring = ensure_rect("WheelRing", Rect2(214.0, 274.0, 152.0, 152.0), Color(0.16, 0.28, 0.52, 0.94))
+	_wheel_core = ensure_rect("WheelCore", Rect2(246.0, 306.0, 88.0, 88.0), Color(0.09, 0.14, 0.24, 1.0))
+	_portrait_ring = ensure_rect("PortraitRing", Rect2(392.0, 270.0, 122.0, 122.0), Color(0.92, 0.76, 0.24, 0.20))
+	_portrait_card = ensure_rect("PortraitCard", Rect2(362.0, 304.0, 174.0, 166.0), Color(0.08, 0.14, 0.24, 0.98))
+	_portrait_glow = ensure_rect("PortraitGlow", Rect2(382.0, 320.0, 134.0, 102.0), Color(0.30, 0.78, 0.98, 0.28))
+	_summary_card = ensure_rect("SummaryCard", Rect2(230.0, 450.0, 296.0, 58.0), Color(0.07, 0.13, 0.23, 0.95))
+	_roster_card = ensure_rect("RosterCard", Rect2(602.0, 274.0, 446.0, 194.0), Color(0.07, 0.13, 0.23, 0.95))
+	_context_chip = ensure_rect("ContextChip", Rect2(602.0, 252.0, 164.0, 30.0), Color(0.18, 0.38, 0.86, 0.96))
 	_backdrop.z_index = -11
 	_hero_glow.z_index = -10
 	_header_plate.z_index = -9
@@ -136,41 +140,18 @@ func _ensure_chrome() -> void:
 	_roster_card.z_index = 0
 	_context_chip.z_index = 1
 
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
-
 func _ensure_header_labels() -> void:
-	_context_label = _ensure_label("ContextLabel", Vector2(614.0, 252.0), Vector2(140.0, 26.0), 14)
+	_context_label = ensure_label("ContextLabel", Vector2(614.0, 252.0), Vector2(140.0, 26.0), 14)
 	_context_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_selected_name_label = _ensure_label("SelectedNameLabel", Vector2(226.0, 252.0), Vector2(300.0, 38.0), 28)
+	_selected_name_label = ensure_label("SelectedNameLabel", Vector2(226.0, 252.0), Vector2(300.0, 38.0), 28)
 	_selected_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_selected_desc_label = _ensure_label("SelectedDescLabel", Vector2(230.0, 290.0), Vector2(292.0, 48.0), 15)
+	_selected_desc_label = ensure_label("SelectedDescLabel", Vector2(230.0, 290.0), Vector2(292.0, 48.0), 15)
 	_selected_desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_selected_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_summary_label = _ensure_label("SummaryLabel", Vector2(248.0, 458.0), Vector2(260.0, 44.0), 14)
+	_summary_label = ensure_label("SummaryLabel", Vector2(248.0, 458.0), Vector2(260.0, 44.0), 14)
 	_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_emblem_label = _ensure_label("EmblemLabel", Vector2(416.0, 312.0), Vector2(74.0, 38.0), 26)
+	_emblem_label = ensure_label("EmblemLabel", Vector2(416.0, 312.0), Vector2(74.0, 38.0), 26)
 	_emblem_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 func _ensure_rows() -> void:
@@ -178,34 +159,15 @@ func _ensure_rows() -> void:
 		return
 	for i in range(5):
 		var top := 290.0 + float(i) * 36.0
-		var card := _ensure_rect("RowCard%d" % i, Rect2(624.0, top, 398.0, 30.0), Color(0.10, 0.16, 0.29, 0.96))
-		var row := _ensure_label("RowLabel%d" % i, Vector2(642.0, top - 1.0), Vector2(132.0, 16.0), 17)
-		var desc := _ensure_label("DescLabel%d" % i, Vector2(642.0, top + 14.0), Vector2(176.0, 14.0), 10)
-		var status := _ensure_label("StatusLabel%d" % i, Vector2(826.0, top + 5.0), Vector2(176.0, 18.0), 12)
+		var card := ensure_rect("RowCard%d" % i, Rect2(624.0, top, 398.0, 30.0), Color(0.10, 0.16, 0.29, 0.96))
+		var row := ensure_label("RowLabel%d" % i, Vector2(642.0, top - 1.0), Vector2(132.0, 16.0), 17)
+		var desc := ensure_label("DescLabel%d" % i, Vector2(642.0, top + 14.0), Vector2(176.0, 14.0), 10)
+		var status := ensure_label("StatusLabel%d" % i, Vector2(826.0, top + 5.0), Vector2(176.0, 18.0), 12)
 		status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		_row_cards.append(card)
 		_row_labels.append(row)
 		_desc_labels.append(desc)
 		_status_labels.append(status)
-
-func _ensure_wheel() -> void:
-	if _wheel_nodes.size() > 0:
-		return
-	var center := Vector2(290.0, 350.0)
-	var radius_x := 86.0
-	var radius_y := 72.0
-	for i in range(5):
-		var angle := -PI * 0.5 + float(i) * TAU / 5.0
-		var pos := center + Vector2(cos(angle) * radius_x, sin(angle) * radius_y)
-		_node_positions.append(pos)
-		var node := _ensure_rect("WheelNode%d" % i, Rect2(pos.x - 16.0, pos.y - 16.0, 32.0, 32.0), Color(0.20, 0.30, 0.44, 0.98))
-		var label := _ensure_label("WheelNodeLabel%d" % i, Vector2(pos.x - 16.0, pos.y - 16.0), Vector2(32.0, 32.0), 11)
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_wheel_nodes.append(node)
-		_wheel_node_labels.append(label)
-	_selected_node_ring = _ensure_rect("SelectedNodeRing", Rect2(center.x - 22.0, center.y - 22.0, 44.0, 44.0), Color(0.98, 0.80, 0.22, 0.92))
-	_selected_node_ring.z_index = 2
-	_selected_wheel_pos = center
 
 func _update_selected_character() -> void:
 	var selected_name := CoreBridge.get_selected_character_name()
@@ -242,7 +204,7 @@ func _update_rows() -> void:
 		var is_available := bool(row.get("available", false))
 		var status_text := str(row.get("status", ""))
 		var top := 290.0 + float(i) * 36.0
-		var lift := -3.0 if is_selected else 0.0
+		var lift := 0.0
 		_row_cards[i].position = Vector2(624.0, top + lift)
 		_row_labels[i].position = Vector2(642.0, top - 1.0 + lift)
 		_desc_labels[i].position = Vector2(642.0, top + 14.0 + lift)
@@ -256,37 +218,7 @@ func _update_rows() -> void:
 		_status_labels[i].modulate = Color(0.32, 1.0, 0.56, 1.0) if is_available else Color(0.62, 0.66, 0.76, 0.96)
 
 func _update_wheel() -> void:
-	var rows: Array = CoreBridge.get_character_select_rows()
-	var selected_index := -1
-	for i in range(_wheel_nodes.size()):
-		var visible := i < rows.size()
-		_wheel_nodes[i].visible = visible
-		_wheel_node_labels[i].visible = visible
-		if not visible:
-			continue
-		var row: Dictionary = rows[i]
-		var is_available := bool(row.get("available", false))
-		var is_selected := bool(row.get("selected", false))
-		var pos := _node_positions[i]
-		var bob := sin(_wheel_time + float(i) * 0.8) * 4.0
-		_wheel_nodes[i].position = Vector2(pos.x - 16.0, pos.y - 16.0 + bob)
-		_wheel_node_labels[i].position = Vector2(pos.x - 16.0, pos.y - 16.0 + bob)
-		_wheel_nodes[i].color = Color(0.46, 0.78, 0.98, 0.98) if is_selected else (Color(0.20, 0.30, 0.44, 0.98) if is_available else Color(0.24, 0.24, 0.28, 0.96))
-		var name_text := str(row.get("name", ""))
-		name_text = name_text.replace(" ", "")
-		_wheel_node_labels[i].text = name_text.left(2)
-		_wheel_node_labels[i].modulate = Color(0.96, 0.98, 1.0, 1.0) if is_available else Color(0.70, 0.72, 0.76, 0.94)
-		if is_selected:
-			selected_index = i
-	if _selected_node_ring:
-		if selected_index >= 0:
-			var target := _node_positions[selected_index] + Vector2(0.0, sin(_wheel_time + float(selected_index) * 0.8) * 4.0)
-			_selected_wheel_pos = _selected_wheel_pos.lerp(target, clampf(get_process_delta_time() * 10.0, 0.0, 1.0))
-			_selected_node_ring.position = _selected_wheel_pos - Vector2(22.0, 22.0)
-			_selected_node_ring.color = Color(0.98, 0.80, 0.22, 0.92 + absf(sin(_wheel_time * 1.2)) * 0.06)
-			_selected_node_ring.visible = true
-		else:
-			_selected_node_ring.visible = false
+	_wheel_view.update(get_process_delta_time(), _wheel_time)
 
 func _update_chrome() -> void:
 	var unlocked := CoreBridge.is_character_unlocked(CoreBridge.get_character_menu_index())

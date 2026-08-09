@@ -1,6 +1,6 @@
 # PauseScreen.gd
 # Presents an original-inspired dedicated pause panel with compact stage actions.
-extends CanvasLayer
+extends ScreenBase
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -66,22 +66,22 @@ func _process(_delta: float) -> void:
 	_update_summary()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.05, 0.10, 0.74))
-	_hero_glow = _ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.36, 0.28, 0.10, 0.16))
-	_header_plate = _ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.09, 0.08, 0.08, 0.94))
-	_panel = _ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.06, 0.08, 0.15, 0.96))
-	_accent = _ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.98, 0.76, 0.20, 0.98))
-	_header_band = _ensure_rect("HeaderBand", Rect2(318.0, 246.0, 644.0, 82.0), Color(0.24, 0.18, 0.08, 0.92))
-	_badge_ring = _ensure_rect("BadgeRing", Rect2(556.0, 214.0, 168.0, 60.0), Color(0.96, 0.82, 0.30, 0.20))
-	_badge_core = _ensure_rect("BadgeCore", Rect2(570.0, 222.0, 140.0, 44.0), Color(0.24, 0.18, 0.08, 0.96))
-	_menu_stage = _ensure_rect("MenuStage", Rect2(286.0, 330.0, 356.0, 122.0), Color(0.08, 0.12, 0.22, 0.94))
-	_summary_stage = _ensure_rect("SummaryStage", Rect2(668.0, 330.0, 326.0, 122.0), Color(0.08, 0.10, 0.18, 0.94))
-	_menu_card = _ensure_rect("MenuCard", Rect2(302.0, 346.0, 324.0, 90.0), Color(0.10, 0.13, 0.22, 0.98))
-	_summary_card = _ensure_rect("SummaryCard", Rect2(686.0, 346.0, 290.0, 90.0), Color(0.08, 0.10, 0.18, 0.96))
-	_prompt_band = _ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.92))
-	_summary_label = _ensure_label("SummaryLabel", Vector2(710.0, 364.0), Vector2(242.0, 52.0), 15)
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.05, 0.10, 0.74))
+	_hero_glow = ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.36, 0.28, 0.10, 0.16))
+	_header_plate = ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.09, 0.08, 0.08, 0.94))
+	_panel = ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.06, 0.08, 0.15, 0.96))
+	_accent = ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.98, 0.76, 0.20, 0.98))
+	_header_band = ensure_rect("HeaderBand", Rect2(318.0, 246.0, 644.0, 82.0), Color(0.24, 0.18, 0.08, 0.92))
+	_badge_ring = ensure_rect("BadgeRing", Rect2(556.0, 214.0, 168.0, 60.0), Color(0.96, 0.82, 0.30, 0.20))
+	_badge_core = ensure_rect("BadgeCore", Rect2(570.0, 222.0, 140.0, 44.0), Color(0.24, 0.18, 0.08, 0.96))
+	_menu_stage = ensure_rect("MenuStage", Rect2(286.0, 330.0, 356.0, 122.0), Color(0.08, 0.12, 0.22, 0.94))
+	_summary_stage = ensure_rect("SummaryStage", Rect2(668.0, 330.0, 326.0, 122.0), Color(0.08, 0.10, 0.18, 0.94))
+	_menu_card = ensure_rect("MenuCard", Rect2(302.0, 346.0, 324.0, 90.0), Color(0.10, 0.13, 0.22, 0.98))
+	_summary_card = ensure_rect("SummaryCard", Rect2(686.0, 346.0, 290.0, 90.0), Color(0.08, 0.10, 0.18, 0.96))
+	_prompt_band = ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.92))
+	_summary_label = ensure_label("SummaryLabel", Vector2(710.0, 364.0), Vector2(242.0, 52.0), 15)
 	_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_badge_label = _ensure_label("BadgeLabel", Vector2(582.0, 228.0), Vector2(116.0, 32.0), 16)
+	_badge_label = ensure_label("BadgeLabel", Vector2(582.0, 228.0), Vector2(116.0, 32.0), 16)
 	_backdrop.z_index = -10
 	_hero_glow.z_index = -9
 	_header_plate.z_index = -8
@@ -96,37 +96,14 @@ func _ensure_chrome() -> void:
 	_summary_card.z_index = -2
 	_prompt_band.z_index = -1
 
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
-
 func _ensure_rows() -> void:
 	if _row_labels.size() > 0:
 		return
 	for i in range(2):
 		var top := 364.0 + float(i) * 34.0
-		var card := _ensure_rect("RowCard%d" % i, Rect2(322.0, top, 284.0, 28.0), Color(0.10, 0.16, 0.29, 0.96))
-		var row := _ensure_label("RowLabel%d" % i, Vector2(340.0, top - 1.0), Vector2(124.0, 26.0), 16)
-		var value := _ensure_label("ValueLabel%d" % i, Vector2(450.0, top - 1.0), Vector2(136.0, 26.0), 12)
+		var card := ensure_rect("RowCard%d" % i, Rect2(322.0, top, 284.0, 28.0), Color(0.10, 0.16, 0.29, 0.96))
+		var row := ensure_label("RowLabel%d" % i, Vector2(340.0, top - 1.0), Vector2(124.0, 26.0), 16)
+		var value := ensure_label("ValueLabel%d" % i, Vector2(450.0, top - 1.0), Vector2(136.0, 26.0), 12)
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		_row_cards.append(card)
 		_row_labels.append(row)
@@ -145,7 +122,7 @@ func _update_rows() -> void:
 		var row: Dictionary = rows[i]
 		var is_selected := i == selected
 		var top := 364.0 + float(i) * 34.0
-		var lift := -3.0 if is_selected else 0.0
+		var lift := 0.0
 		_row_cards[i].position = Vector2(322.0, top + lift)
 		_row_labels[i].position = Vector2(340.0, top - 1.0 + lift)
 		_value_labels[i].position = Vector2(450.0, top - 1.0 + lift)

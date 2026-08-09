@@ -2,8 +2,11 @@
 class_name SourceTilemapTexture
 extends RefCounted
 
+const SOURCE_DATA_PATHS := preload("res://scripts/core/SourceDataPaths.gd")
+const SOURCE_TILE_GRAPHICS := preload("res://scripts/core/SourceTileGraphics.gd")
+
 static func compose(source: String, map_width: int = 30, map_entry_bytes: int = 2) -> Texture2D:
-	var base := ProjectSettings.globalize_path("res://../data/sa2/tilemaps/%s" % source)
+	var base := SOURCE_DATA_PATHS.globalize(SOURCE_DATA_PATHS.tilemap_root(source))
 	var tiles := Image.new()
 	if tiles.load(base.path_join("tiles.png")) != OK:
 		return null
@@ -22,13 +25,12 @@ static func compose(source: String, map_width: int = 30, map_entry_bytes: int = 
 			if map_entry_bytes == 2:
 				entry |= int(tilemap[offset + 1]) << 8
 			var tile_index := entry & 0x03ff
-			var flip_x := (entry & 0x0400) != 0
-			var flip_y := (entry & 0x0800) != 0
-			for tile_y in range(8):
-				for tile_x in range(8):
-					var source_x := 7 - tile_x if flip_x else tile_x
-					var source_y := 7 - tile_y if flip_y else tile_y
-					var source_y_atlas := tile_index * 8 + source_y
-					if source_y_atlas < tiles.get_height():
-						image.set_pixel(map_x * 8 + tile_x, map_y * 8 + tile_y, tiles.get_pixel(source_x, source_y_atlas))
+			SOURCE_TILE_GRAPHICS.blit_atlas_tile(
+				image,
+				tiles,
+				tile_index,
+				Vector2i(map_x * 8, map_y * 8),
+				bool(entry & 0x0400),
+				bool(entry & 0x0800)
+			)
 	return ImageTexture.create_from_image(image)

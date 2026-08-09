@@ -1,6 +1,6 @@
 # SwitchOptionScreen.gd
 # Presents an original-inspired two-choice submenu used by options toggles.
-extends CanvasLayer
+extends ScreenBase
 
 @export var screen_id: String = ""
 @export var title_label: Label = null
@@ -50,14 +50,17 @@ func _process(_delta: float) -> void:
 		title_label.size = Vector2(628.0, 56.0)
 		title_label.modulate = Color(0.98, 0.98, 1.0, 1.0)
 	if prompt_label:
-		prompt_label.text = _get_prompt_text()
-		prompt_label.position = Vector2(180.0, 550.0)
-		prompt_label.size = Vector2(920.0, 34.0)
-		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		prompt_label.modulate = _get_prompt_color(pulse)
+		if _is_delete_screen():
+			prompt_label.visible = false
+		else:
+			prompt_label.text = _get_prompt_text()
+			prompt_label.position = Vector2(180.0, 550.0)
+			prompt_label.size = Vector2(920.0, 34.0)
+			prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			prompt_label.modulate = _get_prompt_color(pulse)
 	if detail_label:
-		detail_label.text = "%s   |   %s" % [_get_summary_text().replace("\n", "   "), _get_detail_text()]
-		detail_label.position = Vector2(164.0, 664.0)
+		detail_label.text = _get_detail_text() if _is_delete_screen() else "%s   |   %s" % [_get_summary_text().replace("\n", "   "), _get_detail_text()]
+		detail_label.position = Vector2(164.0, 574.0) if _is_delete_screen() else Vector2(164.0, 664.0)
 		detail_label.size = Vector2(952.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		detail_label.modulate = _get_footer_color()
@@ -66,19 +69,19 @@ func _process(_delta: float) -> void:
 	_update_rows()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.04, 0.09, 0.68))
-	_hero_glow = _ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.20, 0.28, 0.40, 0.18))
-	_header_plate = _ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.10, 0.10, 0.12, 0.94))
-	_panel = _ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.05, 0.09, 0.17, 0.96))
-	_accent = _ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), _get_accent_color())
-	_header_band = _ensure_rect("HeaderBand", Rect2(210.0, 246.0, 288.0, 238.0), Color(0.20, 0.18, 0.14, 0.92))
-	_choice_stage = _ensure_rect("ChoiceStage", Rect2(204.0, 246.0, 562.0, 238.0), Color(0.05, 0.10, 0.18, 0.92))
-	_summary_stage = _ensure_rect("SummaryStage", Rect2(792.0, 246.0, 280.0, 238.0), Color(0.10, 0.16, 0.28, 0.94))
-	_badge_ring = _ensure_rect("BadgeRing", Rect2(878.0, 108.0, 140.0, 140.0), Color(0.92, 0.78, 0.24, 0.22))
-	_badge_core = _ensure_rect("BadgeCore", Rect2(913.0, 143.0, 70.0, 70.0), Color(0.20, 0.18, 0.14, 0.96))
-	_choice_card = _ensure_rect("ChoiceCard", Rect2(226.0, 302.0, 518.0, 126.0), Color(0.05, 0.10, 0.18, 0.92))
-	_summary_card = _ensure_rect("SummaryCard", Rect2(818.0, 278.0, 228.0, 196.0), Color(0.07, 0.14, 0.25, 0.95))
-	_prompt_band = _ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.92))
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.04, 0.09, 0.68))
+	_hero_glow = ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.20, 0.28, 0.40, 0.18))
+	_header_plate = ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.10, 0.10, 0.12, 0.94))
+	_panel = ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.05, 0.09, 0.17, 0.96))
+	_accent = ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), _get_accent_color())
+	_header_band = ensure_rect("HeaderBand", Rect2(210.0, 246.0, 288.0, 238.0), Color(0.20, 0.18, 0.14, 0.92))
+	_choice_stage = ensure_rect("ChoiceStage", Rect2(204.0, 246.0, 562.0, 238.0), Color(0.05, 0.10, 0.18, 0.92))
+	_summary_stage = ensure_rect("SummaryStage", Rect2(792.0, 246.0, 280.0, 238.0), Color(0.10, 0.16, 0.28, 0.94))
+	_badge_ring = ensure_rect("BadgeRing", Rect2(878.0, 108.0, 140.0, 140.0), Color(0.92, 0.78, 0.24, 0.22))
+	_badge_core = ensure_rect("BadgeCore", Rect2(913.0, 143.0, 70.0, 70.0), Color(0.20, 0.18, 0.14, 0.96))
+	_choice_card = ensure_rect("ChoiceCard", Rect2(226.0, 302.0, 518.0, 126.0), Color(0.05, 0.10, 0.18, 0.92))
+	_summary_card = ensure_rect("SummaryCard", Rect2(818.0, 278.0, 228.0, 196.0), Color(0.07, 0.14, 0.25, 0.95))
+	_prompt_band = ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.92))
 	_backdrop.z_index = -9
 	_hero_glow.z_index = -8
 	_header_plate.z_index = -7
@@ -92,44 +95,37 @@ func _ensure_chrome() -> void:
 	_choice_card.z_index = -1
 	_summary_card.z_index = -1
 	_prompt_band.z_index = -1
-
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
+	if _is_delete_screen():
+		_header_band.position = Vector2(260.0, 246.0)
+		_header_band.size = Vector2(760.0, 270.0)
+		_choice_stage.position = Vector2(260.0, 246.0)
+		_choice_stage.size = Vector2(760.0, 270.0)
+		_choice_card.visible = false
+		_summary_stage.visible = false
+		_summary_card.visible = false
+		_badge_ring.visible = false
+		_badge_core.visible = false
+		_prompt_band.position = Vector2(176.0, 532.0)
+		_prompt_band.size = Vector2(928.0, 98.0)
 
 func _ensure_rows() -> void:
 	if _summary_label == null:
-		_summary_label = _ensure_label("SummaryLabel", Vector2(838.0, 304.0), Vector2(188.0, 148.0), 16)
+		var summary_position := Vector2(280.0, 402.0) if _is_delete_screen() else Vector2(838.0, 304.0)
+		var summary_size := Vector2(720.0, 92.0) if _is_delete_screen() else Vector2(188.0, 148.0)
+		_summary_label = ensure_label("SummaryLabel", summary_position, summary_size, 18 if _is_delete_screen() else 16)
 		_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		_summary_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 		_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if _row_labels.size() > 0:
 		return
 	for i in range(2):
-		var top := 328.0 + float(i) * 42.0
-		var card := _ensure_rect("RowCard%d" % i, Rect2(252.0, top, 466.0, 30.0), Color(0.10, 0.16, 0.29, 0.96))
-		var row := _ensure_label("RowLabel%d" % i, Vector2(276.0, top), Vector2(130.0, 28.0), 20)
-		var status := _ensure_label("StatusLabel%d" % i, Vector2(420.0, top), Vector2(274.0, 28.0), 12)
+		var top := 278.0 + float(i) * 52.0 if _is_delete_screen() else 328.0 + float(i) * 42.0
+		var card_rect := Rect2(280.0, top, 720.0, 44.0) if _is_delete_screen() else Rect2(252.0, top, 466.0, 30.0)
+		var row_position := Vector2(306.0, top) if _is_delete_screen() else Vector2(276.0, top)
+		var row_size := Vector2(668.0, 42.0) if _is_delete_screen() else Vector2(130.0, 28.0)
+		var card := ensure_rect("RowCard%d" % i, card_rect, Color(0.10, 0.16, 0.29, 0.96))
+		var row := ensure_label("RowLabel%d" % i, row_position, row_size, 22 if _is_delete_screen() else 20)
+		var status := ensure_label("StatusLabel%d" % i, Vector2.ZERO, Vector2.ZERO, 1) if _is_delete_screen() else ensure_label("StatusLabel%d" % i, Vector2(420.0, top), Vector2(274.0, 28.0), 12)
 		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		_row_cards.append(card)
@@ -164,10 +160,13 @@ func _update_summary() -> void:
 		_summary_label.text = _get_summary_text().replace("\n", "\n")
 		_summary_label.modulate = _get_summary_color()
 	if _badge_label == null:
-		_badge_label = _ensure_label("BadgeLabel", Vector2(886.0, 160.0), Vector2(124.0, 38.0), 18)
+		_badge_label = ensure_label("BadgeLabel", Vector2(886.0, 160.0), Vector2(124.0, 38.0), 18)
 	if _badge_label:
-		_badge_label.text = _get_badge_text()
-		_badge_label.modulate = _get_badge_text_color()
+		if _is_delete_screen():
+			_badge_label.visible = false
+		else:
+			_badge_label.text = _get_badge_text()
+			_badge_label.modulate = _get_badge_text_color()
 
 func _update_rows() -> void:
 	var rows := _get_rows()
@@ -175,21 +174,28 @@ func _update_rows() -> void:
 		var visible := i < rows.size()
 		_row_cards[i].visible = visible
 		_row_labels[i].visible = visible
-		_status_labels[i].visible = visible
+		_status_labels[i].visible = visible and not _is_delete_screen()
 		if not visible:
 			continue
 		var row: Dictionary = rows[i]
 		var is_selected := bool(row.get("selected", false))
-		var top := 328.0 + float(i) * 42.0
-		var lift := -4.0 if is_selected else 0.0
+		var top := 278.0 + float(i) * 52.0 if _is_delete_screen() else 328.0 + float(i) * 42.0
+		var lift := 0.0
+		if _is_delete_screen():
+			_row_cards[i].position.x = 280.0
+			_row_cards[i].size = Vector2(720.0, 44.0)
+			_row_labels[i].position.x = 306.0
+			_row_labels[i].size = Vector2(668.0, 42.0)
 		_row_cards[i].position.y = top + lift
 		_row_labels[i].position.y = top + lift
-		_status_labels[i].position.y = top + lift
+		if not _is_delete_screen():
+			_status_labels[i].position.y = top + lift
 		_row_cards[i].color = _get_row_card_color(is_selected, i)
 		_row_labels[i].text = str(row.get("label", ""))
 		_status_labels[i].text = str(row.get("status", ""))
 		_row_labels[i].modulate = _get_row_text_color(is_selected, i)
-		_status_labels[i].modulate = _get_row_status_color(is_selected, i)
+		if not _is_delete_screen():
+			_status_labels[i].modulate = _get_row_status_color(is_selected, i)
 
 func _is_active() -> bool:
 	if screen_id == "difficulty":
@@ -366,21 +372,21 @@ func _set_screen_visible(screen_visible: bool) -> void:
 	if _choice_stage:
 		_choice_stage.visible = screen_visible
 	if _summary_stage:
-		_summary_stage.visible = screen_visible
+		_summary_stage.visible = screen_visible and not _is_delete_screen()
 	if _badge_ring:
-		_badge_ring.visible = screen_visible
+		_badge_ring.visible = screen_visible and not _is_delete_screen()
 	if _badge_core:
-		_badge_core.visible = screen_visible
+		_badge_core.visible = screen_visible and not _is_delete_screen()
 	if _choice_card:
-		_choice_card.visible = screen_visible
+		_choice_card.visible = screen_visible and not _is_delete_screen()
 	if _summary_card:
-		_summary_card.visible = screen_visible
+		_summary_card.visible = screen_visible and not _is_delete_screen()
 	if _prompt_band:
 		_prompt_band.visible = screen_visible
 	if _summary_label:
 		_summary_label.visible = screen_visible
 	if _badge_label:
-		_badge_label.visible = screen_visible
+		_badge_label.visible = screen_visible and not _is_delete_screen()
 	if title_label:
 		title_label.visible = screen_visible
 	if prompt_label:
@@ -392,4 +398,4 @@ func _set_screen_visible(screen_visible: bool) -> void:
 	for label in _row_labels:
 		label.visible = screen_visible
 	for label in _status_labels:
-		label.visible = screen_visible
+		label.visible = screen_visible and not _is_delete_screen()

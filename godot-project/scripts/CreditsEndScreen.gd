@@ -1,5 +1,5 @@
 # Source-inspired completion card shown between credits and copyright.
-extends CanvasLayer
+extends ScreenBase
 
 const SourceTilemapTextureImpl = preload("res://scripts/SourceTilemapTexture.gd")
 
@@ -50,10 +50,10 @@ func _process(delta: float) -> void:
 	_update_source_card()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.06, 0.98))
-	_panel = _ensure_rect("CompletionPanel", Rect2(174.0, 142.0, 932.0, 430.0), Color(0.05, 0.11, 0.23, 0.98))
-	_shine = _ensure_rect("CompletionShine", Rect2(206.0, 178.0, 868.0, 138.0), Color(0.22, 0.60, 1.0, 0.16))
-	_rule = _ensure_rect("CompletionRule", Rect2(246.0, 360.0, 788.0, 6.0), Color(1.0, 0.72, 0.20, 0.66))
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.06, 0.98))
+	_panel = ensure_rect("CompletionPanel", Rect2(174.0, 142.0, 932.0, 430.0), Color(0.05, 0.11, 0.23, 0.98))
+	_shine = ensure_rect("CompletionShine", Rect2(206.0, 178.0, 868.0, 138.0), Color(0.22, 0.60, 1.0, 0.16))
+	_rule = ensure_rect("CompletionRule", Rect2(246.0, 360.0, 788.0, 6.0), Color(1.0, 0.72, 0.20, 0.66))
 	_source_card = TextureRect.new()
 	_source_card.name = "OriginalCreditsEndCard"
 	_source_card.position = Vector2(400.0, 240.0)
@@ -78,17 +78,6 @@ func _update_source_card() -> void:
 	if not _source_cache.has(source):
 		_source_cache[source] = SourceTilemapTextureImpl.compose(source)
 	_source_card.texture = _source_cache[source] as Texture2D
-
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var node := get_node_or_null(node_name) as ColorRect
-	if node == null:
-		node = ColorRect.new()
-		node.name = node_name
-		add_child(node)
-	node.position = rect.position
-	node.size = rect.size
-	node.color = color
-	return node
 
 func _set_screen_visible(screen_visible: bool) -> void:
 	for node in [_backdrop, _panel, _shine, _rule, title_label, prompt_label, detail_label]:

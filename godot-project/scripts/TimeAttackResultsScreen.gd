@@ -1,4 +1,4 @@
-extends CanvasLayer
+extends ScreenBase
 
 # Mirrors time_attack_results.c as a separate result task rather than mixing
 # its medal and record presentation into the regular stage-clear screen.

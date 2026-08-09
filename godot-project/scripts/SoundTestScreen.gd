@@ -1,6 +1,6 @@
 # SoundTestScreen.gd
 # Presents an original-inspired dedicated sound test screen.
-extends CanvasLayer
+extends ScreenBase
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -36,9 +36,6 @@ var _gradient_bands: Array[ColorRect] = []
 var _gradient_time: float = 0.0
 var _track_audio_player: AudioStreamPlayer = null
 var _track_audio_key := ""
-
-const PREVIEW_SAMPLE_RATE := 22050
-const PREVIEW_SECONDS := 4
 
 const SOURCE_BG_PALETTE: Array[Color] = [
 	Color(0.02, 0.03, 0.08, 0.96),
@@ -111,7 +108,7 @@ func _sync_track_preview() -> void:
 		return
 	if track_key != _track_audio_key or _track_audio_player.stream == null:
 		_track_audio_key = track_key
-		_track_audio_player.stream = _make_track_preview(CoreBridge.get_sound_test_track_number(), CoreBridge.get_sound_test_tempo())
+		_track_audio_player.stream = SoundTestPreviewGenerator.make_preview(CoreBridge.get_sound_test_track_number(), CoreBridge.get_sound_test_tempo())
 		_track_audio_player.play()
 	elif not _track_audio_player.playing:
 		_track_audio_player.play()
@@ -120,52 +117,24 @@ func _stop_track_preview() -> void:
 	if _track_audio_player and _track_audio_player.playing:
 		_track_audio_player.stop()
 
-func _make_track_preview(track_number: int, tempo: float) -> AudioStreamWAV:
-	var sample_count := PREVIEW_SAMPLE_RATE * PREVIEW_SECONDS
-	var data := PackedByteArray()
-	data.resize(sample_count * 2)
-	var beat_hz := maxf(1.0, tempo / 60.0)
-	var root_hz := 196.0 * pow(2.0, float(posmod(track_number - 1, 12)) / 12.0)
-	for sample_index in range(sample_count):
-		var time := float(sample_index) / float(PREVIEW_SAMPLE_RATE)
-		var beat: float = floor(time * beat_hz)
-		var note_index := posmod(int(beat) + track_number, 8)
-		var note_hz := root_hz * pow(2.0, float([0, 2, 4, 7, 9, 7, 4, 2][note_index]) / 12.0)
-		var phase := time * note_hz * TAU
-		var bass := sin(time * root_hz * 0.5 * TAU) * 0.22
-		var lead := sin(phase) * 0.26 + sin(phase * 2.0) * 0.08
-		var pulse := 0.12 if fmod(time * beat_hz, 1.0) < 0.08 else 0.0
-		var envelope := minf(1.0, time * 12.0) * minf(1.0, (float(sample_count) / float(PREVIEW_SAMPLE_RATE) - time) * 8.0)
-		var sample := clampf((bass + lead + pulse) * envelope, -0.92, 0.92)
-		data.encode_s16(sample_index * 2, int(sample * 32767.0))
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = PREVIEW_SAMPLE_RATE
-	stream.stereo = false
-	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	stream.loop_begin = 0
-	stream.loop_end = sample_count
-	stream.data = data
-	return stream
-
 func _ensure_chrome() -> void:
 	_ensure_gradient_bands()
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.05, 0.70))
-	_hero_glow = _ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.12, 0.34, 0.56, 0.18))
-	_header_plate = _ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.08, 0.12, 0.18, 0.94))
-	_panel = _ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.07, 0.11, 0.20, 0.98))
-	_accent = _ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.18, 0.78, 0.98, 1.0))
-	_header_band = _ensure_rect("HeaderBand", Rect2(210.0, 246.0, 288.0, 238.0), Color(0.08, 0.16, 0.30, 0.92))
-	_speaker_stage = _ensure_rect("SpeakerStage", Rect2(204.0, 246.0, 292.0, 238.0), Color(0.08, 0.14, 0.22, 0.94))
-	_status_stage = _ensure_rect("StatusStage", Rect2(522.0, 246.0, 550.0, 238.0), Color(0.08, 0.14, 0.24, 0.94))
-	_badge_ring = _ensure_rect("BadgeRing", Rect2(878.0, 108.0, 140.0, 140.0), Color(0.92, 0.78, 0.24, 0.22))
-	_badge_core = _ensure_rect("BadgeCore", Rect2(913.0, 143.0, 70.0, 70.0), Color(0.10, 0.20, 0.34, 0.96))
-	_speaker_frame = _ensure_rect("SpeakerFrame", Rect2(224.0, 278.0, 252.0, 196.0), Color(0.13, 0.18, 0.28, 1.0))
-	_speaker_core = _ensure_rect("SpeakerCore", Rect2(254.0, 312.0, 192.0, 128.0), Color(0.03, 0.05, 0.10, 1.0))
-	_speaker_glow = _ensure_rect("SpeakerGlow", Rect2(284.0, 338.0, 132.0, 76.0), Color(0.28, 0.88, 0.98, 0.34))
-	_number_plate = _ensure_rect("NumberPlate", Rect2(548.0, 278.0, 498.0, 54.0), Color(0.10, 0.16, 0.28, 1.0))
-	_status_plate = _ensure_rect("StatusPlate", Rect2(548.0, 344.0, 498.0, 130.0), Color(0.09, 0.13, 0.22, 1.0))
-	_prompt_band = _ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.92))
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.05, 0.70))
+	_hero_glow = ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.12, 0.34, 0.56, 0.18))
+	_header_plate = ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.08, 0.12, 0.18, 0.94))
+	_panel = ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.07, 0.11, 0.20, 0.98))
+	_accent = ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.18, 0.78, 0.98, 1.0))
+	_header_band = ensure_rect("HeaderBand", Rect2(210.0, 246.0, 288.0, 238.0), Color(0.08, 0.16, 0.30, 0.92))
+	_speaker_stage = ensure_rect("SpeakerStage", Rect2(204.0, 246.0, 292.0, 238.0), Color(0.08, 0.14, 0.22, 0.94))
+	_status_stage = ensure_rect("StatusStage", Rect2(522.0, 246.0, 550.0, 238.0), Color(0.08, 0.14, 0.24, 0.94))
+	_badge_ring = ensure_rect("BadgeRing", Rect2(878.0, 108.0, 140.0, 140.0), Color(0.92, 0.78, 0.24, 0.22))
+	_badge_core = ensure_rect("BadgeCore", Rect2(913.0, 143.0, 70.0, 70.0), Color(0.10, 0.20, 0.34, 0.96))
+	_speaker_frame = ensure_rect("SpeakerFrame", Rect2(224.0, 278.0, 252.0, 196.0), Color(0.13, 0.18, 0.28, 1.0))
+	_speaker_core = ensure_rect("SpeakerCore", Rect2(254.0, 312.0, 192.0, 128.0), Color(0.03, 0.05, 0.10, 1.0))
+	_speaker_glow = ensure_rect("SpeakerGlow", Rect2(284.0, 338.0, 132.0, 76.0), Color(0.28, 0.88, 0.98, 0.34))
+	_number_plate = ensure_rect("NumberPlate", Rect2(548.0, 278.0, 498.0, 54.0), Color(0.10, 0.16, 0.28, 1.0))
+	_status_plate = ensure_rect("StatusPlate", Rect2(548.0, 344.0, 498.0, 130.0), Color(0.09, 0.13, 0.22, 1.0))
+	_prompt_band = ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.92))
 	_backdrop.z_index = -9
 	_hero_glow.z_index = -8
 	_header_plate.z_index = -7
@@ -187,7 +156,7 @@ func _ensure_gradient_bands() -> void:
 	if not _gradient_bands.is_empty():
 		return
 	for i in range(12):
-		var band := _ensure_rect("PaletteBand%d" % i, Rect2(0.0, float(i) * 60.0, 1280.0, 61.0), SOURCE_BG_PALETTE[i % SOURCE_BG_PALETTE.size()])
+		var band := ensure_rect("PaletteBand%d" % i, Rect2(0.0, float(i) * 60.0, 1280.0, 61.0), SOURCE_BG_PALETTE[i % SOURCE_BG_PALETTE.size()])
 		band.z_index = -10
 		_gradient_bands.append(band)
 
@@ -202,36 +171,12 @@ func _update_gradient_bands() -> void:
 		_gradient_bands[i].color = Color(color.r, color.g, color.b, 0.26)
 		_gradient_bands[i].position.y = float(i) * 60.0 - fposmod(_gradient_time * 18.0, 60.0)
 
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
-
 func _ensure_labels() -> void:
-	_track_number_label = _ensure_label("TrackNumberLabel", Vector2(572.0, 286.0), Vector2(186.0, 38.0), 28)
-	_track_name_label = _ensure_label("TrackNameLabel", Vector2(550.0, 352.0), Vector2(494.0, 32.0), 23)
-	_status_label = _ensure_label("StatusLabel", Vector2(572.0, 394.0), Vector2(450.0, 26.0), 17)
-	_summary_label = _ensure_label("SummaryLabel", Vector2(572.0, 426.0), Vector2(450.0, 42.0), 15)
-	_ticker_label = _ensure_label("TickerLabel", Vector2(176.0, 596.0), Vector2(928.0, 26.0), 20)
+	_track_number_label = ensure_label("TrackNumberLabel", Vector2(572.0, 286.0), Vector2(186.0, 38.0), 28)
+	_track_name_label = ensure_label("TrackNameLabel", Vector2(550.0, 352.0), Vector2(494.0, 32.0), 23)
+	_status_label = ensure_label("StatusLabel", Vector2(572.0, 394.0), Vector2(450.0, 26.0), 17)
+	_summary_label = ensure_label("SummaryLabel", Vector2(572.0, 426.0), Vector2(450.0, 42.0), 15)
+	_ticker_label = ensure_label("TickerLabel", Vector2(176.0, 596.0), Vector2(928.0, 26.0), 20)
 	_track_number_label.modulate = Color(0.93, 0.98, 1.0, 1.0)
 	_track_name_label.modulate = Color(0.98, 0.93, 0.62, 1.0)
 	_status_label.modulate = Color(0.78, 0.88, 1.0, 0.94)
@@ -241,7 +186,7 @@ func _ensure_labels() -> void:
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	if _badge_label == null:
-		_badge_label = _ensure_label("BadgeLabel", Vector2(886.0, 160.0), Vector2(124.0, 38.0), 18)
+		_badge_label = ensure_label("BadgeLabel", Vector2(886.0, 160.0), Vector2(124.0, 38.0), 18)
 	_badge_label.text = CoreBridge.get_menu_badge_text("AUDIO")
 	_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
 
@@ -250,9 +195,9 @@ func _ensure_rows() -> void:
 		return
 	for i in range(1):
 		var top := 486.0 + float(i) * 24.0
-		var card := _ensure_rect("RowCard%d" % i, Rect2(548.0, top, 498.0, 24.0), Color(0.10, 0.16, 0.29, 0.96))
-		var row := _ensure_label("RowLabel%d" % i, Vector2(570.0, top - 1.0), Vector2(154.0, 26.0), 14)
-		var value := _ensure_label("ValueLabel%d" % i, Vector2(728.0, top - 1.0), Vector2(290.0, 26.0), 13)
+		var card := ensure_rect("RowCard%d" % i, Rect2(548.0, top, 498.0, 24.0), Color(0.10, 0.16, 0.29, 0.96))
+		var row := ensure_label("RowLabel%d" % i, Vector2(570.0, top - 1.0), Vector2(154.0, 26.0), 14)
+		var value := ensure_label("ValueLabel%d" % i, Vector2(728.0, top - 1.0), Vector2(290.0, 26.0), 13)
 		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		_row_cards.append(card)
@@ -315,7 +260,7 @@ func _update_rows() -> void:
 			continue
 		var row: Dictionary = rows[i]
 		var is_selected := bool(row.get("selected", false))
-		var lift := -4.0 if is_selected else 0.0
+		var lift := 0.0
 		var top := 486.0 + float(i) * 24.0
 		_row_cards[i].position.y = top + lift
 		_row_labels[i].position.y = top - 2.0 + lift

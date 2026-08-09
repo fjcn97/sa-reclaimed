@@ -2,6 +2,9 @@
 # Presents an original-inspired gameplay HUD with dedicated score, ring, life, and timer panels.
 extends CanvasLayer
 
+const UI_NODE_FACTORY := preload("res://scripts/ui/UiNodeFactory.gd")
+const HUD_CHROME_BUILDER := preload("res://scripts/ui/HudChromeBuilder.gd")
+
 @export var rings_label: Label = null
 @export var score_label: Label = null
 @export var time_label: Label = null
@@ -53,15 +56,41 @@ func _ready() -> void:
 		lives_label = get_node_or_null("LivesLabel")
 	if status_label == null:
 		status_label = get_node_or_null("StatusLabel")
-	special_ring_label = get_node_or_null("SpecialRingLabel")
-	powerup_label = get_node_or_null("PowerupLabel")
-	_ensure_chrome()
-	_ensure_titles()
-	_race_start_label = _ensure_label("RaceStartLabel", Vector2(430.0, 174.0), Vector2(420.0, 92.0), 64)
+	var chrome_nodes := HUD_CHROME_BUILDER.build(self)
+	special_ring_label = chrome_nodes["special_ring_label"] as Label
+	powerup_label = chrome_nodes["powerup_label"] as Label
+	_score_glow = chrome_nodes["score_glow"] as ColorRect
+	_score_card = chrome_nodes["score_card"] as ColorRect
+	_rings_card = chrome_nodes["rings_card"] as ColorRect
+	_special_ring_card = chrome_nodes["special_ring_card"] as ColorRect
+	_lives_glow = chrome_nodes["lives_glow"] as ColorRect
+	_lives_card = chrome_nodes["lives_card"] as ColorRect
+	_timer_glow = chrome_nodes["timer_glow"] as ColorRect
+	_timer_card = chrome_nodes["timer_card"] as ColorRect
+	_status_card = chrome_nodes["status_card"] as ColorRect
+	_score_title = chrome_nodes["score_title"] as Label
+	_rings_title = chrome_nodes["rings_title"] as Label
+	_time_title = chrome_nodes["time_title"] as Label
+	_lives_title = chrome_nodes["lives_title"] as Label
+	_character_label = chrome_nodes["character_label"] as Label
+	_boss_panel = chrome_nodes["boss_panel"] as ColorRect
+	_boss_title = chrome_nodes["boss_title"] as Label
+	_boss_phase = chrome_nodes["boss_phase"] as Label
+	_boss_health_back = chrome_nodes["boss_health_back"] as ColorRect
+	_boss_health_fill = chrome_nodes["boss_health_fill"] as ColorRect
+	_boss_health_pips.assign(chrome_nodes["boss_health_pips"])
+	_mp_panel = chrome_nodes["mp_panel"] as ColorRect
+	_mp_track = chrome_nodes["mp_track"] as ColorRect
+	_mp_start_flag = chrome_nodes["mp_start_flag"] as Label
+	_mp_finish_flag = chrome_nodes["mp_finish_flag"] as Label
+	_mp_row_cards.assign(chrome_nodes["mp_row_cards"])
+	_mp_place_labels.assign(chrome_nodes["mp_place_labels"])
+	_mp_name_labels.assign(chrome_nodes["mp_name_labels"])
+	_mp_progress_labels.assign(chrome_nodes["mp_progress_labels"])
+	_mp_markers.assign(chrome_nodes["mp_markers"])
+	_race_start_label = UI_NODE_FACTORY.ensure_label(self, "RaceStartLabel", Vector2(430.0, 174.0), Vector2(420.0, 92.0), 64, false)
 	_race_start_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_race_start_label.text = CoreBridge.get_hud_race_start_text()
-	_ensure_boss_panel()
-	_ensure_multiplayer_panel()
 
 func _process(_delta: float) -> void:
 	var title_mode: bool = CoreBridge.is_title_screen()
@@ -159,80 +188,6 @@ func _process(_delta: float) -> void:
 	_update_multiplayer_panel(chrome)
 	_update_hud_chrome(chrome)
 
-func _ensure_chrome() -> void:
-	_score_glow = _ensure_rect("ScoreGlow", Rect2(10.0, 12.0, 300.0, 56.0), Color(0.14, 0.28, 0.54, 0.18))
-	_score_card = _ensure_rect("ScoreCard", Rect2(18.0, 18.0, 278.0, 42.0), Color(0.08, 0.16, 0.38, 0.92))
-	_rings_card = _ensure_rect("RingsCard", Rect2(18.0, 70.0, 194.0, 42.0), Color(0.34, 0.18, 0.04, 0.92))
-	_special_ring_card = _ensure_rect("SpecialRingCard", Rect2(18.0, 118.0, 194.0, 36.0), Color(0.08, 0.28, 0.40, 0.90))
-	_lives_glow = _ensure_rect("LivesGlow", Rect2(10.0, 626.0, 236.0, 58.0), Color(0.10, 0.18, 0.36, 0.14))
-	_lives_card = _ensure_rect("LivesCard", Rect2(18.0, 632.0, 214.0, 46.0), Color(0.08, 0.14, 0.28, 0.92))
-	_timer_glow = _ensure_rect("TimerGlow", Rect2(972.0, 12.0, 278.0, 56.0), Color(0.16, 0.24, 0.58, 0.18))
-	_timer_card = _ensure_rect("TimerCard", Rect2(980.0, 18.0, 262.0, 42.0), Color(0.12, 0.18, 0.42, 0.92))
-	_status_card = _ensure_rect("StatusCard", Rect2(350.0, 18.0, 580.0, 46.0), Color(0.08, 0.10, 0.18, 0.86))
-	_score_glow.z_index = -6
-	_score_card.z_index = -5
-	_rings_card.z_index = -5
-	_special_ring_card.z_index = -5
-	_lives_glow.z_index = -6
-	_lives_card.z_index = -5
-	_timer_glow.z_index = -6
-	_timer_card.z_index = -5
-	_status_card.z_index = -5
-
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
-
-func _ensure_titles() -> void:
-	if special_ring_label == null:
-		special_ring_label = _ensure_label("SpecialRingLabel", Vector2(34.0, 126.0), Vector2(164.0, 22.0), 12)
-	powerup_label = _ensure_label("PowerupLabel", Vector2(222.0, 126.0), Vector2(132.0, 22.0), 12)
-	_score_title = _ensure_label("ScoreTitle", Vector2(34.0, 22.0), Vector2(86.0, 20.0), 14)
-	_rings_title = _ensure_label("RingsTitle", Vector2(34.0, 74.0), Vector2(86.0, 20.0), 14)
-	_time_title = _ensure_label("TimeTitle", Vector2(996.0, 22.0), Vector2(72.0, 20.0), 14)
-	_lives_title = _ensure_label("LivesTitle", Vector2(34.0, 636.0), Vector2(60.0, 20.0), 14)
-	_character_label = _ensure_label("CharacterLabel", Vector2(34.0, 652.0), Vector2(60.0, 20.0), 16)
-	var chrome := CoreBridge.get_hud_chrome_colors()
-	_score_title.modulate = chrome.get("score_title", Color(0.68, 0.86, 1.0, 0.94))
-	_rings_title.modulate = chrome.get("rings_title", Color(1.0, 0.84, 0.36, 0.96))
-	_time_title.modulate = chrome.get("time_title", Color(0.74, 0.88, 1.0, 0.94))
-	_lives_title.modulate = chrome.get("lives_title", Color(0.72, 0.84, 1.0, 0.94))
-	_character_label.modulate = chrome.get("character", Color(0.98, 0.98, 1.0, 1.0))
-
-func _ensure_boss_panel() -> void:
-	_boss_panel = _ensure_rect("BossPanel", Rect2(432.0, 78.0, 416.0, 74.0), Color(0.18, 0.06, 0.10, 0.94))
-	_boss_panel.z_index = -4
-	_boss_title = _ensure_label("BossTitle", Vector2(448.0, 86.0), Vector2(150.0, 22.0), 14)
-	_boss_phase = _ensure_label("BossPhase", Vector2(620.0, 86.0), Vector2(212.0, 22.0), 14)
-	_boss_phase.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_boss_health_back = _ensure_rect("BossHealthBack", Rect2(448.0, 118.0, 384.0, 14.0), Color(0.04, 0.03, 0.06, 0.96))
-	_boss_health_back.z_index = -3
-	_boss_health_fill = _ensure_rect("BossHealthFill", Rect2(450.0, 120.0, 380.0, 10.0), Color(0.94, 0.24, 0.24, 1.0))
-	_boss_health_fill.z_index = -2
-	for i in range(8):
-		var pip := _ensure_rect("BossHealthPip%d" % i, Rect2(450.0 + i * 47.5, 120.0, 42.0, 10.0), Color(1.0, 0.52, 0.34, 1.0))
-		pip.z_index = -1
-		_boss_health_pips.append(pip)
-
 func _update_boss_panel(chrome: Dictionary) -> void:
 	var boss_state: Dictionary = CoreBridge.get_boss_hud_state()
 	var boss_visible := bool(boss_state.get("active", false))
@@ -276,39 +231,6 @@ func _update_titles(character_variant: int, chrome: Dictionary) -> void:
 	if _character_label:
 		_character_label.text = CoreBridge.get_hud_character_short_name(character_variant)
 		_character_label.modulate = chrome.get("character", Color(0.98, 0.98, 1.0, 1.0))
-
-func _ensure_multiplayer_panel() -> void:
-	_mp_panel = _ensure_rect("MultiplayerPanel", Rect2(828.0, 508.0, 420.0, 168.0), Color(0.16, 0.07, 0.12, 0.88))
-	_mp_track = _ensure_rect("MultiplayerTrack", Rect2(960.0, 532.0, 236.0, 8.0), Color(0.88, 0.62, 0.18, 0.88))
-	_mp_start_flag = _ensure_label("MultiplayerStartFlag", Vector2(922.0, 520.0), Vector2(34.0, 24.0), 14)
-	_mp_finish_flag = _ensure_label("MultiplayerFinishFlag", Vector2(1200.0, 520.0), Vector2(40.0, 24.0), 14)
-	_mp_panel.z_index = -4
-	_mp_track.z_index = -3
-	_mp_start_flag.z_index = -2
-	_mp_finish_flag.z_index = -2
-
-	if _mp_row_cards.size() > 0:
-		return
-
-	for i in range(4):
-		var row_card := _ensure_rect("MultiplayerRowCard%d" % i, Rect2(846.0, 548.0 + i * 28.0, 386.0, 24.0), Color(0.10, 0.05, 0.09, 0.82))
-		row_card.z_index = -2
-		_mp_row_cards.append(row_card)
-
-		var place_label := _ensure_label("MultiplayerPlaceLabel%d" % i, Vector2(858.0, 548.0 + i * 28.0), Vector2(58.0, 24.0), 14)
-		place_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_mp_place_labels.append(place_label)
-
-		var name_label := _ensure_label("MultiplayerNameLabel%d" % i, Vector2(924.0, 548.0 + i * 28.0), Vector2(188.0, 24.0), 14)
-		_mp_name_labels.append(name_label)
-
-		var progress_label := _ensure_label("MultiplayerProgressLabel%d" % i, Vector2(1136.0, 548.0 + i * 28.0), Vector2(84.0, 24.0), 14)
-		progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		_mp_progress_labels.append(progress_label)
-
-		var marker := _ensure_rect("MultiplayerMarker%d" % i, Rect2(960.0, 531.0, 10.0, 10.0), Color(1.0, 0.88, 0.48, 1.0))
-		marker.z_index = -1
-		_mp_markers.append(marker)
 
 func _update_hud_chrome(chrome: Dictionary) -> void:
 	if _score_card:

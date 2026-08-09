@@ -1,4 +1,6 @@
-extends CanvasLayer
+extends ScreenBase
+
+const COURSE_MAP_VIEW := preload("res://scripts/ui/CourseMapView.gd")
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -37,18 +39,14 @@ var _marker_glow: ColorRect = null
 var _map_nodes: Array[ColorRect] = []
 var _map_node_labels: Array[Label] = []
 var _map_links: Array[ColorRect] = []
+var _map_view := COURSE_MAP_VIEW.new()
 var _emerald_badges: Array[ColorRect] = []
 var _emerald_labels: Array[Label] = []
 var _row_cards: Array[ColorRect] = []
 var _row_labels: Array[Label] = []
 var _value_labels: Array[Label] = []
 var _status_labels: Array[Label] = []
-var _marker_visual_pos: Vector2 = Vector2.ZERO
-var _marker_target_pos: Vector2 = Vector2.ZERO
-var _marker_from_pos: Vector2 = Vector2.ZERO
-var _selected_map_index: int = -1
 var _map_pulse_time: float = 0.0
-var _map_ready: bool = false
 var _banner_slide_x: float = 0.0
 var _banner_target_text: String = ""
 var _banner_display_text: String = ""
@@ -62,7 +60,12 @@ func _ready() -> void:
 	if detail_label == null:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
-	_ensure_map_graphics()
+	var map_nodes := _map_view.setup(self)
+	_avatar_marker = map_nodes["avatar_marker"] as ColorRect
+	_marker_glow = map_nodes["marker_glow"] as ColorRect
+	_map_nodes.assign(map_nodes["map_nodes"])
+	_map_node_labels.assign(map_nodes["map_node_labels"])
+	_map_links.assign(map_nodes["map_links"])
 	_ensure_emerald_badges()
 	_ensure_rows()
 	_set_screen_visible(false)
@@ -72,7 +75,7 @@ func _process(delta: float) -> void:
 	var screen_visible := CoreBridge.is_course_select_screen()
 	_set_screen_visible(screen_visible)
 	if not screen_visible:
-		_map_ready = false
+		_map_view.reset()
 		return
 	var pulse := 0.5 + (sin(Time.get_ticks_msec() / 220.0) * 0.5)
 	if title_label:
@@ -100,36 +103,36 @@ func _process(delta: float) -> void:
 	_update_rows()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.05, 0.10, 0.74))
-	_hero_glow = _ensure_rect("CourseHeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.10, 0.32, 0.60, 0.18))
-	_header_plate = _ensure_rect("CourseHeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.08, 0.10, 0.18, 0.94))
-	_panel = _ensure_rect("CoursePanel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.04, 0.09, 0.19, 0.96))
-	_header_band = _ensure_rect("CourseHeaderBand", Rect2(212.0, 246.0, 318.0, 256.0), Color(0.08, 0.15, 0.30, 0.92))
-	_header_glow = _ensure_rect("CourseHeaderGlow", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.30, 0.56, 0.88, 0.72))
-	_left_stage = _ensure_rect("CourseLeftStage", Rect2(204.0, 246.0, 340.0, 256.0), Color(0.08, 0.12, 0.24, 0.94))
-	_right_stage = _ensure_rect("CourseRightStage", Rect2(576.0, 246.0, 498.0, 256.0), Color(0.10, 0.16, 0.28, 0.94))
-	_prompt_band = _ensure_rect("CoursePromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.92))
-	_launch_fade = _ensure_rect("LaunchFade", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.92, 0.97, 1.0, 0.0))
-	_intro_fade = _ensure_rect("CourseIntroFade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.05, 0.10, 0.0))
-	_map_card = _ensure_rect("CourseMapCard", Rect2(224.0, 276.0, 234.0, 188.0), Color(0.07, 0.13, 0.24, 0.97))
-	_map_frame = _ensure_rect("CourseMapFrame", Rect2(238.0, 290.0, 206.0, 160.0), Color(0.10, 0.18, 0.32, 0.96))
-	_summary_card = _ensure_rect("CourseSummaryCard", Rect2(218.0, 470.0, 314.0, 44.0), Color(0.07, 0.13, 0.23, 0.95))
-	_summary_label = _ensure_label("CourseSummaryLabel", Vector2(238.0, 474.0), Vector2(274.0, 34.0), 13)
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.05, 0.10, 0.74))
+	_hero_glow = ensure_rect("CourseHeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.10, 0.32, 0.60, 0.18))
+	_header_plate = ensure_rect("CourseHeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.08, 0.10, 0.18, 0.94))
+	_panel = ensure_rect("CoursePanel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.04, 0.09, 0.19, 0.96))
+	_header_band = ensure_rect("CourseHeaderBand", Rect2(212.0, 246.0, 318.0, 256.0), Color(0.08, 0.15, 0.30, 0.92))
+	_header_glow = ensure_rect("CourseHeaderGlow", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.30, 0.56, 0.88, 0.72))
+	_left_stage = ensure_rect("CourseLeftStage", Rect2(204.0, 246.0, 340.0, 256.0), Color(0.08, 0.12, 0.24, 0.94))
+	_right_stage = ensure_rect("CourseRightStage", Rect2(576.0, 246.0, 498.0, 256.0), Color(0.10, 0.16, 0.28, 0.94))
+	_prompt_band = ensure_rect("CoursePromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.92))
+	_launch_fade = ensure_rect("LaunchFade", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.92, 0.97, 1.0, 0.0))
+	_intro_fade = ensure_rect("CourseIntroFade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.05, 0.10, 0.0))
+	_map_card = ensure_rect("CourseMapCard", Rect2(224.0, 276.0, 234.0, 188.0), Color(0.07, 0.13, 0.24, 0.97))
+	_map_frame = ensure_rect("CourseMapFrame", Rect2(238.0, 290.0, 206.0, 160.0), Color(0.10, 0.18, 0.32, 0.96))
+	_summary_card = ensure_rect("CourseSummaryCard", Rect2(218.0, 470.0, 314.0, 44.0), Color(0.07, 0.13, 0.23, 0.95))
+	_summary_label = ensure_label("CourseSummaryLabel", Vector2(238.0, 474.0), Vector2(274.0, 34.0), 13)
 	_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_zone_chip = _ensure_rect("ZoneChip", Rect2(600.0, 252.0, 108.0, 30.0), Color(0.10, 0.20, 0.36, 0.96))
-	_act_chip = _ensure_rect("ActChip", Rect2(718.0, 252.0, 108.0, 30.0), Color(0.10, 0.20, 0.36, 0.96))
-	_type_chip = _ensure_rect("TypeChip", Rect2(836.0, 252.0, 194.0, 30.0), Color(0.18, 0.28, 0.18, 0.96))
-	_banner_shadow = _ensure_rect("BannerShadow", Rect2(612.0, 300.0, 370.0, 46.0), Color(0.02, 0.04, 0.08, 0.72))
-	_banner_plate = _ensure_rect("BannerPlate", Rect2(600.0, 288.0, 370.0, 46.0), Color(0.18, 0.36, 0.66, 0.96))
-	_banner_trim = _ensure_rect("BannerTrim", Rect2(614.0, 294.0, 342.0, 6.0), Color(0.76, 0.90, 1.0, 0.30))
-	_zone_label = _ensure_label("ZoneChipLabel", Vector2(600.0, 252.0), Vector2(108.0, 30.0), 14)
-	_act_label = _ensure_label("ActChipLabel", Vector2(718.0, 252.0), Vector2(108.0, 30.0), 14)
-	_type_label = _ensure_label("TypeChipLabel", Vector2(836.0, 252.0), Vector2(194.0, 30.0), 14)
-	_banner_label = _ensure_label("BannerLabel", Vector2(626.0, 292.0), Vector2(318.0, 36.0), 24)
-	_badge_ring = _ensure_rect("CourseBadgeRing", Rect2(880.0, 108.0, 140.0, 140.0), Color(0.22, 0.48, 0.84, 0.22))
-	_badge_core = _ensure_rect("CourseBadgeCore", Rect2(915.0, 143.0, 70.0, 70.0), Color(0.10, 0.18, 0.33, 0.96))
-	_badge_label = _ensure_label("CourseBadgeLabel", Vector2(886.0, 160.0), Vector2(128.0, 36.0), 18)
+	_zone_chip = ensure_rect("ZoneChip", Rect2(600.0, 252.0, 108.0, 30.0), Color(0.10, 0.20, 0.36, 0.96))
+	_act_chip = ensure_rect("ActChip", Rect2(718.0, 252.0, 108.0, 30.0), Color(0.10, 0.20, 0.36, 0.96))
+	_type_chip = ensure_rect("TypeChip", Rect2(836.0, 252.0, 194.0, 30.0), Color(0.18, 0.28, 0.18, 0.96))
+	_banner_shadow = ensure_rect("BannerShadow", Rect2(612.0, 300.0, 370.0, 46.0), Color(0.02, 0.04, 0.08, 0.72))
+	_banner_plate = ensure_rect("BannerPlate", Rect2(600.0, 288.0, 370.0, 46.0), Color(0.18, 0.36, 0.66, 0.96))
+	_banner_trim = ensure_rect("BannerTrim", Rect2(614.0, 294.0, 342.0, 6.0), Color(0.76, 0.90, 1.0, 0.30))
+	_zone_label = ensure_label("ZoneChipLabel", Vector2(600.0, 252.0), Vector2(108.0, 30.0), 14)
+	_act_label = ensure_label("ActChipLabel", Vector2(718.0, 252.0), Vector2(108.0, 30.0), 14)
+	_type_label = ensure_label("TypeChipLabel", Vector2(836.0, 252.0), Vector2(194.0, 30.0), 14)
+	_banner_label = ensure_label("BannerLabel", Vector2(626.0, 292.0), Vector2(318.0, 36.0), 24)
+	_badge_ring = ensure_rect("CourseBadgeRing", Rect2(880.0, 108.0, 140.0, 140.0), Color(0.22, 0.48, 0.84, 0.22))
+	_badge_core = ensure_rect("CourseBadgeCore", Rect2(915.0, 143.0, 70.0, 70.0), Color(0.10, 0.18, 0.33, 0.96))
+	_badge_label = ensure_label("CourseBadgeLabel", Vector2(886.0, 160.0), Vector2(128.0, 36.0), 18)
 	_zone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_act_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_type_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -158,30 +161,12 @@ func _ensure_chrome() -> void:
 	_badge_ring.z_index = -1
 	_badge_core.z_index = 0
 
-func _ensure_map_graphics() -> void:
-	if _avatar_marker != null:
-		return
-	_marker_glow = _ensure_rect("CourseMarkerGlow", Rect2(0.0, 0.0, 28.0, 28.0), Color(1.0, 0.90, 0.34, 0.24))
-	_marker_glow.z_index = 1
-	_avatar_marker = _ensure_rect("CourseAvatarMarker", Rect2(0.0, 0.0, 16.0, 16.0), Color(1.0, 0.88, 0.32, 1.0))
-	_avatar_marker.z_index = 2
-	for i in range(16):
-		var link := _ensure_rect("CourseMapLink%d" % i, Rect2(0.0, 0.0, 8.0, 8.0), Color(0.16, 0.28, 0.44, 0.86))
-		link.z_index = 0
-		_map_links.append(link)
-		var node := _ensure_rect("CourseMapNode%d" % i, Rect2(0.0, 0.0, 22.0, 22.0), Color(0.20, 0.28, 0.38, 0.96))
-		node.z_index = 1
-		var label := _ensure_label("CourseMapNodeLabel%d" % i, Vector2.ZERO, Vector2(54.0, 16.0), 11)
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_map_nodes.append(node)
-		_map_node_labels.append(label)
-
 func _ensure_emerald_badges() -> void:
 	if _emerald_badges.size() > 0:
 		return
 	for i in range(7):
-		var badge := _ensure_rect("EmeraldBadge%d" % i, Rect2(218.0 + float(i) * 38.0, 514.0, 28.0, 28.0), Color(0.18, 0.28, 0.40, 0.92))
-		var label := _ensure_label("EmeraldLabel%d" % i, Vector2(218.0 + float(i) * 38.0, 514.0), Vector2(28.0, 28.0), 10)
+		var badge := ensure_rect("EmeraldBadge%d" % i, Rect2(218.0 + float(i) * 38.0, 514.0, 28.0, 28.0), Color(0.18, 0.28, 0.40, 0.92))
+		var label := ensure_label("EmeraldLabel%d" % i, Vector2(218.0 + float(i) * 38.0, 514.0), Vector2(28.0, 28.0), 10)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_emerald_badges.append(badge)
 		_emerald_labels.append(label)
@@ -191,38 +176,15 @@ func _ensure_rows() -> void:
 		return
 	for i in range(4):
 		var top := 350.0 + float(i) * 34.0
-		var card := _ensure_rect("CourseRowCard%d" % i, Rect2(620.0, top, 410.0, 28.0), Color(0.08, 0.14, 0.26, 0.96))
-		var name_label := _ensure_label("CourseRowLabel%d" % i, Vector2(638.0, top - 1.0), Vector2(156.0, 16.0), 16)
-		var value_label := _ensure_label("CourseValueLabel%d" % i, Vector2(638.0, top + 13.0), Vector2(178.0, 14.0), 10)
-		var status_label := _ensure_label("CourseStatusLabel%d" % i, Vector2(850.0, top + 5.0), Vector2(158.0, 16.0), 11)
+		var card := ensure_rect("CourseRowCard%d" % i, Rect2(620.0, top, 410.0, 28.0), Color(0.08, 0.14, 0.26, 0.96))
+		var name_label := ensure_label("CourseRowLabel%d" % i, Vector2(638.0, top - 1.0), Vector2(156.0, 16.0), 16)
+		var value_label := ensure_label("CourseValueLabel%d" % i, Vector2(638.0, top + 13.0), Vector2(178.0, 14.0), 10)
+		var status_label := ensure_label("CourseStatusLabel%d" % i, Vector2(850.0, top + 5.0), Vector2(158.0, 16.0), 11)
 		status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		_row_cards.append(card)
 		_row_labels.append(name_label)
 		_value_labels.append(value_label)
 		_status_labels.append(status_label)
-
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
 
 func _update_summary() -> void:
 	if _summary_label:
@@ -291,92 +253,7 @@ func _update_intro_fade() -> void:
 		_intro_fade.color = Color(0.02, 0.05, 0.10, 0.0)
 
 func _update_map() -> void:
-	var nodes: Array = CoreBridge.get_course_select_map_nodes()
-	var marker_pulse := 0.5 + 0.5 * sin(_map_pulse_time * 6.0)
-	var unlock_phase := CoreBridge.get_course_select_unlock_phase()
-	var unlock_progress := CoreBridge.get_course_select_unlock_progress()
-	var course_positions: Dictionary = {}
-	for node_data in nodes:
-		course_positions[int(node_data.get("index", -1))] = Vector2(node_data.get("position", Vector2.ZERO))
-	for i in range(_map_links.size()):
-		_map_links[i].visible = i < nodes.size() - 1
-		if not _map_links[i].visible:
-			continue
-		var from_node: Dictionary = nodes[i]
-		var to_node: Dictionary = nodes[i + 1]
-		var from_pos: Vector2 = Vector2(from_node.get("position", Vector2.ZERO))
-		var to_pos: Vector2 = Vector2(to_node.get("position", Vector2.ZERO))
-		var delta: Vector2 = to_pos - from_pos
-		var width: float = max(absf(delta.x), 8.0)
-		var height: float = max(absf(delta.y), 8.0)
-		_map_links[i].position = Vector2(254.0 + minf(from_pos.x, to_pos.x), 310.0 + minf(from_pos.y, to_pos.y))
-		_map_links[i].size = Vector2(width, height)
-		var active_path := bool(from_node.get("unlocked", false)) and bool(to_node.get("unlocked", false))
-		var path_color := Color(0.30, 0.64, 0.94, 0.92) if active_path else Color(0.18, 0.34, 0.54, 0.56)
-		if CoreBridge.is_course_select_unlocking() and i == nodes.size() - 2:
-			var reveal_alpha := 0.18 + (unlock_progress * 0.82) if unlock_phase == CoreBridge.COURSE_UNLOCK_PHASE_PATH else 1.0
-			path_color = Color(1.0, 0.78, 0.28, reveal_alpha)
-		_map_links[i].color = path_color
-	for i in range(_map_nodes.size()):
-		var visible := i < nodes.size()
-		_map_nodes[i].visible = visible
-		_map_node_labels[i].visible = visible
-		if not visible:
-			continue
-		var node: Dictionary = nodes[i]
-		var pos: Vector2 = Vector2(node.get("position", Vector2.ZERO))
-		var selected := bool(node.get("selected", false))
-		var unlocked := bool(node.get("unlocked", false))
-		var cleared := bool(node.get("cleared", false))
-		var bob := sin(_map_pulse_time * 2.4 + float(i) * 0.8) * 2.0
-		_map_nodes[i].position = Vector2(244.0 + pos.x, 298.0 + pos.y + bob)
-		_map_node_labels[i].position = Vector2(231.0 + pos.x, 320.0 + pos.y + bob)
-		_map_node_labels[i].size = Vector2(44.0, 14.0)
-		_map_nodes[i].size = Vector2(26.0, 26.0) if selected else Vector2(22.0, 22.0)
-		_map_nodes[i].color = Color(1.0, 0.84, 0.28, 0.84 + marker_pulse * 0.16) if selected else (Color(0.30, 0.76, 0.48, 0.98) if cleared else (Color(0.30, 0.54, 0.90, 0.96) if unlocked else Color(0.22, 0.26, 0.32, 0.92)))
-		_map_node_labels[i].text = str(int(node.get("index", 0)) + 1)
-		_map_node_labels[i].modulate = Color(1.0, 0.96, 0.84, 1.0) if selected else Color(0.96, 0.98, 1.0, 1.0)
-		if selected:
-			_marker_target_pos = Vector2(250.0 + pos.x + 3.0, 276.0 + pos.y + bob)
-			if _selected_map_index != i:
-				_selected_map_index = i
-				if not _map_ready:
-					_marker_visual_pos = _marker_target_pos
-					_marker_from_pos = _marker_target_pos
-					_map_ready = true
-	if _avatar_marker and nodes.size() > 0:
-		if CoreBridge.is_course_select_traveling():
-			var from_index := CoreBridge.get_course_select_travel_from_index()
-			var to_index := CoreBridge.get_course_select_travel_to_index()
-			if course_positions.has(from_index):
-				var from_pos: Vector2 = course_positions[from_index]
-				_marker_from_pos = Vector2(250.0 + from_pos.x + 3.0, 276.0 + from_pos.y)
-			if course_positions.has(to_index):
-				var to_pos: Vector2 = course_positions[to_index]
-				_marker_target_pos = Vector2(250.0 + to_pos.x + 3.0, 276.0 + to_pos.y)
-			var travel_progress := ease(CoreBridge.get_course_select_travel_progress(), -2.0)
-			_marker_visual_pos = _marker_from_pos.lerp(_marker_target_pos, travel_progress)
-		else:
-			var marker_speed := clampf(get_process_delta_time() * 8.0, 0.0, 1.0)
-			_marker_visual_pos = _marker_visual_pos.lerp(_marker_target_pos, marker_speed)
-			_marker_from_pos = _marker_visual_pos
-		_avatar_marker.position = _marker_visual_pos
-		if _marker_glow:
-			_marker_glow.position = _marker_visual_pos - Vector2(6.0, 6.0)
-			_marker_glow.size = Vector2(28.0, 28.0)
-			_marker_glow.color = Color(1.0, 0.90, 0.34, 0.20 + marker_pulse * 0.12)
-		var settle_bonus := 0.0
-		if CoreBridge.is_course_select_settling():
-			settle_bonus = 4.0 * (1.0 - CoreBridge.get_course_select_settle_progress())
-		_avatar_marker.size = Vector2(16.0 + sin(_map_pulse_time * 6.0) * 2.0 + settle_bonus, 16.0 + sin(_map_pulse_time * 6.0) * 2.0 + settle_bonus)
-		_avatar_marker.color = Color(1.0, 0.94, 0.46, 1.0) if CoreBridge.is_course_select_settling() else Color(1.0, 0.88, 0.32, 0.90 + marker_pulse * 0.10)
-		_avatar_marker.visible = true
-		if _marker_glow:
-			_marker_glow.visible = true
-	elif _avatar_marker:
-		_avatar_marker.visible = false
-		if _marker_glow:
-			_marker_glow.visible = false
+	_map_view.update(get_process_delta_time(), _map_pulse_time)
 
 func _update_emerald_badges() -> void:
 	var rows: Array = CoreBridge.get_course_select_emerald_rows()
@@ -407,7 +284,7 @@ func _update_rows() -> void:
 		var row: Dictionary = rows[row_index]
 		var selected := bool(row.get("selected", false))
 		var top := 350.0 + float(i) * 34.0
-		var lift := -3.0 if selected else 0.0
+		var lift := 0.0
 		_row_cards[i].position = Vector2(620.0, top + lift)
 		_row_labels[i].position = Vector2(638.0, top - 1.0 + lift)
 		_value_labels[i].position = Vector2(638.0, top + 13.0 + lift)

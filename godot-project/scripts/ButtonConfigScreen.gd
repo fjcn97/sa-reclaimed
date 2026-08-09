@@ -1,6 +1,6 @@
 # ButtonConfigScreen.gd
 # Presents an original-inspired dedicated button configuration screen.
-extends CanvasLayer
+extends ScreenBase
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -66,19 +66,19 @@ func _process(_delta: float) -> void:
 	_update_rows()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.04, 0.09, 0.68))
-	_hero_glow = _ensure_rect("HeroGlow", Rect2(190.0, 92.0, 900.0, 160.0), Color(0.38, 0.22, 0.10, 0.18))
-	_header_plate = _ensure_rect("HeaderPlate", Rect2(214.0, 94.0, 852.0, 92.0), Color(0.10, 0.08, 0.10, 0.94))
-	_panel = _ensure_rect("Panel", Rect2(210.0, 212.0, 860.0, 336.0), Color(0.08, 0.08, 0.12, 0.96))
-	_accent = _ensure_rect("AccentBar", Rect2(244.0, 172.0, 792.0, 8.0), Color(0.92, 0.48, 0.20, 0.92))
-	_header_band = _ensure_rect("HeaderBand", Rect2(252.0, 234.0, 230.0, 236.0), Color(0.24, 0.14, 0.10, 0.92))
-	_summary_stage = _ensure_rect("SummaryStage", Rect2(246.0, 228.0, 230.0, 236.0), Color(0.12, 0.09, 0.10, 0.94))
-	_bindings_stage = _ensure_rect("BindingsStage", Rect2(516.0, 236.0, 488.0, 216.0), Color(0.10, 0.10, 0.14, 0.94))
-	_focus_plate = _ensure_rect("FocusPlate", Rect2(532.0, 264.0, 456.0, 52.0), Color(0.50, 0.24, 0.10, 0.22))
-	_badge_ring = _ensure_rect("BadgeRing", Rect2(908.0, 112.0, 110.0, 110.0), Color(0.92, 0.78, 0.24, 0.22))
-	_badge_core = _ensure_rect("BadgeCore", Rect2(936.0, 140.0, 54.0, 54.0), Color(0.24, 0.14, 0.10, 0.96))
-	_controls_card = _ensure_rect("ControlsCard", Rect2(518.0, 452.0, 486.0, 70.0), Color(0.09, 0.08, 0.12, 0.92))
-	_prompt_band = _ensure_rect("PromptBand", Rect2(210.0, 568.0, 860.0, 82.0), Color(0.04, 0.08, 0.16, 0.92))
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.04, 0.09, 0.68))
+	_hero_glow = ensure_rect("HeroGlow", Rect2(190.0, 92.0, 900.0, 160.0), Color(0.38, 0.22, 0.10, 0.18))
+	_header_plate = ensure_rect("HeaderPlate", Rect2(214.0, 94.0, 852.0, 92.0), Color(0.10, 0.08, 0.10, 0.94))
+	_panel = ensure_rect("Panel", Rect2(210.0, 212.0, 860.0, 336.0), Color(0.08, 0.08, 0.12, 0.96))
+	_accent = ensure_rect("AccentBar", Rect2(244.0, 172.0, 792.0, 8.0), Color(0.92, 0.48, 0.20, 0.92))
+	_header_band = ensure_rect("HeaderBand", Rect2(252.0, 234.0, 230.0, 236.0), Color(0.24, 0.14, 0.10, 0.92))
+	_summary_stage = ensure_rect("SummaryStage", Rect2(246.0, 228.0, 230.0, 236.0), Color(0.12, 0.09, 0.10, 0.94))
+	_bindings_stage = ensure_rect("BindingsStage", Rect2(516.0, 236.0, 488.0, 216.0), Color(0.10, 0.10, 0.14, 0.94))
+	_focus_plate = ensure_rect("FocusPlate", Rect2(532.0, 264.0, 456.0, 52.0), Color(0.50, 0.24, 0.10, 0.22))
+	_badge_ring = ensure_rect("BadgeRing", Rect2(908.0, 112.0, 110.0, 110.0), Color(0.92, 0.78, 0.24, 0.22))
+	_badge_core = ensure_rect("BadgeCore", Rect2(936.0, 140.0, 54.0, 54.0), Color(0.24, 0.14, 0.10, 0.96))
+	_controls_card = ensure_rect("ControlsCard", Rect2(518.0, 452.0, 486.0, 70.0), Color(0.09, 0.08, 0.12, 0.92))
+	_prompt_band = ensure_rect("PromptBand", Rect2(210.0, 568.0, 860.0, 82.0), Color(0.04, 0.08, 0.16, 0.92))
 	_backdrop.z_index = -9
 	_hero_glow.z_index = -8
 	_header_plate.z_index = -7
@@ -93,43 +93,19 @@ func _ensure_chrome() -> void:
 	_controls_card.z_index = -1
 	_prompt_band.z_index = -1
 
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
-
 func _ensure_rows() -> void:
 	if _summary_label == null:
-		_summary_label = _ensure_label("SummaryLabel", Vector2(266.0, 266.0), Vector2(182.0, 164.0), 15)
+		_summary_label = ensure_label("SummaryLabel", Vector2(266.0, 266.0), Vector2(182.0, 164.0), 15)
 		_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		_summary_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	if _row_labels.size() > 0:
 		return
 	for i in range(3):
 		var top := 270.0 + float(i) * 58.0
-		var card := _ensure_rect("RowCard%d" % i, Rect2(532.0, top, 456.0, 52.0), Color(0.10, 0.16, 0.29, 0.96))
-		var row := _ensure_label("RowLabel%d" % i, Vector2(550.0, top + 2.0), Vector2(120.0, 46.0), 18)
-		var value := _ensure_label("ValueLabel%d" % i, Vector2(682.0, top + 2.0), Vector2(188.0, 46.0), 18)
-		var status := _ensure_label("StatusLabel%d" % i, Vector2(866.0, top + 2.0), Vector2(98.0, 46.0), 14)
+		var card := ensure_rect("RowCard%d" % i, Rect2(532.0, top, 456.0, 52.0), Color(0.10, 0.16, 0.29, 0.96))
+		var row := ensure_label("RowLabel%d" % i, Vector2(550.0, top + 2.0), Vector2(120.0, 46.0), 18)
+		var value := ensure_label("ValueLabel%d" % i, Vector2(682.0, top + 2.0), Vector2(188.0, 46.0), 18)
+		var status := ensure_label("StatusLabel%d" % i, Vector2(866.0, top + 2.0), Vector2(98.0, 46.0), 14)
 		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -143,7 +119,7 @@ func _update_summary() -> void:
 		_summary_label.text = CoreBridge.get_button_config_summary_text()
 		_summary_label.modulate = Color(0.92, 0.95, 1.0, 0.98)
 	if _badge_label == null:
-		_badge_label = _ensure_label("BadgeLabel", Vector2(900.0, 152.0), Vector2(126.0, 30.0), 16)
+		_badge_label = ensure_label("BadgeLabel", Vector2(900.0, 152.0), Vector2(126.0, 30.0), 16)
 	if _badge_label:
 		_badge_label.text = CoreBridge.get_button_config_badge_text()
 		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
@@ -174,7 +150,14 @@ func _update_chrome() -> void:
 
 func _update_rows() -> void:
 	var rows: Array = CoreBridge.get_button_config_rows()
-	var focus_y := 270.0 + float(CoreBridge.get_save_menu_index()) * 58.0
+	# Button Config owns its own three-row cursor. Using the generic Options
+	# index here makes the focus plate jump to an unrelated row after a tap.
+	var selected_index := 0
+	for i in range(rows.size()):
+		if bool(rows[i].get("selected", false)):
+			selected_index = i
+			break
+	var focus_y := 270.0 + float(selected_index) * 58.0
 	if _focus_plate:
 		_focus_plate.position.y = focus_y
 	for i in range(_row_labels.size()):
@@ -189,7 +172,7 @@ func _update_rows() -> void:
 		var is_selected := bool(row.get("selected", false))
 		var is_active := bool(row.get("active", is_selected))
 		var status_text := str(row.get("status", ""))
-		var lift := -2.0 if is_selected else 0.0
+		var lift := 0.0
 		var top := 270.0 + float(i) * 58.0
 		_row_cards[i].position.y = top + lift
 		_row_labels[i].position.y = top + 2.0 + lift

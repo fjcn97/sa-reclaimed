@@ -1,4 +1,4 @@
-extends CanvasLayer
+extends ScreenBase
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -85,29 +85,29 @@ func _process(delta: float) -> void:
 		_summary_card.position.x = 884.0 + side_shift
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.98, 0.98, 0.97, 1.0))
-	_hero_glow = _ensure_rect("HeroGlow", Rect2(102.0, 98.0, 1076.0, 506.0), Color(0.99, 0.71, 0.31, 0.14))
-	_header_plate = _ensure_rect("HeaderPlate", Rect2(150.0, 68.0, 980.0, 82.0), Color(1.0, 1.0, 1.0, 0.98))
-	_header_band = _ensure_rect("HeaderBand", Rect2(150.0, 150.0, 980.0, 10.0), Color(0.95, 0.46, 0.13, 1.0))
-	_panel = _ensure_rect("Panel", Rect2(118.0, 170.0, 1044.0, 348.0), Color(1.0, 1.0, 1.0, 0.98))
-	_accent = _ensure_rect("AccentBar", Rect2(796.0, 170.0, 366.0, 348.0), Color(0.95, 0.47, 0.12, 0.96))
-	_header_glow = _ensure_rect("HeaderGlow", Rect2(150.0, 62.0, 980.0, 6.0), Color(0.11, 0.26, 0.56, 0.20))
-	_left_stage = _ensure_rect("LeftStage", Rect2(160.0, 214.0, 438.0, 258.0), Color(0.94, 0.96, 1.0, 0.96))
-	_right_stage = _ensure_rect("RightStage", Rect2(640.0, 214.0, 466.0, 258.0), Color(0.97, 0.55, 0.18, 0.96))
-	_option_stage = _ensure_rect("OptionStage", Rect2(184.0, 236.0, 392.0, 214.0), Color(0.90, 0.94, 1.0, 0.96))
-	_vs_ring = _ensure_rect("VsRing", Rect2(720.0, 238.0, 142.0, 142.0), Color(1.0, 1.0, 1.0, 0.20))
-	_vs_core = _ensure_rect("VsCore", Rect2(756.0, 274.0, 70.0, 70.0), Color(1.0, 1.0, 1.0, 0.92))
-	_summary_card = _ensure_rect("SummaryCard", Rect2(884.0, 236.0, 222.0, 214.0), Color(1.0, 0.86, 0.70, 0.94))
-	_prompt_band = _ensure_rect("PromptBand", Rect2(118.0, 534.0, 1044.0, 148.0), Color(1.0, 0.97, 0.93, 0.98))
-	_focus_plate = _ensure_rect("FocusPlate", Rect2(650.0, 236.0, 214.0, 214.0), Color(1.0, 0.64, 0.21, 0.92))
-	_badge_label = _ensure_label("BadgeLabel", Vector2(752.0, 288.0), Vector2(112.0, 34.0), 24)
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.98, 0.98, 0.97, 1.0))
+	_hero_glow = ensure_rect("HeroGlow", Rect2(102.0, 98.0, 1076.0, 506.0), Color(0.99, 0.71, 0.31, 0.14))
+	_header_plate = ensure_rect("HeaderPlate", Rect2(150.0, 68.0, 980.0, 82.0), Color(1.0, 1.0, 1.0, 0.98))
+	_header_band = ensure_rect("HeaderBand", Rect2(150.0, 150.0, 980.0, 10.0), Color(0.95, 0.46, 0.13, 1.0))
+	_panel = ensure_rect("Panel", Rect2(118.0, 170.0, 1044.0, 348.0), Color(1.0, 1.0, 1.0, 0.98))
+	_accent = ensure_rect("AccentBar", Rect2(796.0, 170.0, 366.0, 348.0), Color(0.95, 0.47, 0.12, 0.96))
+	_header_glow = ensure_rect("HeaderGlow", Rect2(150.0, 62.0, 980.0, 6.0), Color(0.11, 0.26, 0.56, 0.20))
+	_left_stage = ensure_rect("LeftStage", Rect2(160.0, 214.0, 438.0, 258.0), Color(0.94, 0.96, 1.0, 0.96))
+	_right_stage = ensure_rect("RightStage", Rect2(640.0, 214.0, 466.0, 258.0), Color(0.97, 0.55, 0.18, 0.96))
+	_option_stage = ensure_rect("OptionStage", Rect2(184.0, 236.0, 392.0, 214.0), Color(0.90, 0.94, 1.0, 0.96))
+	_vs_ring = ensure_rect("VsRing", Rect2(720.0, 238.0, 142.0, 142.0), Color(1.0, 1.0, 1.0, 0.20))
+	_vs_core = ensure_rect("VsCore", Rect2(756.0, 274.0, 70.0, 70.0), Color(1.0, 1.0, 1.0, 0.92))
+	_summary_card = ensure_rect("SummaryCard", Rect2(884.0, 236.0, 222.0, 214.0), Color(1.0, 0.86, 0.70, 0.94))
+	_prompt_band = ensure_rect("PromptBand", Rect2(118.0, 534.0, 1044.0, 148.0), Color(1.0, 0.97, 0.93, 0.98))
+	_focus_plate = ensure_rect("FocusPlate", Rect2(650.0, 236.0, 214.0, 214.0), Color(1.0, 0.64, 0.21, 0.92))
+	_badge_label = ensure_label("BadgeLabel", Vector2(752.0, 288.0), Vector2(112.0, 34.0), 24)
 	_badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_summary_label = _ensure_label("SummaryLabel", Vector2(904.0, 262.0), Vector2(184.0, 178.0), 15)
+	_summary_label = ensure_label("SummaryLabel", Vector2(904.0, 262.0), Vector2(184.0, 178.0), 15)
 	_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_summary_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	_focus_header = _ensure_label("FocusHeader", Vector2(672.0, 246.0), Vector2(170.0, 44.0), 28)
+	_focus_header = ensure_label("FocusHeader", Vector2(672.0, 246.0), Vector2(170.0, 44.0), 28)
 	_focus_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_focus_body = _ensure_label("FocusBody", Vector2(674.0, 314.0), Vector2(166.0, 112.0), 16)
+	_focus_body = ensure_label("FocusBody", Vector2(674.0, 314.0), Vector2(166.0, 112.0), 16)
 	_focus_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_focus_body.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	_focus_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -127,38 +127,15 @@ func _ensure_chrome() -> void:
 	_vs_ring.z_index = -1
 	_vs_core.z_index = 0
 
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
-
 func _ensure_option_labels() -> void:
 	if _option_labels.size() > 0:
 		return
 	for i in range(2):
 		var top := 262.0 + float(i) * 102.0
-		var card := _ensure_rect("OptionCard%d" % i, Rect2(202.0, top, 356.0, 78.0), Color(0.88, 0.92, 1.0, 1.0))
-		var option := _ensure_label("OptionLabel%d" % i, Vector2(226.0, top + 10.0), Vector2(182.0, 28.0), 26)
-		var meta := _ensure_label("MetaLabel%d" % i, Vector2(228.0, top + 42.0), Vector2(226.0, 18.0), 11)
-		var status := _ensure_label("StatusLabel%d" % i, Vector2(428.0, top + 24.0), Vector2(108.0, 20.0), 13)
+		var card := ensure_rect("OptionCard%d" % i, Rect2(202.0, top, 356.0, 78.0), Color(0.88, 0.92, 1.0, 1.0))
+		var option := ensure_label("OptionLabel%d" % i, Vector2(226.0, top + 10.0), Vector2(182.0, 28.0), 26)
+		var meta := ensure_label("MetaLabel%d" % i, Vector2(228.0, top + 42.0), Vector2(226.0, 18.0), 11)
+		var status := ensure_label("StatusLabel%d" % i, Vector2(428.0, top + 24.0), Vector2(108.0, 20.0), 13)
 		option.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -181,9 +158,9 @@ func _update_option_labels() -> void:
 		var is_selected := bool(row.get("selected", false))
 		var available := bool(row.get("available", true))
 		var top := 262.0 + float(i) * 102.0
-		var lift := -6.0 if is_selected else 0.0
+		var lift := 0.0
 		_option_cards[i].position = Vector2(202.0, top + lift)
-		_option_cards[i].size = Vector2(372.0, 82.0) if is_selected else Vector2(356.0, 78.0)
+		_option_cards[i].size = Vector2(356.0, 78.0)
 		_option_labels[i].position = Vector2(226.0, top + 10.0 + lift)
 		_meta_labels[i].position = Vector2(228.0, top + 44.0 + lift)
 		_status_labels[i].position = Vector2(430.0, top + 24.0 + lift)

@@ -1,5 +1,5 @@
 # Source-inspired character unlock cutscene shown after a qualifying course clear.
-extends CanvasLayer
+extends ScreenBase
 
 const SourceTilemapTextureImpl = preload("res://scripts/SourceTilemapTexture.gd")
 
@@ -56,11 +56,11 @@ func _process(delta: float) -> void:
 	_update_source_cards()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.06, 0.98))
-	_panel = _ensure_rect("UnlockPanel", Rect2(168.0, 108.0, 944.0, 500.0), Color(0.05, 0.11, 0.23, 0.98))
-	_portrait = _ensure_rect("PortraitCard", Rect2(244.0, 246.0, 220.0, 190.0), Color(0.24, 0.66, 1.0, 0.28))
-	_shine = _ensure_rect("UnlockShine", Rect2(512.0, 178.0, 536.0, 164.0), Color(0.22, 0.60, 1.0, 0.14))
-	_rule = _ensure_rect("UnlockRule", Rect2(226.0, 470.0, 828.0, 6.0), Color(1.0, 0.70, 0.18, 0.66))
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.06, 0.98))
+	_panel = ensure_rect("UnlockPanel", Rect2(168.0, 108.0, 944.0, 500.0), Color(0.05, 0.11, 0.23, 0.98))
+	_portrait = ensure_rect("PortraitCard", Rect2(244.0, 246.0, 220.0, 190.0), Color(0.24, 0.66, 1.0, 0.28))
+	_shine = ensure_rect("UnlockShine", Rect2(512.0, 178.0, 536.0, 164.0), Color(0.22, 0.60, 1.0, 0.14))
+	_rule = ensure_rect("UnlockRule", Rect2(226.0, 470.0, 828.0, 6.0), Color(1.0, 0.70, 0.18, 0.66))
 	_slide_texture = _create_source_texture("OriginalUnlockSlide", Vector2(204.0, 226.0), Vector2(270.0, 180.0), -2)
 	_dialogue_texture = _create_source_texture("OriginalUnlockDialogue", Vector2(486.0, 504.0), Vector2(574.0, 80.0), -1)
 	_backdrop.z_index = -5
@@ -96,17 +96,6 @@ func _update_source_cards() -> void:
 		if not _dialogue_cache.has(dialogue_name) and not dialogue_name.is_empty():
 			_dialogue_cache[dialogue_name] = SourceTilemapTextureImpl.compose(dialogue_name)
 		_dialogue_texture.texture = _dialogue_cache[dialogue_name] as Texture2D if not dialogue_name.is_empty() else null
-
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var node := get_node_or_null(node_name) as ColorRect
-	if node == null:
-		node = ColorRect.new()
-		node.name = node_name
-		add_child(node)
-	node.position = rect.position
-	node.size = rect.size
-	node.color = color
-	return node
 
 func _set_screen_visible(screen_visible: bool) -> void:
 	for node in [_backdrop, _panel, _portrait, _shine, _rule, title_label, prompt_label, detail_label]:

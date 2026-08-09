@@ -1,6 +1,6 @@
 # ClearScreen.gd
 # Presents an original-inspired stage results screen.
-extends CanvasLayer
+extends ScreenBase
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -68,19 +68,19 @@ func _process(_delta: float) -> void:
 	_update_rank_style()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.04, 0.68))
-	_hero_glow = _ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.36, 0.24, 0.10, 0.18))
-	_header_plate = _ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.10, 0.08, 0.03, 0.94))
-	_header_band = _ensure_rect("HeaderBand", Rect2(214.0, 246.0, 332.0, 256.0), Color(0.10, 0.08, 0.03, 0.94))
-	_panel = _ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.10, 0.08, 0.03, 0.96))
-	_accent = _ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.96, 0.76, 0.20, 0.98))
-	_left_stage = _ensure_rect("LeftStage", Rect2(204.0, 246.0, 346.0, 256.0), Color(0.16, 0.10, 0.04, 0.92))
-	_right_stage = _ensure_rect("RightStage", Rect2(576.0, 246.0, 498.0, 256.0), Color(0.18, 0.12, 0.04, 0.98))
-	_results_stage = _ensure_rect("ResultsStage", Rect2(222.0, 272.0, 310.0, 218.0), Color(0.16, 0.10, 0.04, 0.92))
-	_header_card = _ensure_rect("HeaderCard", Rect2(236.0, 286.0, 282.0, 48.0), Color(0.28, 0.18, 0.06, 0.98))
-	_score_card = _ensure_rect("ScoreCard", Rect2(236.0, 346.0, 282.0, 126.0), Color(0.18, 0.12, 0.04, 0.98))
-	_rank_badge = _ensure_rect("RankBadge", Rect2(818.0, 280.0, 230.0, 176.0), Color(0.72, 0.50, 0.14, 0.98))
-	_prompt_band = _ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.08, 0.07, 0.05, 0.92))
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.04, 0.68))
+	_hero_glow = ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.36, 0.24, 0.10, 0.18))
+	_header_plate = ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.10, 0.08, 0.03, 0.94))
+	_header_band = ensure_rect("HeaderBand", Rect2(214.0, 246.0, 332.0, 256.0), Color(0.10, 0.08, 0.03, 0.94))
+	_panel = ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.10, 0.08, 0.03, 0.96))
+	_accent = ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.96, 0.76, 0.20, 0.98))
+	_left_stage = ensure_rect("LeftStage", Rect2(204.0, 246.0, 346.0, 256.0), Color(0.16, 0.10, 0.04, 0.92))
+	_right_stage = ensure_rect("RightStage", Rect2(576.0, 246.0, 498.0, 256.0), Color(0.18, 0.12, 0.04, 0.98))
+	_results_stage = ensure_rect("ResultsStage", Rect2(222.0, 272.0, 310.0, 218.0), Color(0.16, 0.10, 0.04, 0.92))
+	_header_card = ensure_rect("HeaderCard", Rect2(236.0, 286.0, 282.0, 48.0), Color(0.28, 0.18, 0.06, 0.98))
+	_score_card = ensure_rect("ScoreCard", Rect2(236.0, 346.0, 282.0, 126.0), Color(0.18, 0.12, 0.04, 0.98))
+	_rank_badge = ensure_rect("RankBadge", Rect2(818.0, 280.0, 230.0, 176.0), Color(0.72, 0.50, 0.14, 0.98))
+	_prompt_band = ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.08, 0.07, 0.05, 0.92))
 	_backdrop.z_index = -10
 	_hero_glow.z_index = -9
 	_header_plate.z_index = -8
@@ -95,36 +95,13 @@ func _ensure_chrome() -> void:
 	_prompt_band.z_index = -2
 	_rank_badge.z_index = -1
 
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
-
 func _ensure_header_labels() -> void:
-	_stage_label = _ensure_label("StageLabel", Vector2(252.0, 294.0), Vector2(250.0, 28.0), 20)
+	_stage_label = ensure_label("StageLabel", Vector2(252.0, 294.0), Vector2(250.0, 28.0), 20)
 	_stage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_rank_label = _ensure_label("RankLabel", Vector2(848.0, 304.0), Vector2(170.0, 88.0), 56)
+	_rank_label = ensure_label("RankLabel", Vector2(848.0, 304.0), Vector2(170.0, 88.0), 56)
 	_rank_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_rank_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_record_label = _ensure_label("RecordLabel", Vector2(836.0, 408.0), Vector2(194.0, 36.0), 16)
+	_record_label = ensure_label("RecordLabel", Vector2(836.0, 408.0), Vector2(194.0, 36.0), 16)
 	_record_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_record_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
@@ -133,8 +110,8 @@ func _ensure_rows() -> void:
 		return
 	for i in range(4):
 		var top := 354.0 + float(i) * 28.0
-		var row := _ensure_label("RowLabel%d" % i, Vector2(252.0, top), Vector2(112.0, 22.0), 14)
-		var value := _ensure_label("ValueLabel%d" % i, Vector2(372.0, top), Vector2(124.0, 22.0), 16)
+		var row := ensure_label("RowLabel%d" % i, Vector2(252.0, top), Vector2(112.0, 22.0), 14)
+		var value := ensure_label("ValueLabel%d" % i, Vector2(372.0, top), Vector2(124.0, 22.0), 16)
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		_row_labels.append(row)
 		_value_labels.append(value)

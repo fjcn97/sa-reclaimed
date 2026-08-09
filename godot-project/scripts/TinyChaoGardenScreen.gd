@@ -1,6 +1,6 @@
 # TinyChaoGardenScreen.gd
 # Presents the original-inspired Tiny Chao Garden branch and transfer setup.
-extends CanvasLayer
+extends ScreenBase
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -76,23 +76,23 @@ func _process(_delta: float) -> void:
 	_update_garden_avatar()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.98, 1.0, 0.96, 1.0))
-	_hero_glow = _ensure_rect("HeroGlow", Rect2(106.0, 96.0, 1068.0, 504.0), Color(0.56, 0.86, 0.28, 0.10))
-	_header_plate = _ensure_rect("HeaderPlate", Rect2(150.0, 68.0, 980.0, 82.0), Color(1.0, 1.0, 1.0, 0.98))
-	_panel = _ensure_rect("Panel", Rect2(118.0, 170.0, 1044.0, 352.0), Color(0.98, 1.0, 0.97, 0.99))
-	_accent = _ensure_rect("AccentBar", Rect2(118.0, 150.0, 1044.0, 10.0), Color(0.40, 0.84, 0.28, 1.0))
-	_header_band = _ensure_rect("HeaderBand", Rect2(160.0, 214.0, 386.0, 258.0), Color(0.90, 0.97, 0.84, 0.98))
-	_badge_ring = _ensure_rect("BadgeRing", Rect2(886.0, 224.0, 220.0, 220.0), Color(0.96, 0.86, 0.30, 0.24))
-	_badge_core = _ensure_rect("BadgeCore", Rect2(948.0, 286.0, 96.0, 96.0), Color(1.0, 1.0, 1.0, 0.96))
-	_menu_stage = _ensure_rect("MenuStage", Rect2(160.0, 214.0, 386.0, 258.0), Color(0.90, 0.97, 0.84, 0.98))
-	_status_stage = _ensure_rect("StatusStage", Rect2(582.0, 214.0, 262.0, 258.0), Color(0.56, 0.86, 0.28, 0.94))
-	_menu_card = _ensure_rect("MenuCard", Rect2(182.0, 236.0, 342.0, 214.0), Color(0.95, 0.99, 0.90, 0.98))
-	_status_card = _ensure_rect("StatusCard", Rect2(610.0, 236.0, 206.0, 214.0), Color(0.99, 0.96, 0.82, 0.98))
-	_prompt_band = _ensure_rect("PromptBand", Rect2(118.0, 534.0, 1044.0, 148.0), Color(0.98, 1.0, 0.94, 0.99))
-	_garden_stage = _ensure_rect("GardenStage", Rect2(160.0, 214.0, 684.0, 258.0), Color(0.72, 0.90, 0.58, 0.98))
-	_garden_shadow = _ensure_rect("GardenShadow", Rect2(454.0, 418.0, 96.0, 16.0), Color(0.18, 0.32, 0.12, 0.28))
-	_garden_avatar = _ensure_rect("GardenAvatar", Rect2(476.0, 354.0, 52.0, 68.0), Color(0.30, 0.74, 0.92, 1.0))
-	_garden_face = _ensure_label("GardenFace", Vector2(480.0, 372.0), Vector2(44.0, 26.0), 22)
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.98, 1.0, 0.96, 1.0))
+	_hero_glow = ensure_rect("HeroGlow", Rect2(106.0, 96.0, 1068.0, 504.0), Color(0.56, 0.86, 0.28, 0.10))
+	_header_plate = ensure_rect("HeaderPlate", Rect2(150.0, 68.0, 980.0, 82.0), Color(1.0, 1.0, 1.0, 0.98))
+	_panel = ensure_rect("Panel", Rect2(118.0, 170.0, 1044.0, 352.0), Color(0.98, 1.0, 0.97, 0.99))
+	_accent = ensure_rect("AccentBar", Rect2(118.0, 150.0, 1044.0, 10.0), Color(0.40, 0.84, 0.28, 1.0))
+	_header_band = ensure_rect("HeaderBand", Rect2(160.0, 214.0, 386.0, 258.0), Color(0.90, 0.97, 0.84, 0.98))
+	_badge_ring = ensure_rect("BadgeRing", Rect2(886.0, 224.0, 220.0, 220.0), Color(0.96, 0.86, 0.30, 0.24))
+	_badge_core = ensure_rect("BadgeCore", Rect2(948.0, 286.0, 96.0, 96.0), Color(1.0, 1.0, 1.0, 0.96))
+	_menu_stage = ensure_rect("MenuStage", Rect2(160.0, 214.0, 386.0, 258.0), Color(0.90, 0.97, 0.84, 0.98))
+	_status_stage = ensure_rect("StatusStage", Rect2(582.0, 214.0, 262.0, 258.0), Color(0.56, 0.86, 0.28, 0.94))
+	_menu_card = ensure_rect("MenuCard", Rect2(182.0, 236.0, 342.0, 214.0), Color(0.95, 0.99, 0.90, 0.98))
+	_status_card = ensure_rect("StatusCard", Rect2(610.0, 236.0, 206.0, 214.0), Color(0.99, 0.96, 0.82, 0.98))
+	_prompt_band = ensure_rect("PromptBand", Rect2(118.0, 534.0, 1044.0, 148.0), Color(0.98, 1.0, 0.94, 0.99))
+	_garden_stage = ensure_rect("GardenStage", Rect2(160.0, 214.0, 684.0, 258.0), Color(0.72, 0.90, 0.58, 0.98))
+	_garden_shadow = ensure_rect("GardenShadow", Rect2(454.0, 418.0, 96.0, 16.0), Color(0.18, 0.32, 0.12, 0.28))
+	_garden_avatar = ensure_rect("GardenAvatar", Rect2(476.0, 354.0, 52.0, 68.0), Color(0.30, 0.74, 0.92, 1.0))
+	_garden_face = ensure_label("GardenFace", Vector2(480.0, 372.0), Vector2(44.0, 26.0), 22)
 	_garden_face.text = "^_^"
 	_garden_face.modulate = Color(1.0, 1.0, 1.0, 0.96)
 	_backdrop.z_index = -9
@@ -117,49 +117,25 @@ func _ensure_chrome() -> void:
 	_garden_avatar.visible = false
 	_garden_face.visible = false
 
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
-
 func _ensure_option_labels() -> void:
 	if _summary_label == null:
-		_summary_label = _ensure_label("SummaryLabel", Vector2(884.0, 466.0), Vector2(226.0, 112.0), 16)
+		_summary_label = ensure_label("SummaryLabel", Vector2(884.0, 466.0), Vector2(226.0, 112.0), 16)
 		_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_summary_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	if _status_title_label == null:
-		_status_title_label = _ensure_label("StatusTitleLabel", Vector2(624.0, 452.0), Vector2(176.0, 24.0), 16)
+		_status_title_label = ensure_label("StatusTitleLabel", Vector2(624.0, 452.0), Vector2(176.0, 24.0), 16)
 		_status_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if _badge_label == null:
-		_badge_label = _ensure_label("BadgeLabel", Vector2(898.0, 314.0), Vector2(196.0, 34.0), 24)
+		_badge_label = ensure_label("BadgeLabel", Vector2(898.0, 314.0), Vector2(196.0, 34.0), 24)
 	if _option_labels.size() > 0:
 		return
 	for i in range(3):
 		var top := 252.0 + float(i) * 66.0
-		var card := _ensure_rect("RowCard%d" % i, Rect2(198.0, top, 312.0, 54.0), Color(0.88, 0.95, 0.82, 1.0))
-		var option := _ensure_label("OptionLabel%d" % i, Vector2(220.0, top + 6.0), Vector2(160.0, 24.0), 22)
-		var meta := _ensure_label("MetaLabel%d" % i, Vector2(222.0, top + 30.0), Vector2(176.0, 18.0), 10)
-		var status := _ensure_label("StatusLabel%d" % i, Vector2(384.0, top + 16.0), Vector2(104.0, 18.0), 12)
+		var card := ensure_rect("RowCard%d" % i, Rect2(198.0, top, 312.0, 54.0), Color(0.88, 0.95, 0.82, 1.0))
+		var option := ensure_label("OptionLabel%d" % i, Vector2(220.0, top + 6.0), Vector2(160.0, 24.0), 22)
+		var meta := ensure_label("MetaLabel%d" % i, Vector2(222.0, top + 30.0), Vector2(176.0, 18.0), 10)
+		var status := ensure_label("StatusLabel%d" % i, Vector2(384.0, top + 16.0), Vector2(104.0, 18.0), 12)
 		option.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -172,7 +148,7 @@ func _ensure_info_labels() -> void:
 	if _info_labels.size() > 0:
 		return
 	for i in range(4):
-		var label := _ensure_label("InfoLabel%d" % i, Vector2(632.0, 258.0 + float(i) * 42.0), Vector2(160.0, 34.0), 14)
+		var label := ensure_label("InfoLabel%d" % i, Vector2(632.0, 258.0 + float(i) * 42.0), Vector2(160.0, 34.0), 14)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		_info_labels.append(label)
 
@@ -190,10 +166,10 @@ func _update_option_labels() -> void:
 		var is_selected := bool(row.get("selected", false))
 		var name_text := str(row.get("name", ""))
 		var status_text := str(row.get("status", ""))
-		var lift := -6.0 if is_selected else 0.0
+		var lift := 0.0
 		var top := 252.0 + float(i) * 66.0
 		_row_cards[i].position.y = top + lift
-		_row_cards[i].size = Vector2(324.0, 58.0) if is_selected else Vector2(312.0, 54.0)
+		_row_cards[i].size = Vector2(312.0, 54.0)
 		_option_labels[i].position.y = top + 6.0 + lift
 		_meta_labels[i].position.y = top + 30.0 + lift
 		_status_labels[i].position.y = top + 16.0 + lift

@@ -1,6 +1,6 @@
 # MultiplayerRecordsScreen.gd
 # Presents an original-inspired dedicated multiplayer records screen.
-extends CanvasLayer
+extends ScreenBase
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -71,17 +71,17 @@ func _process(_delta: float) -> void:
 	_update_rows()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.03, 0.04, 0.08, 0.68))
-	_hero_glow = _ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.44, 0.24, 0.12, 0.18))
-	_header_plate = _ensure_rect("HeaderPlate", Rect2(146.0, 96.0, 988.0, 124.0), Color(0.12, 0.08, 0.08, 0.94))
-	_panel = _ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.08, 0.08, 0.12, 0.96))
-	_accent = _ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.92, 0.48, 0.20, 1.0))
-	_header_band = _ensure_rect("HeaderBand", Rect2(204.0, 246.0, 316.0, 238.0), Color(0.24, 0.14, 0.10, 0.92))
-	_badge_ring = _ensure_rect("BadgeRing", Rect2(878.0, 108.0, 140.0, 140.0), Color(0.92, 0.78, 0.24, 0.22))
-	_badge_core = _ensure_rect("BadgeCore", Rect2(913.0, 143.0, 70.0, 70.0), Color(0.24, 0.14, 0.10, 0.96))
-	_records_stage = _ensure_rect("RecordsStage", Rect2(540.0, 246.0, 532.0, 238.0), Color(0.09, 0.08, 0.12, 0.94))
-	_table_card = _ensure_rect("TableCard", Rect2(540.0, 246.0, 532.0, 238.0), Color(0.09, 0.08, 0.12, 0.94))
-	_prompt_band = _ensure_rect("PromptBand", Rect2(176.0, 534.0, 928.0, 96.0), Color(0.04, 0.08, 0.16, 0.92))
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.03, 0.04, 0.08, 0.68))
+	_hero_glow = ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.44, 0.24, 0.12, 0.18))
+	_header_plate = ensure_rect("HeaderPlate", Rect2(146.0, 96.0, 988.0, 124.0), Color(0.12, 0.08, 0.08, 0.94))
+	_panel = ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.08, 0.08, 0.12, 0.96))
+	_accent = ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.92, 0.48, 0.20, 1.0))
+	_header_band = ensure_rect("HeaderBand", Rect2(204.0, 246.0, 316.0, 238.0), Color(0.24, 0.14, 0.10, 0.92))
+	_badge_ring = ensure_rect("BadgeRing", Rect2(878.0, 108.0, 140.0, 140.0), Color(0.92, 0.78, 0.24, 0.22))
+	_badge_core = ensure_rect("BadgeCore", Rect2(913.0, 143.0, 70.0, 70.0), Color(0.24, 0.14, 0.10, 0.96))
+	_records_stage = ensure_rect("RecordsStage", Rect2(540.0, 246.0, 532.0, 238.0), Color(0.09, 0.08, 0.12, 0.94))
+	_table_card = ensure_rect("TableCard", Rect2(540.0, 246.0, 532.0, 238.0), Color(0.09, 0.08, 0.12, 0.94))
+	_prompt_band = ensure_rect("PromptBand", Rect2(176.0, 534.0, 928.0, 96.0), Color(0.04, 0.08, 0.16, 0.92))
 	_backdrop.z_index = -9
 	_hero_glow.z_index = -8
 	_header_plate.z_index = -7
@@ -94,61 +94,37 @@ func _ensure_chrome() -> void:
 	_table_card.z_index = -1
 	_prompt_band.z_index = -1
 
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
-
 func _ensure_rows() -> void:
 	if _summary_label == null:
-		_summary_label = _ensure_label("SummaryLabel", Vector2(228.0, 282.0), Vector2(248.0, 82.0), 15)
+		_summary_label = ensure_label("SummaryLabel", Vector2(228.0, 282.0), Vector2(248.0, 82.0), 15)
 		_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	if _player_name_label == null:
-		_player_name_label = _ensure_label("PlayerNameLabel", Vector2(228.0, 414.0), Vector2(146.0, 24.0), 18)
+		_player_name_label = ensure_label("PlayerNameLabel", Vector2(228.0, 414.0), Vector2(146.0, 24.0), 18)
 		_player_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	if _player_wins_label == null:
-		_player_wins_label = _ensure_label("PlayerWinsLabel", Vector2(384.0, 414.0), Vector2(42.0, 24.0), 18)
+		_player_wins_label = ensure_label("PlayerWinsLabel", Vector2(384.0, 414.0), Vector2(42.0, 24.0), 18)
 		_player_wins_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if _player_losses_label == null:
-		_player_losses_label = _ensure_label("PlayerLossesLabel", Vector2(438.0, 414.0), Vector2(42.0, 24.0), 18)
+		_player_losses_label = ensure_label("PlayerLossesLabel", Vector2(438.0, 414.0), Vector2(42.0, 24.0), 18)
 		_player_losses_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if _player_draws_label == null:
-		_player_draws_label = _ensure_label("PlayerDrawsLabel", Vector2(492.0, 414.0), Vector2(42.0, 24.0), 18)
+		_player_draws_label = ensure_label("PlayerDrawsLabel", Vector2(492.0, 414.0), Vector2(42.0, 24.0), 18)
 		_player_draws_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if _column_label == null:
-		_column_label = _ensure_label("ColumnLabel", Vector2(566.0, 280.0), Vector2(420.0, 24.0), 16)
+		_column_label = ensure_label("ColumnLabel", Vector2(566.0, 280.0), Vector2(420.0, 24.0), 16)
 		_column_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	if _scroll_hint_label == null:
-		_scroll_hint_label = _ensure_label("ScrollHintLabel", Vector2(958.0, 280.0), Vector2(82.0, 24.0), 14)
+		_scroll_hint_label = ensure_label("ScrollHintLabel", Vector2(958.0, 280.0), Vector2(82.0, 24.0), 14)
 		_scroll_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	if _name_labels.size() > 0:
 		return
 	for i in range(4):
 		var top := 326.0 + float(i) * 36.0
-		var card := _ensure_rect("RowCard%d" % i, Rect2(566.0, top, 474.0, 28.0), Color(0.10, 0.16, 0.29, 0.96))
-		var name := _ensure_label("NameLabel%d" % i, Vector2(588.0, top), Vector2(176.0, 26.0), 16)
-		var wins := _ensure_label("WinsLabel%d" % i, Vector2(804.0, top), Vector2(40.0, 26.0), 16)
-		var losses := _ensure_label("LossesLabel%d" % i, Vector2(872.0, top), Vector2(40.0, 26.0), 16)
-		var draws := _ensure_label("DrawsLabel%d" % i, Vector2(940.0, top), Vector2(40.0, 26.0), 16)
+		var card := ensure_rect("RowCard%d" % i, Rect2(566.0, top, 474.0, 28.0), Color(0.10, 0.16, 0.29, 0.96))
+		var name := ensure_label("NameLabel%d" % i, Vector2(588.0, top), Vector2(176.0, 26.0), 16)
+		var wins := ensure_label("WinsLabel%d" % i, Vector2(804.0, top), Vector2(40.0, 26.0), 16)
+		var losses := ensure_label("LossesLabel%d" % i, Vector2(872.0, top), Vector2(40.0, 26.0), 16)
+		var draws := ensure_label("DrawsLabel%d" % i, Vector2(940.0, top), Vector2(40.0, 26.0), 16)
 		name.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		wins.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		losses.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -159,7 +135,7 @@ func _ensure_rows() -> void:
 		_losses_labels.append(losses)
 		_draws_labels.append(draws)
 	if _badge_label == null:
-		_badge_label = _ensure_label("BadgeLabel", Vector2(886.0, 160.0), Vector2(108.0, 38.0), 18)
+		_badge_label = ensure_label("BadgeLabel", Vector2(886.0, 160.0), Vector2(108.0, 38.0), 18)
 		_badge_label.text = CoreBridge.get_menu_badge_text("VERSUS")
 		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
 

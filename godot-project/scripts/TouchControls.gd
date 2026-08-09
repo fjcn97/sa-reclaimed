@@ -48,7 +48,13 @@ func _ready() -> void:
 	_connect_tap_button(_menu_down_button, CoreBridge.DPAD_DOWN)
 	_connect_tap_button(_menu_confirm_button, CoreBridge.A_BUTTON)
 	_connect_tap_button(_menu_back_button, CoreBridge.B_BUTTON)
+	_disable_keyboard_focus()
 	_refresh_touch_ui_state()
+
+func _disable_keyboard_focus() -> void:
+	for button in [_left_button, _right_button, _jump_button, _action_button, _pause_button, _menu_left_button, _menu_right_button, _menu_up_button, _menu_down_button, _menu_confirm_button, _menu_back_button]:
+		if button:
+			button.focus_mode = Control.FOCUS_NONE
 
 func _process(_delta: float) -> void:
 	_refresh_touch_ui_state()

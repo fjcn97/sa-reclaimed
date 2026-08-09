@@ -1,0 +1,425 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/TimeRecordsScreen.gd" id="20"]
+[ext_resource type="Script" path="res://scripts/MultiplayerRecordsScreen.gd" id="21"]
+[ext_resource type="Script" path="res://scripts/NameEntryScreen.gd" id="22"]
+[ext_resource type="Script" path="res://scripts/LanguageScreen.gd" id="23"]
+[ext_resource type="Script" path="res://scripts/ButtonConfigScreen.gd" id="24"]
+[ext_resource type="Script" path="res://scripts/SoundTestScreen.gd" id="25"]
+[ext_resource type="Script" path="res://scripts/PlayerDataScreen.gd" id="26"]
+[ext_resource type="Script" path="res://scripts/OptionsMainScreen.gd" id="27"]
+[ext_resource type="Script" path="res://scripts/SwitchOptionScreen.gd" id="33"]
+
+[node name="ScreenStackOptions" type="Node"]
+
+[node name="TimeRecordsScreen" type="CanvasLayer" parent="."]
+layer = 103
+script = ExtResource("20")
+
+[node name="TitleLabel" type="Label" parent="TimeRecordsScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "TIME RECORDS"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="TimeRecordsScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "BEST CLEAR TIMES"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="TimeRecordsScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="MultiplayerRecordsScreen" type="CanvasLayer" parent="."]
+layer = 103
+script = ExtResource("21")
+
+[node name="TitleLabel" type="Label" parent="MultiplayerRecordsScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "MULTI-PAK RECORDS"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="MultiplayerRecordsScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "VERSUS RECORD SUMMARY"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="MultiplayerRecordsScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="NameEntryScreen" type="CanvasLayer" parent="."]
+layer = 104
+script = ExtResource("22")
+
+[node name="TitleLabel" type="Label" parent="NameEntryScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "NAME ENTRY"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="NameEntryScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "EDIT PROFILE NAME"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="NameEntryScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="LanguageScreen" type="CanvasLayer" parent="."]
+layer = 104
+script = ExtResource("23")
+
+[node name="TitleLabel" type="Label" parent="LanguageScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "LANGUAGE"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="LanguageScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "SELECT DISPLAY LANGUAGE"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="LanguageScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="ButtonConfigScreen" type="CanvasLayer" parent="."]
+layer = 104
+script = ExtResource("24")
+
+[node name="TitleLabel" type="Label" parent="ButtonConfigScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "BUTTON CONFIG"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="ButtonConfigScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "ASSIGN ACTION BUTTONS"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="ButtonConfigScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="SoundTestScreen" type="CanvasLayer" parent="."]
+layer = 104
+script = ExtResource("25")
+
+[node name="TitleLabel" type="Label" parent="SoundTestScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "SOUND TEST"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="SoundTestScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "LISTEN TO UNLOCKED TRACKS"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="SoundTestScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="PlayerDataScreen" type="CanvasLayer" parent="."]
+layer = 103
+script = ExtResource("26")
+
+[node name="TitleLabel" type="Label" parent="PlayerDataScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "PLAYER DATA"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="PlayerDataScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "PROFILE AND RECORDS"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="PlayerDataScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="OptionsMainScreen" type="CanvasLayer" parent="."]
+layer = 103
+script = ExtResource("27")
+
+[node name="TitleLabel" type="Label" parent="OptionsMainScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "OPTIONS"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="OptionsMainScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "GAME SETTINGS"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="OptionsMainScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="DifficultyScreen" type="CanvasLayer" parent="."]
+layer = 104
+script = ExtResource("33")
+screen_id = "difficulty"
+
+[node name="TitleLabel" type="Label" parent="DifficultyScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "DIFFICULTY"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="DifficultyScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "SELECT DIFFICULTY"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="DifficultyScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="TimeLimitScreen" type="CanvasLayer" parent="."]
+layer = 104
+script = ExtResource("33")
+screen_id = "time_limit"
+
+[node name="TitleLabel" type="Label" parent="TimeLimitScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "TIME LIMIT"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="TimeLimitScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "TOGGLE TIME LIMIT"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="TimeLimitScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="DeleteConfirmScreen" type="CanvasLayer" parent="."]
+layer = 105
+script = ExtResource("33")
+screen_id = "delete_confirm"
+
+[node name="TitleLabel" type="Label" parent="DeleteConfirmScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "DELETE GAME DATA"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="DeleteConfirmScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "DELETE ALL SAVE DATA?"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="DeleteConfirmScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="DeleteFinalConfirmScreen" type="CanvasLayer" parent="."]
+layer = 106
+script = ExtResource("33")
+screen_id = "delete_final"
+
+[node name="TitleLabel" type="Label" parent="DeleteFinalConfirmScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "DELETE GAME DATA"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="DeleteFinalConfirmScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "THIS CANNOT BE UNDONE"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="DeleteFinalConfirmScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false

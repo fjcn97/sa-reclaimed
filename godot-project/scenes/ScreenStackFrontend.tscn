@@ -1,0 +1,474 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scripts/TitleScreen.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/CharacterSelectScreen.gd" id="12"]
+[ext_resource type="Script" path="res://scripts/SinglePakResultsScreen.gd" id="14"]
+[ext_resource type="Script" path="res://scripts/MultiplayerLobbyScreen.gd" id="15"]
+[ext_resource type="Script" path="res://scripts/MultiplayerModeScreen.gd" id="16"]
+[ext_resource type="Script" path="res://scripts/TimeAttackModeScreen.gd" id="17"]
+[ext_resource type="Script" path="res://scripts/TinyChaoGardenScreen.gd" id="18"]
+[ext_resource type="Script" path="res://scripts/MultiplayerCommScreen.gd" id="19"]
+[ext_resource type="Script" path="res://scripts/PlayModeScreen.gd" id="28"]
+[ext_resource type="Script" path="res://scripts/SinglePlayerMenuScreen.gd" id="29"]
+[ext_resource type="Script" path="res://scripts/TimeAttackLobbyScreen.gd" id="30"]
+[ext_resource type="Script" path="res://scripts/CourseSelectScreen.gd" id="31"]
+[ext_resource type="Script" path="res://scripts/MultiplayerOutcomeScreen.gd" id="34"]
+
+[node name="ScreenStackFrontend" type="Node"]
+
+[node name="TitleScreen" type="CanvasLayer" parent="."]
+layer = 100
+script = ExtResource("6")
+
+[node name="TitleLabel" type="Label" parent="TitleScreen"]
+offset_left = 160
+offset_top = 130
+offset_right = 1120
+offset_bottom = 210
+theme_override_font_sizes/font_size = 32
+horizontal_alignment = 1
+text = "SONIC ADVANCE RECLAIMED"
+
+[node name="SubtitleLabel" type="Label" parent="TitleScreen"]
+offset_left = 220
+offset_top = 220
+offset_right = 1060
+offset_bottom = 258
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
+text = "STAGE: SKY CANYON"
+
+[node name="PromptLabel" type="Label" parent="TitleScreen"]
+offset_left = 220
+offset_top = 288
+offset_right = 1060
+offset_bottom = 336
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+text = "UP/DOWN SELECT, ENTER TO BEGIN, X OPTIONS"
+
+[node name="StageOneLabel" type="Label" parent="TitleScreen"]
+offset_left = 220
+offset_top = 352
+offset_right = 1060
+offset_bottom = 386
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+text = "SKY CANYON  [LOCKED]  BEST 0"
+
+[node name="StageTwoLabel" type="Label" parent="TitleScreen"]
+offset_left = 220
+offset_top = 392
+offset_right = 1060
+offset_bottom = 426
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+text = "TRAINING GROUND  [LOCKED]  BEST 0"
+
+[node name="PlayModeScreen" type="CanvasLayer" parent="."]
+layer = 100
+script = ExtResource("28")
+
+[node name="TitleLabel" type="Label" parent="PlayModeScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "PLAY MODE"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="PlayModeScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "SELECT A GAME STYLE"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="PlayModeScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="SinglePlayerMenuScreen" type="CanvasLayer" parent="."]
+layer = 100
+script = ExtResource("29")
+
+[node name="TitleLabel" type="Label" parent="SinglePlayerMenuScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "SINGLE PLAYER"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="SinglePlayerMenuScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "SELECT A MODE"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="SinglePlayerMenuScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="MultiplayerModeScreen" type="CanvasLayer" parent="."]
+layer = 100
+script = ExtResource("16")
+
+[node name="TitleLabel" type="Label" parent="MultiplayerModeScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "MULTIPLAYER"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="MultiplayerModeScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "SELECT PAK MODE"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="MultiplayerModeScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="TimeAttackModeScreen" type="CanvasLayer" parent="."]
+layer = 100
+script = ExtResource("17")
+
+[node name="TitleLabel" type="Label" parent="TimeAttackModeScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "TIME ATTACK"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="TimeAttackModeScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "SELECT ATTACK MODE"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="TimeAttackModeScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="TimeAttackLobbyScreen" type="CanvasLayer" parent="."]
+layer = 101
+script = ExtResource("30")
+
+[node name="TitleLabel" type="Label" parent="TimeAttackLobbyScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "TIME ATTACK"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="TimeAttackLobbyScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "TRY AGAIN"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="TimeAttackLobbyScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="CourseSelectScreen" type="CanvasLayer" parent="."]
+layer = 101
+script = ExtResource("31")
+
+[node name="TitleLabel" type="Label" parent="CourseSelectScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "COURSE SELECT"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="CourseSelectScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "SELECT A COURSE"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="CourseSelectScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="CharacterSelectScreen" type="CanvasLayer" parent="."]
+layer = 98
+script = ExtResource("12")
+
+[node name="TitleLabel" type="Label" parent="CharacterSelectScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "CHARACTER SELECT"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="CharacterSelectScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "SONIC"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="CharacterSelectScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "BALANCED SPEED TYPE"
+visible = false
+
+[node name="TinyChaoGardenScreen" type="CanvasLayer" parent="."]
+layer = 100
+script = ExtResource("18")
+
+[node name="TitleLabel" type="Label" parent="TinyChaoGardenScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "TINY CHAO GARDEN"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="TinyChaoGardenScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "SELECT TRANSFER MODE"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="TinyChaoGardenScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="MultiplayerCommScreen" type="CanvasLayer" parent="."]
+layer = 100
+script = ExtResource("19")
+
+[node name="TitleLabel" type="Label" parent="MultiplayerCommScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "LINK CONNECTION"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="MultiplayerCommScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "LINK READY ROOM"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="MultiplayerCommScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="MultiplayerOutcomeScreen" type="CanvasLayer" parent="."]
+layer = 101
+script = ExtResource("34")
+
+[node name="TitleLabel" type="Label" parent="MultiplayerOutcomeScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "CONNECTION SUCCESS"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="MultiplayerOutcomeScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "LET'S PLAY WITH 2P"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="MultiplayerOutcomeScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="MultiplayerLobbyScreen" type="CanvasLayer" parent="."]
+layer = 102
+script = ExtResource("15")
+
+[node name="TitleLabel" type="Label" parent="MultiplayerLobbyScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "PLAY AGAIN?"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="MultiplayerLobbyScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "WAITING FOR ALL PLAYERS TO CONFIRM"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="MultiplayerLobbyScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="SinglePakResultsScreen" type="CanvasLayer" parent="."]
+layer = 101
+script = ExtResource("14")
+
+[node name="TitleLabel" type="Label" parent="SinglePakResultsScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "SINGLE-PAK RESULTS"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="SinglePakResultsScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "COLLECT RINGS SUMMARY"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="SinglePakResultsScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false

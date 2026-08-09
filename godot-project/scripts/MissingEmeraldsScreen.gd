@@ -1,6 +1,6 @@
 # MissingEmeraldsScreen.gd
 # Ports the original notification shown when the story ends before all emeralds.
-extends CanvasLayer
+extends ScreenBase
 
 const SourceTilemapTextureImpl = preload("res://scripts/SourceTilemapTexture.gd")
 
@@ -49,9 +49,9 @@ func _process(delta: float) -> void:
 	_update_source_card()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.03, 0.08, 0.98))
-	_panel = _ensure_rect("NotificationPanel", Rect2(164.0, 132.0, 952.0, 430.0), Color(0.06, 0.12, 0.24, 0.96))
-	_accent = _ensure_rect("AccentBar", Rect2(232.0, 244.0, 816.0, 6.0), Color(0.28, 0.72, 1.0, 0.78))
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.02, 0.03, 0.08, 0.98))
+	_panel = ensure_rect("NotificationPanel", Rect2(164.0, 132.0, 952.0, 430.0), Color(0.06, 0.12, 0.24, 0.96))
+	_accent = ensure_rect("AccentBar", Rect2(232.0, 244.0, 816.0, 6.0), Color(0.28, 0.72, 1.0, 0.78))
 	_source_card = TextureRect.new()
 	_source_card.name = "OriginalMissingEmeraldsCard"
 	_source_card.position = Vector2(400.0, 268.0)
@@ -66,35 +66,12 @@ func _ensure_chrome() -> void:
 	_accent.z_index = -2
 	for i in range(7):
 		var x := 370.0 + float(i) * 80.0
-		var slot := _ensure_rect("EmeraldSlot%d" % i, Rect2(x, 332.0, 48.0, 48.0), Color(0.12, 0.18, 0.30, 1.0))
-		var label := _ensure_label("EmeraldLabel%d" % i, Vector2(x, 382.0), Vector2(48.0, 24.0), 11)
+		var slot := ensure_rect("EmeraldSlot%d" % i, Rect2(x, 332.0, 48.0, 48.0), Color(0.12, 0.18, 0.30, 1.0))
+		var label := ensure_label("EmeraldLabel%d" % i, Vector2(x, 382.0), Vector2(48.0, 24.0), 11)
 		label.text = CoreBridge.get_missing_emerald_unknown_label()
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_slots.append(slot)
 		_slot_labels.append(label)
-
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var node := get_node_or_null(node_name) as ColorRect
-	if node == null:
-		node = ColorRect.new()
-		node.name = node_name
-		add_child(node)
-	node.position = rect.position
-	node.size = rect.size
-	node.color = color
-	return node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var node := get_node_or_null(node_name) as Label
-	if node == null:
-		node = Label.new()
-		node.name = node_name
-		add_child(node)
-	node.position = pos
-	node.size = size
-	node.add_theme_font_size_override("font_size", font_size)
-	node.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return node
 
 func _update_slots() -> void:
 	var collected := CoreBridge.get_missing_emeralds_count()

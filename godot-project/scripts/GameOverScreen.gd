@@ -1,4 +1,4 @@
-extends CanvasLayer
+extends ScreenBase
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -66,19 +66,19 @@ func _process(_delta: float) -> void:
 	_update_chrome()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.04, 0.00, 0.00, 0.82))
-	_hero_glow = _ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.46, 0.12, 0.10, 0.18))
-	_header_plate = _ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.12, 0.04, 0.04, 0.94))
-	_header_band = _ensure_rect("HeaderBand", Rect2(214.0, 246.0, 332.0, 244.0), Color(0.14, 0.05, 0.05, 0.94))
-	_panel = _ensure_rect("OverPanel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.12, 0.03, 0.03, 0.96))
-	_accent = _ensure_rect("OverAccent", Rect2(176.0, 180.0, 928.0, 10.0), Color(1.0, 0.46, 0.18, 0.80))
-	_left_stage = _ensure_rect("LeftStage", Rect2(204.0, 246.0, 346.0, 244.0), Color(0.16, 0.08, 0.07, 0.94))
-	_right_stage = _ensure_rect("RightStage", Rect2(576.0, 246.0, 498.0, 244.0), Color(0.18, 0.08, 0.07, 0.94))
-	_message_card = _ensure_rect("MessageCard", Rect2(238.0, 360.0, 278.0, 96.0), Color(0.18, 0.08, 0.07, 0.94))
-	_prompt_band = _ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.10, 0.06, 0.05, 0.92))
-	_badge_ring = _ensure_rect("BadgeRing", Rect2(878.0, 108.0, 140.0, 140.0), Color(1.0, 0.74, 0.34, 0.18))
-	_badge_core = _ensure_rect("BadgeCore", Rect2(913.0, 143.0, 70.0, 70.0), Color(0.26, 0.10, 0.08, 0.96))
-	_badge_label = _ensure_label("BadgeLabel", Vector2(900.0, 162.0), Vector2(96.0, 32.0), 18)
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.04, 0.00, 0.00, 0.82))
+	_hero_glow = ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.46, 0.12, 0.10, 0.18))
+	_header_plate = ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.12, 0.04, 0.04, 0.94))
+	_header_band = ensure_rect("HeaderBand", Rect2(214.0, 246.0, 332.0, 244.0), Color(0.14, 0.05, 0.05, 0.94))
+	_panel = ensure_rect("OverPanel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.12, 0.03, 0.03, 0.96))
+	_accent = ensure_rect("OverAccent", Rect2(176.0, 180.0, 928.0, 10.0), Color(1.0, 0.46, 0.18, 0.80))
+	_left_stage = ensure_rect("LeftStage", Rect2(204.0, 246.0, 346.0, 244.0), Color(0.16, 0.08, 0.07, 0.94))
+	_right_stage = ensure_rect("RightStage", Rect2(576.0, 246.0, 498.0, 244.0), Color(0.18, 0.08, 0.07, 0.94))
+	_message_card = ensure_rect("MessageCard", Rect2(238.0, 360.0, 278.0, 96.0), Color(0.18, 0.08, 0.07, 0.94))
+	_prompt_band = ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.10, 0.06, 0.05, 0.92))
+	_badge_ring = ensure_rect("BadgeRing", Rect2(878.0, 108.0, 140.0, 140.0), Color(1.0, 0.74, 0.34, 0.18))
+	_badge_core = ensure_rect("BadgeCore", Rect2(913.0, 143.0, 70.0, 70.0), Color(0.26, 0.10, 0.08, 0.96))
+	_badge_label = ensure_label("BadgeLabel", Vector2(900.0, 162.0), Vector2(96.0, 32.0), 18)
 	_badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_backdrop.z_index = -10
 	_hero_glow.z_index = -9
@@ -93,32 +93,9 @@ func _ensure_chrome() -> void:
 	_badge_ring.z_index = -1
 	_badge_core.z_index = 0
 
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
-
 func _ensure_labels() -> void:
-	_over_label = _ensure_label("OverPromptLabel", Vector2(256.0, 382.0), Vector2(242.0, 34.0), 22)
-	_status_label = _ensure_label("OverStatusLabel", Vector2(256.0, 426.0), Vector2(242.0, 28.0), 14)
+	_over_label = ensure_label("OverPromptLabel", Vector2(256.0, 382.0), Vector2(242.0, 34.0), 22)
+	_status_label = ensure_label("OverStatusLabel", Vector2(256.0, 426.0), Vector2(242.0, 28.0), 14)
 	_over_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 

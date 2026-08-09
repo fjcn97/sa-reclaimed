@@ -1,0 +1,475 @@
+# Procedural entity texture construction shared by sprite-based entity views.
+extends RefCounted
+class_name EntitySpriteTextureFactory
+
+func make_ring_texture() -> Texture2D:
+	var image := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	for y in range(32):
+		for x in range(32):
+			var dx := x - 16
+			var dy := y - 16
+			var dist := sqrt(float(dx * dx + dy * dy))
+			if dist >= 10.0 and dist <= 14.0:
+				image.set_pixel(x, y, Color(1.0, 0.82, 0.18, 1.0))
+			elif dist >= 7.5 and dist <= 9.5:
+				image.set_pixel(x, y, Color(0.98, 0.92, 0.48, 1.0))
+	return ImageTexture.create_from_image(image)
+
+func make_ring_glint_texture() -> Texture2D:
+	var image := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	for y in range(16):
+		for x in range(16):
+			var dx := x - 5
+			var dy := y - 5
+			if dx * dx + dy * dy <= 6:
+				image.set_pixel(x, y, Color(1.0, 1.0, 1.0, 0.55))
+	return ImageTexture.create_from_image(image)
+
+func make_ring_effect_texture() -> Texture2D:
+	var image := Image.create(40, 40, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	for i in range(8):
+		var angle: float = float(i) * TAU / 8.0
+		var x := int(20.0 + cos(angle) * 16.0)
+		var y := int(20.0 + sin(angle) * 16.0)
+		for dx in range(-2, 3):
+			for dy in range(-2, 3):
+				if x + dx >= 0 and x + dx < 40 and y + dy >= 0 and y + dy < 40:
+					image.set_pixel(x + dx, y + dy, Color(1.0, 0.86, 0.26, 0.95))
+	return ImageTexture.create_from_image(image)
+
+func make_ring_effect_overlay_texture() -> Texture2D:
+	var image := Image.create(40, 40, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	for i in range(4):
+		var angle: float = float(i) * PI / 2.0
+		for step in range(12):
+			var point := Vector2(20, 20) + Vector2(cos(angle), sin(angle)) * float(step)
+			image.set_pixel(int(point.x), int(point.y), Color(1.0, 1.0, 0.82, 0.8))
+	return ImageTexture.create_from_image(image)
+
+func make_heart_texture() -> Texture2D:
+	var image := Image.create(28, 28, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	for y in range(28):
+		for x in range(28):
+			var px := float(x - 14) / 10.0
+			var py := float(y - 11) / 10.0
+			var left_lobe := (px + 0.43) * (px + 0.43) + (py + 0.18) * (py + 0.18) <= 0.24
+			var right_lobe := (px - 0.43) * (px - 0.43) + (py + 0.18) * (py + 0.18) <= 0.24
+			var lower_point := py >= -0.15 and py <= 1.25 and absf(px) <= (1.25 - py) * 0.58
+			if left_lobe or right_lobe or lower_point:
+				image.set_pixel(x, y, Color(1.0, 0.28, 0.52, 0.95))
+	return ImageTexture.create_from_image(image)
+
+func make_dust_texture() -> Texture2D:
+	var image := Image.create(48, 32, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	for y in range(32):
+		for x in range(48):
+			var left := Vector2(x - 14, y - 18).length_squared() <= 105.0
+			var center := Vector2(x - 24, y - 14).length_squared() <= 128.0
+			var right := Vector2(x - 35, y - 18).length_squared() <= 92.0
+			if left or center or right:
+				image.set_pixel(x, y, Color(0.72, 0.76, 0.82, 0.82))
+	return ImageTexture.create_from_image(image)
+
+func make_grind_effect_texture() -> Texture2D:
+	var image := Image.create(28, 28, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	for i in range(6):
+		var point := Vector2(14, 14) + Vector2(cos(float(i) * PI / 3.0), sin(float(i) * PI / 3.0)) * 11.0
+		for dx in range(-1, 2):
+			for dy in range(-1, 2):
+				var px := int(point.x) + dx
+				var py := int(point.y) + dy
+				if px >= 0 and px < 28 and py >= 0 and py < 28:
+					image.set_pixel(px, py, Color(1.0, 0.88, 0.34, 0.95))
+	return ImageTexture.create_from_image(image)
+
+func make_cheese_texture() -> Texture2D:
+	var image := Image.create(34, 34, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	for y in range(34):
+		for x in range(34):
+			var dx := x - 17
+			var dy := y - 17
+			if dx * dx + dy * dy <= 105:
+				image.set_pixel(x, y, Color(1.0, 0.72, 0.22, 1.0))
+	for i in range(5):
+		image.set_pixel(10 + i, 7 + i, Color(0.34, 0.18, 0.08, 1.0))
+		image.set_pixel(24 - i, 7 + i, Color(0.34, 0.18, 0.08, 1.0))
+	return ImageTexture.create_from_image(image)
+
+func make_tail_swipe_texture() -> Texture2D:
+	var image := Image.create(54, 42, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	for i in range(30):
+		var angle: float = -1.15 + float(i) * 2.3 / 29.0
+		var point := Vector2(25, 30) + Vector2(cos(angle), sin(angle)) * (10.0 + float(i) * 0.55)
+		image.set_pixel(int(point.x), int(point.y), Color(0.34, 0.78, 1.0, 0.88))
+	return ImageTexture.create_from_image(image)
+
+func make_knuckles_fire_texture() -> Texture2D:
+	var image := Image.create(38, 38, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	for y in range(38):
+		for x in range(38):
+			var dx := float(x - 19)
+			var dy := float(y - 19)
+			var dist := sqrt(dx * dx + dy * dy)
+			if dist <= 15.0:
+				image.set_pixel(x, y, Color(1.0, 0.38, 0.08, 0.92))
+			elif dist <= 9.0:
+				image.set_pixel(x, y, Color(1.0, 0.88, 0.24, 1.0))
+	return ImageTexture.create_from_image(image)
+
+func make_sonic_skid_texture() -> Texture2D:
+	var image := Image.create(48, 38, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	for i in range(28):
+		var angle: float = -1.0 + float(i) * 2.0 / 27.0
+		var radius := 8.0 + float(i) * 0.65
+		var point := Vector2(23, 26) + Vector2(cos(angle), sin(angle)) * radius
+		image.set_pixel(int(point.x), int(point.y), Color(0.36, 0.80, 1.0, 0.92))
+	return ImageTexture.create_from_image(image)
+
+func make_spring_base_texture() -> Texture2D:
+	var image := Image.create(32, 24, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(24):
+		for x in range(32):
+			if y >= 12:
+				image.set_pixel(x, y, Color(0.12, 0.64, 1.0, 1.0))
+			elif x >= 5 and x <= 26 and y >= 2:
+				image.set_pixel(x, y, Color(0.22, 0.22, 0.28, 1.0))
+	return ImageTexture.create_from_image(image)
+
+func make_spring_top_texture() -> Texture2D:
+	var image := Image.create(32, 16, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(16):
+		for x in range(32):
+			if y >= 4 and y <= 11 and x >= 4 and x <= 27:
+				image.set_pixel(x, y, Color(0.93, 0.2, 0.3, 1.0))
+			elif y >= 6 and y <= 9 and x >= 2 and x <= 29:
+				image.set_pixel(x, y, Color(0.96, 0.96, 1.0, 1.0))
+	return ImageTexture.create_from_image(image)
+
+func make_bouncy_bar_texture() -> Texture2D:
+	var image := Image.create(56, 28, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(8, 23):
+		for x in range(4, 52):
+			if y <= 12 or y >= 18 or x <= 8 or x >= 47:
+				image.set_pixel(x, y, Color(0.18, 0.64, 0.92, 1.0))
+	return ImageTexture.create_from_image(image)
+
+func make_bouncy_bar_overlay_texture() -> Texture2D:
+	var image := Image.create(56, 28, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for x in range(8, 48):
+		image.set_pixel(x, 14, Color(1.0, 0.84, 0.24, 0.95))
+		image.set_pixel(x, 15, Color(0.98, 0.44, 0.18, 0.90))
+	return ImageTexture.create_from_image(image)
+
+func make_layer_toggle_texture() -> Texture2D:
+	return make_solid_texture(30, 48, Color(0.18, 0.28, 0.54, 0.86))
+
+func make_layer_toggle_overlay_texture(back_layer: bool) -> Texture2D:
+	var image := Image.create(42, 42, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	var color := Color(0.38, 0.92, 1.0, 0.96) if not back_layer else Color(0.86, 0.56, 1.0, 0.96)
+	for y in range(8, 34):
+		var width := 7 if y < 22 else 7 - int((y - 22) * 0.3)
+		for x in range(21 - width, 22 + width):
+			image.set_pixel(x, y, color)
+	return ImageTexture.create_from_image(image)
+
+func make_ramp_texture(reverse: bool) -> Texture2D:
+	var image := Image.create(96, 64, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(8, 58):
+		var edge := int((y - 8) * 1.65) if not reverse else 95 - int((y - 8) * 1.65)
+		for x in range(96):
+			if (not reverse and x >= edge) or (reverse and x <= edge):
+				image.set_pixel(x, y, Color(0.22, 0.62, 0.34, 0.9))
+	return ImageTexture.create_from_image(image)
+
+func make_handle_texture() -> Texture2D:
+	return make_solid_texture(18, 78, Color(0.68, 0.74, 0.82, 0.92))
+
+func make_handle_overlay_texture() -> Texture2D:
+	var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for angle_step in range(24):
+		var angle: float = float(angle_step) * TAU / 24.0
+		var point := Vector2(32.0, 32.0) + Vector2(cos(angle), sin(angle)) * 25.0
+		image.set_pixel(int(point.x), int(point.y), Color(0.96, 0.74, 0.26, 0.98))
+	return ImageTexture.create_from_image(image)
+
+func make_corkscrew_texture(stop: bool) -> Texture2D:
+	var image := Image.create(54, 54, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for i in range(28):
+		var angle: float = float(i) * TAU / 18.0
+		var radius := 5.0 + float(i) * 0.75
+		var point := Vector2(27.0, 27.0) + Vector2(cos(angle), sin(angle)) * radius
+		image.set_pixel(int(point.x), int(point.y), Color(0.94, 0.48, 0.20, 0.98) if not stop else Color(0.42, 0.80, 1.0, 0.98))
+	return ImageTexture.create_from_image(image)
+
+func make_enemy_body_texture() -> Texture2D:
+	var image := Image.create(32, 24, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(24):
+		for x in range(32):
+			var dx := x - 16
+			var dy := y - 11
+			if dx * dx + dy * dy <= 95:
+				image.set_pixel(x, y, Color(0.95, 0.24, 0.26, 1.0))
+			elif y >= 15 and x >= 6 and x <= 25:
+				image.set_pixel(x, y, Color(0.18, 0.18, 0.2, 1.0))
+	return ImageTexture.create_from_image(image)
+
+func make_enemy_face_texture() -> Texture2D:
+	var image := Image.create(32, 24, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(24):
+		for x in range(32):
+			if (x - 12) * (x - 12) + (y - 10) * (y - 10) <= 4:
+				image.set_pixel(x, y, Color.WHITE)
+			if (x - 20) * (x - 20) + (y - 10) * (y - 10) <= 4:
+				image.set_pixel(x, y, Color.WHITE)
+			if y >= 12 and y <= 13 and x >= 12 and x <= 20:
+				image.set_pixel(x, y, Color(0.2, 0.2, 0.22, 1.0))
+	return ImageTexture.create_from_image(image)
+
+func make_checkpoint_pole_texture() -> Texture2D:
+	var image := Image.create(20, 96, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(96):
+		for x in range(20):
+			if x >= 8 and x <= 11:
+				image.set_pixel(x, y, Color(0.95, 0.95, 0.96, 1.0))
+			elif x >= 7 and x <= 12 and y >= 6 and y <= 90:
+				image.set_pixel(x, y, Color(0.22, 0.22, 0.28, 1.0))
+			elif y >= 88 and x >= 5 and x <= 15:
+				image.set_pixel(x, y, Color(0.4, 0.28, 0.16, 1.0))
+	return ImageTexture.create_from_image(image)
+
+func make_goal_pole_texture() -> Texture2D:
+	var image := Image.create(20, 96, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(96):
+		for x in range(20):
+			if x >= 8 and x <= 11:
+				image.set_pixel(x, y, Color(0.96, 0.84, 0.18, 1.0))
+			elif x >= 7 and x <= 12 and y >= 6 and y <= 90:
+				image.set_pixel(x, y, Color(0.30, 0.24, 0.12, 1.0))
+			elif y >= 88 and x >= 5 and x <= 15:
+				image.set_pixel(x, y, Color(0.40, 0.28, 0.16, 1.0))
+	return ImageTexture.create_from_image(image)
+
+func make_flag_texture(activated: bool) -> Texture2D:
+	var image := Image.create(32, 20, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	var color := Color(0.16, 0.76, 0.34, 1.0) if not activated else Color(0.95, 0.38, 0.16, 1.0)
+	for y in range(20):
+		for x in range(32):
+			if x >= 2 and x <= 23 and y >= 3 and y <= 13:
+				image.set_pixel(x, y, color)
+	return ImageTexture.create_from_image(image)
+
+func make_goal_flag_texture() -> Texture2D:
+	var image := Image.create(36, 28, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(28):
+		for x in range(36):
+			if x >= 2 and x <= 25 and y >= 2 and y <= 8:
+				image.set_pixel(x, y, Color(0.95, 0.84, 0.18, 1.0))
+			elif x >= 2 and x <= 21 and y >= 9 and y <= 16:
+				image.set_pixel(x, y, Color(0.16, 0.76, 0.34, 1.0))
+			elif x >= 2 and x <= 17 and y >= 17 and y <= 23:
+				image.set_pixel(x, y, Color(0.95, 0.38, 0.16, 1.0))
+	return ImageTexture.create_from_image(image)
+
+func make_whirlwind_texture() -> Texture2D:
+	return make_solid_texture(112, 240, Color(0.20, 0.70, 0.96, 0.10))
+
+func make_whirlwind_overlay_texture() -> Texture2D:
+	var image := Image.create(112, 240, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(240):
+		var center := 56.0 + sin(float(y) * 0.08) * 18.0
+		var half_width := 8.0 + float(y) * 0.08
+		for x in range(112):
+			if absf(float(x) - center) <= half_width:
+				var alpha := 0.18 + (1.0 - absf(float(x) - center) / half_width) * 0.30
+				image.set_pixel(x, y, Color(0.55, 0.90, 1.0, alpha))
+	return ImageTexture.create_from_image(image)
+
+func make_fan_texture() -> Texture2D:
+	return make_solid_texture(88, 72, Color(0.18, 0.58, 0.92, 0.10))
+
+func make_fan_overlay_texture(direction: float) -> Texture2D:
+	var image := Image.create(88, 72, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	var sign_direction := 1.0 if direction >= 0.0 else -1.0
+	for row in range(3):
+		var y := 14 + row * 22
+		for x in range(12, 76):
+			var local_x := float(x - 44) * sign_direction
+			if local_x >= -22.0 and local_x <= 24.0 and absf(float(y - (14 + row * 22))) <= 3.0:
+				image.set_pixel(x, y, Color(0.60, 0.92, 1.0, 0.72))
+		var arrow_x := 68 if sign_direction > 0.0 else 20
+		for x in range(8):
+			image.set_pixel(arrow_x - int(sign_direction) * x, int(y - x / 2.0), Color(0.78, 0.98, 1.0, 0.75))
+	return ImageTexture.create_from_image(image)
+
+func make_spikes_texture() -> Texture2D:
+	var image := Image.create(64, 28, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for spike in range(4):
+		var center := 8 + spike * 16
+		for y in range(18):
+			var half_width := int((18 - y) * 0.42)
+			for x in range(center - half_width, center + half_width + 1):
+				if x >= 0 and x < 64:
+					image.set_pixel(x, y, Color(0.86, 0.90, 0.96, 1.0))
+	for x in range(64):
+		for y in range(18, 24):
+			image.set_pixel(x, y, Color(0.26, 0.30, 0.40, 1.0))
+	return ImageTexture.create_from_image(image)
+
+func make_item_box_texture() -> Texture2D:
+	var image := Image.create(40, 40, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.96, 0.72, 0.16, 1.0))
+	for y in range(4, 36):
+		for x in range(4, 36):
+			if x < 7 or x > 32 or y < 7 or y > 32:
+				image.set_pixel(x, y, Color(0.18, 0.32, 0.58, 1.0))
+	return ImageTexture.create_from_image(image)
+
+func make_item_box_icon_texture() -> Texture2D:
+	var image := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(6, 26):
+		for x in range(6, 26):
+			var dx := x - 16
+			var dy := y - 16
+			if dx * dx + dy * dy <= 52:
+				image.set_pixel(x, y, Color(0.78, 0.94, 1.0, 0.92))
+	return ImageTexture.create_from_image(image)
+
+func item_box_icon_texture(item_kind: int) -> Texture2D:
+	match item_kind:
+		CoreBridge.ITEM_BOX_KIND_SHIELD, CoreBridge.ITEM_BOX_KIND_MAGNETIC_SHIELD:
+			return make_shield_icon_texture()
+		CoreBridge.ITEM_BOX_KIND_INVINCIBILITY:
+			return make_invincibility_icon_texture()
+		CoreBridge.ITEM_BOX_KIND_SPEED_UP:
+			return make_speed_icon_texture()
+		CoreBridge.ITEM_BOX_KIND_ONE_UP:
+			return make_one_up_icon_texture()
+		_:
+			return make_item_box_icon_texture()
+
+func item_box_icon_color(item_kind: int) -> Color:
+	match item_kind:
+		CoreBridge.ITEM_BOX_KIND_MAGNETIC_SHIELD:
+			return Color(0.72, 0.48, 1.0, 1.0)
+		CoreBridge.ITEM_BOX_KIND_SPEED_UP:
+			return Color(1.0, 0.78, 0.24, 1.0)
+		CoreBridge.ITEM_BOX_KIND_ONE_UP:
+			return Color(0.52, 1.0, 0.62, 1.0)
+		_:
+			return Color.WHITE
+
+func make_shield_icon_texture() -> Texture2D:
+	var image := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(5, 28):
+		var width := int(4.0 + float(y - 5) * 0.45) if y < 17 else int(9.0 - float(y - 17) * 0.35)
+		for x in range(16 - width, 17 + width):
+			if x >= 0 and x < 32:
+				image.set_pixel(x, y, Color(0.55, 0.92, 1.0, 0.95))
+	return ImageTexture.create_from_image(image)
+
+func make_invincibility_icon_texture() -> Texture2D:
+	var image := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(4, 28):
+		for x in range(4, 28):
+			var dx := float(x - 16)
+			var dy := float(y - 16)
+			var angle: float = atan2(float(dy), float(dx))
+			var radius := sqrt(dx * dx + dy * dy)
+			var star_radius := 11.0 if int(floor((angle + PI) / (PI / 5.0))) % 2 == 0 else 5.0
+			if radius <= star_radius:
+				image.set_pixel(x, y, Color(1.0, 0.94, 0.34, 0.98))
+	return ImageTexture.create_from_image(image)
+
+func make_speed_icon_texture() -> Texture2D:
+	var image := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	var points := PackedVector2Array([Vector2(18, 3), Vector2(7, 17), Vector2(15, 17), Vector2(12, 29), Vector2(25, 13), Vector2(17, 13)])
+	for y in range(32):
+		for x in range(32):
+			if Geometry2D.is_point_in_polygon(Vector2(x, y), points):
+				image.set_pixel(x, y, Color.WHITE)
+	return ImageTexture.create_from_image(image)
+
+func make_one_up_icon_texture() -> Texture2D:
+	var image := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(5, 27):
+		for x in range(5, 27):
+			var dx := x - 16
+			var dy := y - 16
+			if dx * dx + dy * dy <= 120:
+				image.set_pixel(x, y, Color.WHITE)
+	return ImageTexture.create_from_image(image)
+
+func make_propeller_texture() -> Texture2D:
+	var image := Image.create(144, 144, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for y in range(144):
+		for x in range(144):
+			var dx := float(x - 72)
+			var dy := float(y - 72)
+			var radius := sqrt(dx * dx + dy * dy)
+			if radius >= 62.0 and radius <= 65.0:
+				image.set_pixel(x, y, Color(0.36, 0.72, 1.0, 0.34))
+	return ImageTexture.create_from_image(image)
+
+func make_propeller_overlay_texture() -> Texture2D:
+	var image := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	for blade in range(4):
+		var angle: float = float(blade) * PI * 0.5
+		var direction := Vector2(cos(angle), sin(angle))
+		var side := Vector2(-direction.y, direction.x)
+		for length in range(12, 58):
+			var center := Vector2(64.0, 64.0) + direction * float(length)
+			var width := 7.0 - float(length - 12) * 0.08
+			for offset in range(-int(width), int(width) + 1):
+				var pixel := center + side * float(offset)
+				var px := int(pixel.x)
+				var py := int(pixel.y)
+				if px >= 0 and px < 128 and py >= 0 and py < 128:
+					image.set_pixel(px, py, Color(0.66, 0.92, 1.0, 0.78))
+		for y in range(56, 73):
+			for x in range(56, 73):
+				var dx := x - 64
+				var dy := y - 64
+				if dx * dx + dy * dy <= 72:
+					image.set_pixel(x, y, Color(0.14, 0.30, 0.52, 1.0))
+	return ImageTexture.create_from_image(image)
+
+func make_solid_texture(width: int, height: int, color: Color) -> Texture2D:
+	var image := Image.create(width, height, false, Image.FORMAT_RGBA8)
+	image.fill(color)
+	return ImageTexture.create_from_image(image)
+

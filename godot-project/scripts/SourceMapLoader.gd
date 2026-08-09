@@ -5,6 +5,8 @@ extends RefCounted
 const CAMERA_REGION_WIDTH := 256
 const TILE_WIDTH := 8
 const ENTITY_FILES := ["rings", "interactables", "enemies", "itemboxes"]
+const SOURCE_DATA_PATHS := preload("res://scripts/core/SourceDataPaths.gd")
+const SOURCE_TILE_GRAPHICS := preload("res://scripts/core/SourceTileGraphics.gd")
 
 static func load_level(level_id: int, boss_mode: bool = false) -> Dictionary:
 	var location := _level_location(level_id, boss_mode)
@@ -12,7 +14,7 @@ static func load_level(level_id: int, boss_mode: bool = false) -> Dictionary:
 		"level_id": level_id,
 		"zone": location.zone,
 		"act": location.act,
-		"source_path": "res://../data/sa2/maps/%s/%s" % [location.zone, location.act],
+		"source_path": SOURCE_DATA_PATHS.map_root(location.zone, location.act),
 		"region_width": 0,
 		"region_height": 0,
 		"entities": {},
@@ -46,9 +48,9 @@ static func sample_floor(terrain: Dictionary, world_x: int, world_y: int, layer:
 	var tile_y := y / 8
 	var map_layer: PackedByteArray = terrain.map_front if layer == 0 else terrain.map_back
 	var map_offset := ((tile_y / 12) * int(terrain.map_width) + (tile_x / 12)) * 2
-	var metatile_index := _read_u16(map_layer, map_offset) & 0x03ff
+	var metatile_index := SOURCE_TILE_GRAPHICS.read_u16(map_layer, map_offset) & 0x03ff
 	var metatile_offset := (metatile_index * 144 + (tile_y % 12) * 12 + (tile_x % 12)) * 2
-	var tile := _read_u16(terrain.metatiles, metatile_offset)
+	var tile := SOURCE_TILE_GRAPHICS.read_u16(terrain.metatiles, metatile_offset)
 	var tile_index := tile & 0x03ff
 	var sample_y := y % 8
 	if tile & 0x0800:
@@ -77,7 +79,7 @@ static func _level_location(level_id: int, boss_mode: bool = false) -> Dictionar
 	return {"zone": "zone_%d" % zone_index, "act": "act_%d" % act_index}
 
 static func _read_entity_file(zone: String, act: String, file_stem: String) -> Dictionary:
-	var path := ProjectSettings.globalize_path("res://../data/sa2/maps/%s/%s/entities/%s.csv" % [zone, act, file_stem])
+	var path := SOURCE_DATA_PATHS.globalize(SOURCE_DATA_PATHS.entity_file(zone, act, file_stem))
 	if not FileAccess.file_exists(path):
 		return {"valid": false, "error": "Missing source map file: %s" % path}
 	var file := FileAccess.open(path, FileAccess.READ)
@@ -117,7 +119,7 @@ static func _read_entity_file(zone: String, act: String, file_stem: String) -> D
 	}
 
 static func _read_terrain(zone: String, act: String) -> Dictionary:
-	var base := ProjectSettings.globalize_path("res://../data/sa2/maps/%s/%s/tilemaps/fg" % [zone, act])
+	var base := SOURCE_DATA_PATHS.globalize(SOURCE_DATA_PATHS.foreground_root(zone, act))
 	var metadata_path := base.path_join("metadata.txt")
 	var metadata := ""
 	if FileAccess.file_exists(metadata_path):
@@ -161,10 +163,6 @@ static func _read_binary(path: String) -> PackedByteArray:
 	var file := FileAccess.open(path, FileAccess.READ)
 	return file.get_buffer(file.get_length()) if file else PackedByteArray()
 
-static func _read_u16(bytes: PackedByteArray, offset: int) -> int:
-	if offset < 0 or offset + 1 >= bytes.size():
-		return 0
-	return int(bytes[offset]) | (int(bytes[offset + 1]) << 8)
 
 static func _to_int(value: String) -> int:
 	return int(value.strip_edges())

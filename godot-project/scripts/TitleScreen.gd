@@ -1,6 +1,6 @@
 # TitleScreen.gd
 # Presents the dedicated press-start/title shell for the Godot remake.
-extends CanvasLayer
+extends ScreenBase
 
 const SourceTilemapTextureImpl = preload("res://scripts/SourceTilemapTexture.gd")
 
@@ -93,12 +93,12 @@ func _process(delta: float) -> void:
 	_update_source_logo()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.98, 0.99, 1.0, 1.0))
-	_ocean_glow = _ensure_rect("OceanGlow", Rect2(104.0, 92.0, 1072.0, 520.0), Color(0.22, 0.50, 0.92, 0.10))
-	_header_plate = _ensure_rect("HeaderPlate", Rect2(150.0, 72.0, 980.0, 88.0), Color(1.0, 1.0, 1.0, 0.98))
-	_logo_panel = _ensure_rect("LogoPanel", Rect2(136.0, 90.0, 1008.0, 186.0), Color(1.0, 1.0, 1.0, 0.98))
-	_logo_rule = _ensure_rect("LogoRule", Rect2(186.0, 180.0, 908.0, 10.0), Color(0.20, 0.48, 0.88, 0.22))
-	_subtitle_chip = _ensure_rect("SubtitleChip", Rect2(446.0, 214.0, 388.0, 40.0), Color(0.90, 0.95, 1.0, 0.98))
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.98, 0.99, 1.0, 1.0))
+	_ocean_glow = ensure_rect("OceanGlow", Rect2(104.0, 92.0, 1072.0, 520.0), Color(0.22, 0.50, 0.92, 0.10))
+	_header_plate = ensure_rect("HeaderPlate", Rect2(150.0, 72.0, 980.0, 88.0), Color(1.0, 1.0, 1.0, 0.98))
+	_logo_panel = ensure_rect("LogoPanel", Rect2(136.0, 90.0, 1008.0, 186.0), Color(1.0, 1.0, 1.0, 0.98))
+	_logo_rule = ensure_rect("LogoRule", Rect2(186.0, 180.0, 908.0, 10.0), Color(0.20, 0.48, 0.88, 0.22))
+	_subtitle_chip = ensure_rect("SubtitleChip", Rect2(446.0, 214.0, 388.0, 40.0), Color(0.90, 0.95, 1.0, 0.98))
 	_source_logo = TextureRect.new()
 	_source_logo.name = "OriginalTitleLogo"
 	_source_logo.position = Vector2(380.0, 100.0)
@@ -117,21 +117,21 @@ func _ensure_chrome() -> void:
 	_source_background.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_source_background.z_index = -11
 	add_child(_source_background)
-	_title_plate = _ensure_rect("TitlePlate", Rect2(168.0, 308.0, 944.0, 184.0), Color(0.94, 0.97, 1.0, 0.98))
-	_left_stage = _ensure_rect("LeftStage", Rect2(212.0, 340.0, 360.0, 108.0), Color(0.90, 0.95, 1.0, 0.98))
-	_right_stage = _ensure_rect("RightStage", Rect2(706.0, 340.0, 360.0, 108.0), Color(0.90, 0.95, 1.0, 0.98))
-	_mode_band = _ensure_rect("ModeBand", Rect2(250.0, 366.0, 780.0, 30.0), Color(0.94, 0.97, 1.0, 0.98))
-	_mode_plate = _ensure_rect("ModePlate", Rect2(260.0, 430.0, 760.0, 70.0), Color(1.0, 0.92, 0.84, 0.98))
-	_prompt_glow = _ensure_rect("PromptGlow", Rect2(118.0, 542.0, 1044.0, 130.0), Color(0.18, 0.46, 0.84, 0.12))
-	_prompt_band = _ensure_rect("PromptBand", Rect2(118.0, 542.0, 1044.0, 130.0), Color(0.96, 0.98, 1.0, 0.99))
-	_badge_ring = _ensure_rect("BadgeRing", Rect2(920.0, 320.0, 140.0, 140.0), Color(0.92, 0.40, 0.18, 0.20))
-	_badge_core = _ensure_rect("BadgeCore", Rect2(955.0, 355.0, 70.0, 70.0), Color(1.0, 1.0, 1.0, 0.96))
-	_badge_label = _ensure_label("BadgeLabel", Vector2(930.0, 372.0), Vector2(120.0, 32.0), 18)
+	_title_plate = ensure_rect("TitlePlate", Rect2(168.0, 308.0, 944.0, 184.0), Color(0.94, 0.97, 1.0, 0.98))
+	_left_stage = ensure_rect("LeftStage", Rect2(212.0, 340.0, 360.0, 108.0), Color(0.90, 0.95, 1.0, 0.98))
+	_right_stage = ensure_rect("RightStage", Rect2(706.0, 340.0, 360.0, 108.0), Color(0.90, 0.95, 1.0, 0.98))
+	_mode_band = ensure_rect("ModeBand", Rect2(250.0, 366.0, 780.0, 30.0), Color(0.94, 0.97, 1.0, 0.98))
+	_mode_plate = ensure_rect("ModePlate", Rect2(260.0, 430.0, 760.0, 70.0), Color(1.0, 0.92, 0.84, 0.98))
+	_prompt_glow = ensure_rect("PromptGlow", Rect2(118.0, 542.0, 1044.0, 130.0), Color(0.18, 0.46, 0.84, 0.12))
+	_prompt_band = ensure_rect("PromptBand", Rect2(118.0, 542.0, 1044.0, 130.0), Color(0.96, 0.98, 1.0, 0.99))
+	_badge_ring = ensure_rect("BadgeRing", Rect2(920.0, 320.0, 140.0, 140.0), Color(0.92, 0.40, 0.18, 0.20))
+	_badge_core = ensure_rect("BadgeCore", Rect2(955.0, 355.0, 70.0, 70.0), Color(1.0, 1.0, 1.0, 0.96))
+	_badge_label = ensure_label("BadgeLabel", Vector2(930.0, 372.0), Vector2(120.0, 32.0), 18)
 	_badge_label.text = CoreBridge.get_menu_badge_text("START")
 	_badge_label.modulate = Color(0.78, 0.30, 0.12, 0.95)
 	if _wave_lines.size() == 0:
 		for i in range(3):
-			var line := _ensure_rect("WaveLine%d" % i, Rect2(186.0, 286.0 + float(i) * 10.0, 908.0, 4.0), Color(0.28, 0.56, 0.94, 0.10))
+			var line := ensure_rect("WaveLine%d" % i, Rect2(186.0, 286.0 + float(i) * 10.0, 908.0, 4.0), Color(0.28, 0.56, 0.94, 0.10))
 			_wave_lines.append(line)
 	_backdrop.z_index = -10
 	_ocean_glow.z_index = -9
@@ -149,30 +149,6 @@ func _ensure_chrome() -> void:
 	_badge_ring.z_index = 0
 	_badge_core.z_index = 1
 	_badge_label.z_index = 2
-
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
 
 func _apply_info_row(label: Label, row: Dictionary, default_position: Vector2, default_color: Color, default_pulse: bool = false) -> void:
 	label.text = str(row.get("text", ""))

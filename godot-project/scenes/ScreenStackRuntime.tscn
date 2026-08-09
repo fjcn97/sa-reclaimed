@@ -1,0 +1,429 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://scripts/PauseScreen.gd" id="7"]
+[ext_resource type="Script" path="res://scripts/ClearScreen.gd" id="9"]
+[ext_resource type="Script" path="res://scripts/TimeAttackResultsScreen.gd" id="47"]
+[ext_resource type="Script" path="res://scripts/IntroScreen.gd" id="10"]
+[ext_resource type="Script" path="res://scripts/GameOverScreen.gd" id="32"]
+[ext_resource type="Script" path="res://scripts/ChaosEmeraldsScreen.gd" id="35"]
+[ext_resource type="Script" path="res://scripts/ToBeContinuedScreen.gd" id="36"]
+[ext_resource type="Script" path="res://scripts/MissingEmeraldsScreen.gd" id="40"]
+[ext_resource type="Script" path="res://scripts/CopyrightScreen.gd" id="41"]
+[ext_resource type="Script" path="res://scripts/SpecialStageScreen.gd" id="42"]
+[ext_resource type="Script" path="res://scripts/CreditsEndScreen.gd" id="43"]
+[ext_resource type="Script" path="res://scripts/CharacterUnlockScreen.gd" id="44"]
+[ext_resource type="Script" path="res://scripts/SegaLogoScreen.gd" id="45"]
+[ext_resource type="Script" path="res://scripts/SonicTeamLogoScreen.gd" id="46"]
+[ext_resource type="Script" path="res://scripts/CreditsScreen.gd" id="47"]
+
+[node name="ScreenStackRuntime" type="Node"]
+
+[node name="PauseScreen" type="CanvasLayer" parent="."]
+layer = 90
+script = ExtResource("7")
+
+[node name="TitleLabel" type="Label" parent="PauseScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "PAUSED"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="PauseScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "PAUSED"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="PauseScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 380
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "PRESS ENTER TO RESUME"
+visible = false
+
+[node name="ClearScreen" type="CanvasLayer" parent="."]
+layer = 96
+script = ExtResource("9")
+
+[node name="TimeAttackResultsScreen" type="CanvasLayer" parent="."]
+layer = 97
+script = ExtResource("47")
+
+[node name="TitleLabel" type="Label" parent="ClearScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "STAGE CLEAR"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="ClearScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "ENTER REPLAY   X TITLE"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="ClearScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 440
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "SCORE: 0   RANK: D\nENTER REPLAY   X TITLE"
+visible = false
+
+[node name="GameOverScreen" type="CanvasLayer" parent="."]
+layer = 96
+script = ExtResource("32")
+
+[node name="TitleLabel" type="Label" parent="GameOverScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "GAME OVER"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="GameOverScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "ALL LIVES LOST"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="GameOverScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "ENTER = TITLE"
+visible = false
+
+[node name="IntroScreen" type="CanvasLayer" parent="."]
+layer = 97
+script = ExtResource("10")
+
+[node name="TitleLabel" type="Label" parent="IntroScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "SKY CANYON"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="IntroScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "READY!"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="IntroScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 380
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "ENTER TO BEGIN"
+visible = false
+
+[node name="ChaosEmeraldsScreen" type="CanvasLayer" parent="."]
+layer = 102
+script = ExtResource("35")
+
+[node name="TitleLabel" type="Label" parent="ChaosEmeraldsScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 34
+horizontal_alignment = 1
+text = "GET THE CHAOS EMERALDS!"
+visible = false
+
+[node name="MissingEmeraldsScreen" type="CanvasLayer" parent="."]
+layer = 107
+script = ExtResource("40")
+
+[node name="TitleLabel" type="Label" parent="MissingEmeraldsScreen"]
+offset_left = 170
+offset_top = 180
+offset_right = 1110
+offset_bottom = 244
+theme_override_font_sizes/font_size = 30
+horizontal_alignment = 1
+text = "COLLECT ALL CHAOS EMERALDS"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="MissingEmeraldsScreen"]
+offset_left = 240
+offset_top = 266
+offset_right = 1040
+offset_bottom = 316
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+text = "A NEW ADVENTURE AWAITS"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="MissingEmeraldsScreen"]
+offset_left = 220
+offset_top = 584
+offset_right = 1060
+offset_bottom = 624
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+text = "A CONTINUE   B SKIP"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="ChaosEmeraldsScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "ALL COURSES CLEARED"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="ChaosEmeraldsScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="ToBeContinuedScreen" type="CanvasLayer" parent="."]
+layer = 103
+script = ExtResource("36")
+
+[node name="TitleLabel" type="Label" parent="ToBeContinuedScreen"]
+offset_left = 180
+offset_top = 170
+offset_right = 1100
+offset_bottom = 250
+theme_override_font_sizes/font_size = 34
+horizontal_alignment = 1
+text = "TO BE CONTINUED"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="ToBeContinuedScreen"]
+offset_left = 240
+offset_top = 260
+offset_right = 1040
+offset_bottom = 320
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "NEXT STORY CHAPTER AHEAD"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="ToBeContinuedScreen"]
+offset_left = 220
+offset_top = 330
+offset_right = 1060
+offset_bottom = 430
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "DETAIL"
+visible = false
+
+[node name="CopyrightScreen" type="CanvasLayer" parent="."]
+layer = 108
+script = ExtResource("41")
+
+[node name="TitleLabel" type="Label" parent="CopyrightScreen"]
+offset_left = 260
+offset_top = 196
+offset_right = 1020
+offset_bottom = 252
+theme_override_font_sizes/font_size = 32
+horizontal_alignment = 1
+text = "SONIC ADVANCE 2"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="CopyrightScreen"]
+offset_left = 240
+offset_top = 304
+offset_right = 1040
+offset_bottom = 360
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+text = "COPYRIGHT 2002 SEGA"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="CopyrightScreen"]
+offset_left = 220
+offset_top = 468
+offset_right = 1060
+offset_bottom = 540
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+text = "SONIC TEAM   ALL RIGHTS RESERVED"
+visible = false
+
+[node name="SpecialStageScreen" type="CanvasLayer" parent="."]
+layer = 109
+script = ExtResource("42")
+
+[node name="CreditsEndScreen" type="CanvasLayer" parent="."]
+layer = 110
+script = ExtResource("43")
+
+[node name="TitleLabel" type="Label" parent="CreditsEndScreen"]
+offset_left = 260.0
+offset_top = 198.0
+offset_right = 1020.0
+offset_bottom = 254.0
+theme_override_font_sizes/font_size = 32
+horizontal_alignment = 1
+text = "SONIC ADVANCE 2"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="CreditsEndScreen"]
+offset_left = 220.0
+offset_top = 288.0
+offset_right = 1060.0
+offset_bottom = 356.0
+theme_override_font_sizes/font_size = 38
+horizontal_alignment = 1
+text = "ADVENTURE COMPLETE"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="CreditsEndScreen"]
+offset_left = 220.0
+offset_top = 412.0
+offset_right = 1060.0
+offset_bottom = 492.0
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "CHAOS EMERALDS: 0/7"
+visible = false
+
+[node name="CharacterUnlockScreen" type="CanvasLayer" parent="."]
+layer = 111
+script = ExtResource("44")
+
+[node name="TitleLabel" type="Label" parent="CharacterUnlockScreen"]
+offset_left = 260.0
+offset_top = 156.0
+offset_right = 1020.0
+offset_bottom = 212.0
+theme_override_font_sizes/font_size = 32
+horizontal_alignment = 1
+text = "NEW CHARACTER"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="CharacterUnlockScreen"]
+offset_left = 486.0
+offset_top = 272.0
+offset_right = 1060.0
+offset_bottom = 340.0
+theme_override_font_sizes/font_size = 38
+horizontal_alignment = 1
+text = "CREAM UNLOCKED"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="CharacterUnlockScreen"]
+offset_left = 486.0
+offset_top = 380.0
+offset_right = 1060.0
+offset_bottom = 500.0
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "FLIGHT AND CHEESE SUPPORT"
+visible = false
+
+[node name="TitleLabel" type="Label" parent="SpecialStageScreen"]
+offset_left = 220
+offset_top = 184
+offset_right = 1060
+offset_bottom = 244
+theme_override_font_sizes/font_size = 34
+horizontal_alignment = 1
+text = "SPECIAL STAGE"
+visible = false
+
+[node name="PromptLabel" type="Label" parent="SpecialStageScreen"]
+offset_left = 200
+offset_top = 304
+offset_right = 1080
+offset_bottom = 356
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "CHAOS EMERALD CHALLENGE READY"
+visible = false
+
+[node name="DetailLabel" type="Label" parent="SpecialStageScreen"]
+offset_left = 180
+offset_top = 600
+offset_right = 1100
+offset_bottom = 668
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+text = "7 SPECIAL RINGS FOUND"
+visible = false
+
+[node name="SegaLogoScreen" type="CanvasLayer" parent="."]
+layer = 100
+script = ExtResource("45")
+
+[node name="TitleLabel" type="Label" parent="SegaLogoScreen"]
+
+[node name="PromptLabel" type="Label" parent="SegaLogoScreen"]
+
+[node name="DetailLabel" type="Label" parent="SegaLogoScreen"]
+
+[node name="SonicTeamLogoScreen" type="CanvasLayer" parent="."]
+layer = 100
+script = ExtResource("46")
+
+[node name="TitleLabel" type="Label" parent="SonicTeamLogoScreen"]
+
+[node name="PromptLabel" type="Label" parent="SonicTeamLogoScreen"]
+
+[node name="DetailLabel" type="Label" parent="SonicTeamLogoScreen"]
+
+[node name="CreditsScreen" type="CanvasLayer" parent="."]
+layer = 100
+script = ExtResource("47")
+
+[node name="TitleLabel" type="Label" parent="CreditsScreen"]
+
+[node name="PageLabel" type="Label" parent="CreditsScreen"]
+
+[node name="PromptLabel" type="Label" parent="CreditsScreen"]

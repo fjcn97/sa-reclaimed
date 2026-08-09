@@ -1,6 +1,6 @@
 # Source-aligned entry/results surface for the migrated special-stage runner.
 # The collectible field is represented by deterministic lane checkpoints.
-extends CanvasLayer
+extends ScreenBase
 
 const SourceTilemapTextureImpl = preload("res://scripts/SourceTilemapTexture.gd")
 
@@ -61,18 +61,18 @@ func _process(delta: float) -> void:
 	_update_source_background()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.06, 0.98))
-	_glow = _ensure_rect("StageGlow", Rect2(112.0, 106.0, 1056.0, 510.0), Color(0.12, 0.42, 0.66, 0.18))
-	_panel = _ensure_rect("StagePanel", Rect2(166.0, 144.0, 948.0, 430.0), Color(0.05, 0.11, 0.22, 0.97))
-	_rule = _ensure_rect("StageRule", Rect2(246.0, 274.0, 788.0, 6.0), Color(0.24, 0.78, 0.94, 0.72))
-	_ring_card = _ensure_rect("RingCard", Rect2(320.0, 342.0, 640.0, 106.0), Color(0.08, 0.17, 0.30, 0.98))
-	_ring_label = _ensure_label("RingLabel", Vector2(342.0, 360.0), Vector2(596.0, 70.0), 24)
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.06, 0.98))
+	_glow = ensure_rect("StageGlow", Rect2(112.0, 106.0, 1056.0, 510.0), Color(0.12, 0.42, 0.66, 0.18))
+	_panel = ensure_rect("StagePanel", Rect2(166.0, 144.0, 948.0, 430.0), Color(0.05, 0.11, 0.22, 0.97))
+	_rule = ensure_rect("StageRule", Rect2(246.0, 274.0, 788.0, 6.0), Color(0.24, 0.78, 0.94, 0.72))
+	_ring_card = ensure_rect("RingCard", Rect2(320.0, 342.0, 640.0, 106.0), Color(0.08, 0.17, 0.30, 0.98))
+	_ring_label = ensure_label("RingLabel", Vector2(342.0, 360.0), Vector2(596.0, 70.0), 24)
 	_ring_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_run_card = _ensure_rect("RunCard", Rect2(284.0, 342.0, 712.0, 128.0), Color(0.08, 0.17, 0.30, 0.98))
-	_run_label = _ensure_label("RunLabel", Vector2(310.0, 352.0), Vector2(660.0, 34.0), 18)
+	_run_card = ensure_rect("RunCard", Rect2(284.0, 342.0, 712.0, 128.0), Color(0.08, 0.17, 0.30, 0.98))
+	_run_label = ensure_label("RunLabel", Vector2(310.0, 352.0), Vector2(660.0, 34.0), 18)
 	_run_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_pause_card = _ensure_rect("PauseCard", Rect2(390.0, 300.0, 500.0, 160.0), Color(0.04, 0.06, 0.12, 0.98))
-	_pause_label = _ensure_label("PauseLabel", Vector2(410.0, 338.0), Vector2(460.0, 84.0), 24)
+	_pause_card = ensure_rect("PauseCard", Rect2(390.0, 300.0, 500.0, 160.0), Color(0.04, 0.06, 0.12, 0.98))
+	_pause_label = ensure_label("PauseLabel", Vector2(410.0, 338.0), Vector2(460.0, 84.0), 24)
 	_pause_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_pause_label.text = CoreBridge.get_special_stage_pause_text()
 	_source_background = TextureRect.new()
@@ -91,13 +91,13 @@ func _ensure_chrome() -> void:
 	_ring_card.z_index = -1
 	for i in range(7):
 		var x := 278.0 + float(i) * 104.0
-		var slot := _ensure_rect("EmeraldSlot%d" % i, Rect2(x, 492.0, 54.0, 26.0), Color(0.12, 0.20, 0.32, 0.98))
-		var label := _ensure_label("EmeraldLabel%d" % i, Vector2(x, 516.0), Vector2(54.0, 18.0), 10)
+		var slot := ensure_rect("EmeraldSlot%d" % i, Rect2(x, 492.0, 54.0, 26.0), Color(0.12, 0.20, 0.32, 0.98))
+		var label := ensure_label("EmeraldLabel%d" % i, Vector2(x, 516.0), Vector2(54.0, 18.0), 10)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_emerald_slots.append(slot)
 		_emerald_labels.append(label)
 	for i in range(3):
-		var lane := _ensure_rect("Lane%d" % i, Rect2(370.0, 394.0 + float(i) * 22.0, 540.0, 14.0), Color(0.12, 0.24, 0.38, 0.98))
+		var lane := ensure_rect("Lane%d" % i, Rect2(370.0, 394.0 + float(i) * 22.0, 540.0, 14.0), Color(0.12, 0.24, 0.38, 0.98))
 		_lane_cards.append(lane)
 
 func _update_source_background() -> void:
@@ -110,29 +110,6 @@ func _update_source_background() -> void:
 	if not _source_background_cache.has(source):
 		_source_background_cache[source] = SourceTilemapTextureImpl.compose(source, 32)
 	_source_background.texture = _source_background_cache[source] as Texture2D
-
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var node := get_node_or_null(node_name) as ColorRect
-	if node == null:
-		node = ColorRect.new()
-		node.name = node_name
-		add_child(node)
-	node.position = rect.position
-	node.size = rect.size
-	node.color = color
-	return node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var node := get_node_or_null(node_name) as Label
-	if node == null:
-		node = Label.new()
-		node.name = node_name
-		add_child(node)
-	node.position = pos
-	node.size = size
-	node.add_theme_font_size_override("font_size", font_size)
-	node.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return node
 
 func _update_results() -> void:
 	var results := CoreBridge.is_special_stage_results_screen()

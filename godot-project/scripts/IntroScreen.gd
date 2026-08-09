@@ -1,8 +1,6 @@
 # IntroScreen.gd
 # Presents an original-inspired stage intro title card.
-extends CanvasLayer
-
-const SourceTilemapTextureImpl = preload("res://scripts/SourceTilemapTexture.gd")
+extends ScreenBase
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -32,9 +30,7 @@ var _zone_label: Label = null
 var _act_label: Label = null
 var _character_label: Label = null
 var _countdown_label: Label = null
-var _final_bg_texture: TextureRect = null
-var _final_clouds_texture: TextureRect = null
-var _final_source_cache: Dictionary = {}
+var _source_art_view := IntroSourceArtView.new()
 var _badge_cards: Array[ColorRect] = []
 var _badge_labels: Array[Label] = []
 
@@ -47,6 +43,7 @@ func _ready() -> void:
 	if detail_label == null:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
+	_source_art_view.setup(self)
 	_ensure_header_labels()
 	_set_screen_visible(CoreBridge.is_intro_screen() or CoreBridge.is_final_intro_screen())
 
@@ -78,29 +75,27 @@ func _process(delta: float) -> void:
 	_update_countdown_label()
 	_update_stage_intro_timing(CoreBridge.get_intro_stage_frame())
 	_update_chrome()
-	_update_final_source_art()
+	_source_art_view.update()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.04, 0.40))
-	_hero_glow = _ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 188.0), Color(0.12, 0.24, 0.44, 0.18))
-	_header_plate = _ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.06, 0.10, 0.18, 0.94))
-	_header_band = _ensure_rect("HeaderBand", Rect2(214.0, 246.0, 324.0, 256.0), Color(0.06, 0.10, 0.18, 0.94))
-	_panel = _ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.06, 0.09, 0.16, 0.88))
-	_accent = _ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.34, 0.80, 1.0, 0.96))
-	_header_glow = _ensure_rect("HeaderGlow", Rect2(176.0, 168.0, 928.0, 6.0), Color(0.34, 0.80, 1.0, 0.24))
-	_left_stage = _ensure_rect("LeftStage", Rect2(204.0, 246.0, 346.0, 256.0), Color(0.08, 0.12, 0.22, 0.92))
-	_right_stage = _ensure_rect("RightStage", Rect2(576.0, 246.0, 498.0, 256.0), Color(0.10, 0.14, 0.24, 0.92))
-	_info_stage = _ensure_rect("InfoStage", Rect2(230.0, 286.0, 292.0, 148.0), Color(0.08, 0.12, 0.22, 0.92))
-	_wheel_ring = _ensure_rect("WheelRing", Rect2(868.0, 108.0, 140.0, 140.0), Color(0.12, 0.22, 0.34, 0.92))
-	_wheel_core = _ensure_rect("WheelCore", Rect2(903.0, 143.0, 70.0, 70.0), Color(0.04, 0.08, 0.16, 0.96))
-	_badge_strip = _ensure_rect("BadgeStrip", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.84))
-	_prompt_band = _ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.05, 0.09, 0.17, 0.92))
-	_final_bg_texture = _create_final_source_texture("OriginalFinalEndingFallBackground", -5)
-	_final_clouds_texture = _create_final_source_texture("OriginalFinalEndingFallClouds", -4)
-	_triangle_accent = _ensure_rect("TriangleAccent", Rect2(820.0, 352.0, 210.0, 126.0), Color(0.20, 0.72, 0.48, 0.18))
-	_zone_chip = _ensure_rect("ZoneChip", Rect2(232.0, 160.0, 126.0, 34.0), Color(0.22, 0.56, 0.92, 0.96))
-	_act_chip = _ensure_rect("ActChip", Rect2(374.0, 160.0, 102.0, 34.0), Color(0.12, 0.24, 0.46, 0.96))
-	_character_chip = _ensure_rect("CharacterChip", Rect2(848.0, 160.0, 178.0, 34.0), Color(0.20, 0.72, 0.48, 0.96))
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.04, 0.40))
+	_hero_glow = ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 188.0), Color(0.12, 0.24, 0.44, 0.18))
+	_header_plate = ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.06, 0.10, 0.18, 0.94))
+	_header_band = ensure_rect("HeaderBand", Rect2(214.0, 246.0, 324.0, 256.0), Color(0.06, 0.10, 0.18, 0.94))
+	_panel = ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.06, 0.09, 0.16, 0.88))
+	_accent = ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.34, 0.80, 1.0, 0.96))
+	_header_glow = ensure_rect("HeaderGlow", Rect2(176.0, 168.0, 928.0, 6.0), Color(0.34, 0.80, 1.0, 0.24))
+	_left_stage = ensure_rect("LeftStage", Rect2(204.0, 246.0, 346.0, 256.0), Color(0.08, 0.12, 0.22, 0.92))
+	_right_stage = ensure_rect("RightStage", Rect2(576.0, 246.0, 498.0, 256.0), Color(0.10, 0.14, 0.24, 0.92))
+	_info_stage = ensure_rect("InfoStage", Rect2(230.0, 286.0, 292.0, 148.0), Color(0.08, 0.12, 0.22, 0.92))
+	_wheel_ring = ensure_rect("WheelRing", Rect2(868.0, 108.0, 140.0, 140.0), Color(0.12, 0.22, 0.34, 0.92))
+	_wheel_core = ensure_rect("WheelCore", Rect2(903.0, 143.0, 70.0, 70.0), Color(0.04, 0.08, 0.16, 0.96))
+	_badge_strip = ensure_rect("BadgeStrip", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.84))
+	_prompt_band = ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.05, 0.09, 0.17, 0.92))
+	_triangle_accent = ensure_rect("TriangleAccent", Rect2(820.0, 352.0, 210.0, 126.0), Color(0.20, 0.72, 0.48, 0.18))
+	_zone_chip = ensure_rect("ZoneChip", Rect2(232.0, 160.0, 126.0, 34.0), Color(0.22, 0.56, 0.92, 0.96))
+	_act_chip = ensure_rect("ActChip", Rect2(374.0, 160.0, 102.0, 34.0), Color(0.12, 0.24, 0.46, 0.96))
+	_character_chip = ensure_rect("CharacterChip", Rect2(848.0, 160.0, 178.0, 34.0), Color(0.20, 0.72, 0.48, 0.96))
 	_backdrop.z_index = -10
 	_hero_glow.z_index = -9
 	_header_plate.z_index = -8
@@ -120,79 +115,25 @@ func _ensure_chrome() -> void:
 	_act_chip.z_index = -1
 	_character_chip.z_index = -1
 
-func _create_final_source_texture(node_name: String, layer_index: int) -> TextureRect:
-	var node := TextureRect.new()
-	node.name = node_name
-	node.position = Vector2(176.0, 188.0)
-	node.size = Vector2(928.0, 464.0)
-	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	node.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	node.z_index = layer_index
-	add_child(node)
-	return node
-
-func _update_final_source_art() -> void:
-	var final_mode := CoreBridge.is_final_intro_screen()
-	if _final_bg_texture:
-		_final_bg_texture.visible = final_mode
-	if _final_clouds_texture:
-		_final_clouds_texture.visible = final_mode
-	if not final_mode:
-		return
-	var sources: Array = CoreBridge.get_final_intro_source_tilemaps()
-	if sources.size() < 2:
-		return
-	for source in sources:
-		if not _final_source_cache.has(source):
-			_final_source_cache[source] = SourceTilemapTextureImpl.compose(str(source), 32)
-	if _final_bg_texture:
-		_final_bg_texture.texture = _final_source_cache[sources[0]] as Texture2D
-	if _final_clouds_texture:
-		_final_clouds_texture.texture = _final_source_cache[sources[1]] as Texture2D
-
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
-
 func _ensure_header_labels() -> void:
-	_zone_label = _ensure_label("ZoneLabel", Vector2(246.0, 162.0), Vector2(98.0, 28.0), 16)
+	_zone_label = ensure_label("ZoneLabel", Vector2(246.0, 162.0), Vector2(98.0, 28.0), 16)
 	_zone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_act_label = _ensure_label("ActLabel", Vector2(388.0, 162.0), Vector2(74.0, 28.0), 16)
+	_act_label = ensure_label("ActLabel", Vector2(388.0, 162.0), Vector2(74.0, 28.0), 16)
 	_act_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_character_label = _ensure_label("CharacterLabel", Vector2(866.0, 162.0), Vector2(142.0, 28.0), 16)
+	_character_label = ensure_label("CharacterLabel", Vector2(866.0, 162.0), Vector2(142.0, 28.0), 16)
 	_character_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_wheel_icon_label = _ensure_label("WheelIconLabel", Vector2(912.0, 158.0), Vector2(52.0, 40.0), 24)
+	_wheel_icon_label = ensure_label("WheelIconLabel", Vector2(912.0, 158.0), Vector2(52.0, 40.0), 24)
 	_wheel_icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_countdown_label = _ensure_label("CountdownLabel", Vector2(752.0, 302.0), Vector2(244.0, 132.0), 84)
+	_countdown_label = ensure_label("CountdownLabel", Vector2(752.0, 302.0), Vector2(244.0, 132.0), 84)
 	_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_countdown_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	if _badge_cards.size() == 0:
 		for i in range(10):
 			var x := 104.0 + i * 108.0
-			var card := _ensure_rect("BadgeCard%d" % i, Rect2(x, 594.0, 100.0, 32.0), Color(0.10, 0.16, 0.26, 0.92))
+			var card := ensure_rect("BadgeCard%d" % i, Rect2(x, 594.0, 100.0, 32.0), Color(0.10, 0.16, 0.26, 0.92))
 			card.z_index = -1
 			_badge_cards.append(card)
-			var label := _ensure_label("BadgeLabel%d" % i, Vector2(x, 592.0), Vector2(100.0, 36.0), 13)
+			var label := ensure_label("BadgeLabel%d" % i, Vector2(x, 592.0), Vector2(100.0, 36.0), 13)
 			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			_badge_labels.append(label)
 
@@ -347,10 +288,7 @@ func _set_screen_visible(screen_visible: bool) -> void:
 		_wheel_icon_label.visible = screen_visible
 	if _countdown_label:
 		_countdown_label.visible = screen_visible and not CoreBridge.get_intro_countdown_text().is_empty()
-	if _final_bg_texture:
-		_final_bg_texture.visible = screen_visible and CoreBridge.is_final_intro_screen()
-	if _final_clouds_texture:
-		_final_clouds_texture.visible = screen_visible and CoreBridge.is_final_intro_screen()
+	_source_art_view.set_visible(screen_visible)
 	for card in _badge_cards:
 		if not screen_visible:
 			card.visible = false

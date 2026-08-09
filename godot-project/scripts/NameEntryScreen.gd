@@ -1,6 +1,6 @@
 # NameEntryScreen.gd
 # Presents a dedicated board-style profile name editor inspired by the original SA2 screen.
-extends CanvasLayer
+extends ScreenBase
 
 @export var title_label: Label = null
 @export var prompt_label: Label = null
@@ -63,6 +63,9 @@ func _process(_delta: float) -> void:
 		prompt_label.size = Vector2(920.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		prompt_label.modulate = Color(1.0, 0.90, 0.52, 0.74 + (pulse * 0.24))
+		prompt_label.visible = false
+	if _prompt_band:
+		_prompt_band.visible = false
 	if detail_label:
 		detail_label.text = CoreBridge.get_name_entry_detail_text()
 		detail_label.position = Vector2(164.0, 664.0)
@@ -76,21 +79,21 @@ func _process(_delta: float) -> void:
 	_update_preview()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.03, 0.04, 0.08, 0.68))
-	_hero_glow = _ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.10, 0.28, 0.58, 0.18))
-	_header_plate = _ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.08, 0.10, 0.16, 0.94))
-	_panel = _ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.06, 0.08, 0.14, 0.96))
-	_accent = _ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.22, 0.78, 0.96, 1.0))
-	_header_band = _ensure_rect("HeaderBand", Rect2(210.0, 246.0, 562.0, 238.0), Color(0.11, 0.18, 0.34, 0.92))
-	_matrix_stage = _ensure_rect("MatrixStage", Rect2(204.0, 246.0, 562.0, 238.0), Color(0.07, 0.12, 0.22, 0.94))
-	_preview_stage = _ensure_rect("PreviewStage", Rect2(792.0, 246.0, 280.0, 238.0), Color(0.08, 0.16, 0.30, 0.94))
-	_badge_ring = _ensure_rect("BadgeRing", Rect2(878.0, 108.0, 140.0, 140.0), Color(0.92, 0.78, 0.24, 0.22))
-	_badge_core = _ensure_rect("BadgeCore", Rect2(913.0, 143.0, 70.0, 70.0), Color(0.11, 0.18, 0.34, 0.96))
-	_matrix_card = _ensure_rect("MatrixCard", Rect2(226.0, 278.0, 518.0, 196.0), Color(0.07, 0.12, 0.22, 0.94))
-	_preview_card = _ensure_rect("PreviewCard", Rect2(818.0, 278.0, 228.0, 196.0), Color(0.08, 0.16, 0.30, 0.94))
-	_prompt_band = _ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.92))
-	_matrix_cursor = _ensure_rect("MatrixCursor", Rect2(250.0, 294.0, 32.0, 22.0), Color(0.24, 0.50, 0.82, 0.28))
-	_control_cursor = _ensure_rect("ControlCursor", Rect2(654.0, 294.0, 72.0, 22.0), Color(0.24, 0.50, 0.82, 0.28))
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.03, 0.04, 0.08, 0.68))
+	_hero_glow = ensure_rect("HeroGlow", Rect2(144.0, 92.0, 992.0, 176.0), Color(0.10, 0.28, 0.58, 0.18))
+	_header_plate = ensure_rect("HeaderPlate", Rect2(148.0, 96.0, 984.0, 124.0), Color(0.08, 0.10, 0.16, 0.94))
+	_panel = ensure_rect("Panel", Rect2(176.0, 120.0, 928.0, 468.0), Color(0.06, 0.08, 0.14, 0.96))
+	_accent = ensure_rect("AccentBar", Rect2(176.0, 180.0, 928.0, 10.0), Color(0.22, 0.78, 0.96, 1.0))
+	_header_band = ensure_rect("HeaderBand", Rect2(210.0, 246.0, 562.0, 238.0), Color(0.11, 0.18, 0.34, 0.92))
+	_matrix_stage = ensure_rect("MatrixStage", Rect2(204.0, 246.0, 562.0, 224.0), Color(0.07, 0.12, 0.22, 0.94))
+	_preview_stage = ensure_rect("PreviewStage", Rect2(792.0, 246.0, 280.0, 238.0), Color(0.08, 0.16, 0.30, 0.94))
+	_badge_ring = ensure_rect("BadgeRing", Rect2(878.0, 108.0, 140.0, 140.0), Color(0.92, 0.78, 0.24, 0.22))
+	_badge_core = ensure_rect("BadgeCore", Rect2(913.0, 143.0, 70.0, 70.0), Color(0.11, 0.18, 0.34, 0.96))
+	_matrix_card = ensure_rect("MatrixCard", Rect2(226.0, 276.0, 518.0, 184.0), Color(0.07, 0.12, 0.22, 0.94))
+	_preview_card = ensure_rect("PreviewCard", Rect2(818.0, 278.0, 228.0, 196.0), Color(0.08, 0.16, 0.30, 0.94))
+	_prompt_band = ensure_rect("PromptBand", Rect2(176.0, 532.0, 928.0, 98.0), Color(0.04, 0.08, 0.16, 0.92))
+	_matrix_cursor = ensure_rect("MatrixCursor", Rect2(240.0, 290.0, 42.0, 28.0), Color(0.24, 0.50, 0.82, 0.28))
+	_control_cursor = ensure_rect("ControlCursor", Rect2(240.0, 422.0, 154.0, 30.0), Color(0.24, 0.50, 0.82, 0.28))
 	_backdrop.z_index = -10
 	_hero_glow.z_index = -9
 	_header_plate.z_index = -8
@@ -106,53 +109,36 @@ func _ensure_chrome() -> void:
 	_prompt_band.z_index = -1
 	_matrix_cursor.z_index = 0
 	_control_cursor.z_index = 0
+	_matrix_cursor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_control_cursor.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if _summary_label == null:
-		_summary_label = _ensure_label("SummaryLabel", Vector2(836.0, 300.0), Vector2(192.0, 78.0), 16)
+		_summary_label = ensure_label("SummaryLabel", Vector2(836.0, 294.0), Vector2(192.0, 88.0), 13)
 		_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		_summary_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	if _guide_label == null:
-		_guide_label = _ensure_label("GuideLabel", Vector2(246.0, 294.0), Vector2(468.0, 18.0), 13)
+		_guide_label = ensure_label("GuideLabel", Vector2(246.0, 270.0), Vector2(468.0, 18.0), 12)
 		_guide_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	if _preview_title_label == null:
-		_preview_title_label = _ensure_label("PreviewTitleLabel", Vector2(836.0, 382.0), Vector2(190.0, 20.0), 14)
+		_preview_title_label = ensure_label("PreviewTitleLabel", Vector2(836.0, 390.0), Vector2(192.0, 20.0), 12)
 		_preview_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	if _badge_label == null:
-		_badge_label = _ensure_label("BadgeLabel", Vector2(886.0, 160.0), Vector2(124.0, 38.0), 18)
-
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var rect_node := get_node_or_null(node_name) as ColorRect
-	if rect_node == null:
-		rect_node = ColorRect.new()
-		rect_node.name = node_name
-		add_child(rect_node)
-	rect_node.position = rect.position
-	rect_node.size = rect.size
-	rect_node.color = color
-	return rect_node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var label := get_node_or_null(node_name) as Label
-	if label == null:
-		label = Label.new()
-		label.name = node_name
-		add_child(label)
-	label.position = pos
-	label.size = size
-	label.add_theme_font_size_override("font_size", font_size)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
+		_badge_label = ensure_label("BadgeLabel", Vector2(886.0, 160.0), Vector2(124.0, 38.0), 18)
 
 func _ensure_matrix() -> void:
 	if _matrix_labels.size() > 0:
 		return
 	for row in range(CoreBridge.NAME_ENTRY_MATRIX_VISIBLE_ROWS):
 		for col in range(CoreBridge.NAME_ENTRY_MATRIX_COLS):
-			var x := 250.0 + float(col) * 36.0
-			var y := 294.0 + float(row) * 25.0
-			var cell := _ensure_rect("MatrixCell_%d_%d" % [row, col], Rect2(x, y, 32.0, 22.0), Color(0.10, 0.16, 0.29, 0.96))
-			var label := _ensure_label("MatrixLabel_%d_%d" % [row, col], Vector2(x, y - 1.0), Vector2(32.0, 22.0), 13)
+			var x := 240.0 + float(col) * 44.0
+			var y := 290.0 + float(row) * 30.0
+			var cell := ensure_rect("MatrixCell_%d_%d" % [row, col], Rect2(x, y, 42.0, 28.0), Color(0.10, 0.16, 0.29, 0.96))
+			var label := ensure_label("MatrixLabel_%d_%d" % [row, col], Vector2(x, y - 1.0), Vector2(42.0, 28.0), 14)
+			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			cell.mouse_filter = Control.MOUSE_FILTER_STOP
+			cell.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			cell.gui_input.connect(_on_matrix_cell_gui_input.bind(row, col))
 			_matrix_cells.append(cell)
 			_matrix_labels.append(label)
 
@@ -161,9 +147,15 @@ func _ensure_controls() -> void:
 		return
 	var labels := CoreBridge.get_name_entry_control_rows()
 	for i in range(labels.size()):
-		var y := 294.0 + float(i) * 25.0
-		var card := _ensure_rect("ControlCard%d" % i, Rect2(650.0, y, 78.0, 22.0), Color(0.10, 0.16, 0.29, 0.96))
-		var label := _ensure_label("ControlLabel%d" % i, Vector2(654.0, y - 1.0), Vector2(70.0, 22.0), 13)
+		var x := 240.0 + float(i) * 164.0
+		var y := 422.0
+		var card := ensure_rect("ControlCard%d" % i, Rect2(x, y, 154.0, 30.0), Color(0.10, 0.16, 0.29, 0.96))
+		var label := ensure_label("ControlLabel%d" % i, Vector2(x + 4.0, y + 2.0), Vector2(146.0, 26.0), 13)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.mouse_filter = Control.MOUSE_FILTER_STOP
+		card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		card.gui_input.connect(_on_control_card_gui_input.bind(i))
 		label.text = str(labels[i])
 		_control_cards.append(card)
 		_control_labels.append(label)
@@ -172,8 +164,9 @@ func _ensure_preview() -> void:
 	if _preview_slots.size() > 0:
 		return
 	for i in range(6):
-		var slot := _ensure_rect("PreviewSlot%d" % i, Rect2(824.0 + float(i) * 34.0, 414.0, 30.0, 48.0), Color(0.14, 0.22, 0.40, 0.98))
-		var label := _ensure_label("PreviewLabel%d" % i, Vector2(826.0 + float(i) * 34.0, 418.0), Vector2(26.0, 38.0), 22)
+		var slot := ensure_rect("PreviewSlot%d" % i, Rect2(824.0 + float(i) * 34.0, 420.0, 30.0, 48.0), Color(0.14, 0.22, 0.40, 0.98))
+		var label := ensure_label("PreviewLabel%d" % i, Vector2(826.0 + float(i) * 34.0, 424.0), Vector2(26.0, 38.0), 22)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_preview_slots.append(slot)
 		_preview_labels.append(label)
 
@@ -191,13 +184,24 @@ func _update_matrix() -> void:
 					text = str(row_chars[col])
 			var is_selected := (not CoreBridge.is_name_entry_control_cursor()) and row == cursor_row and col == cursor_col
 			_matrix_cells[index].color = Color(0.24, 0.44, 0.72, 0.96) if is_selected else Color(0.10, 0.16, 0.29, 0.96)
-			_matrix_labels[index].text = text
+			var display_text := "SPACE" if text == " " else text
+			_matrix_labels[index].text = display_text
+			_matrix_labels[index].add_theme_font_size_override("font_size", 8 if display_text == "SPACE" else 14)
 			_matrix_labels[index].modulate = Color(1.0, 0.98, 0.84, 1.0) if is_selected else Color(0.90, 0.96, 1.0, 0.94)
 			_matrix_cells[index].visible = not text.is_empty()
 			_matrix_labels[index].visible = not text.is_empty()
 	if _matrix_cursor:
 		_matrix_cursor.visible = not CoreBridge.is_name_entry_control_cursor()
-		_matrix_cursor.position = Vector2(250.0 + float(cursor_col) * 36.0, 294.0 + float(cursor_row) * 25.0)
+		_matrix_cursor.position = Vector2(240.0 + float(cursor_col) * 44.0, 290.0 + float(cursor_row) * 30.0)
+
+func _on_matrix_cell_gui_input(event: InputEvent, row: int, col: int) -> void:
+	if not CoreBridge.is_name_entry_screen():
+		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		var rows := CoreBridge.get_name_entry_matrix_rows()
+		if row < rows.size() and col < rows[row].size():
+			CoreBridge.enter_name_entry_character(str(rows[row][col]))
+			get_viewport().set_input_as_handled()
 
 func _update_controls() -> void:
 	var control_selected := CoreBridge.is_name_entry_control_cursor()
@@ -208,21 +212,24 @@ func _update_controls() -> void:
 		_control_labels[i].modulate = Color(1.0, 0.98, 0.84, 1.0) if is_selected else Color(0.90, 0.96, 1.0, 0.94)
 	if _control_cursor:
 		_control_cursor.visible = control_selected
-		_control_cursor.position = Vector2(650.0, 294.0 + float(control_index) * 25.0)
+		_control_cursor.position = Vector2(240.0 + float(control_index) * 164.0, 422.0)
+
+func _on_control_card_gui_input(event: InputEvent, control_index: int) -> void:
+	if not CoreBridge.is_name_entry_screen():
+		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		CoreBridge.activate_name_entry_control(control_index)
+		get_viewport().set_input_as_handled()
 
 func _update_summary() -> void:
 	if _summary_label:
-		_summary_label.text = CoreBridge.get_name_entry_summary_text()
-		_summary_label.modulate = Color(0.98, 0.98, 1.0, 0.98)
+		_summary_label.visible = false
 	if _guide_label:
-		_guide_label.text = CoreBridge.get_name_entry_guide_text()
-		_guide_label.modulate = Color(0.74, 0.86, 1.0, 0.92)
+		_guide_label.visible = false
 	if _preview_title_label:
-		_preview_title_label.text = CoreBridge.get_name_entry_preview_title_text()
-		_preview_title_label.modulate = Color(0.74, 0.88, 1.0, 0.96)
+		_preview_title_label.visible = false
 	if _badge_label:
-		_badge_label.text = CoreBridge.get_menu_badge_text("NAME")
-		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
+		_badge_label.visible = false
 
 func _update_chrome() -> void:
 	var chrome := CoreBridge.get_name_entry_chrome_colors()
@@ -282,3 +289,15 @@ func _set_screen_visible(screen_visible: bool) -> void:
 		slot.visible = screen_visible
 	for label in _preview_labels:
 		label.visible = screen_visible
+	if _guide_label:
+		_guide_label.visible = false
+	if _badge_ring:
+		_badge_ring.visible = false
+	if _badge_core:
+		_badge_core.visible = false
+	if _badge_label:
+		_badge_label.visible = false
+	if _summary_label:
+		_summary_label.visible = false
+	if _preview_title_label:
+		_preview_title_label.visible = false

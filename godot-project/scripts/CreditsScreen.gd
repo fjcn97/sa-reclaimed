@@ -1,6 +1,6 @@
 # CreditsScreen.gd
 # Source-aligned timed credits pages with manual advance and skip input.
-extends CanvasLayer
+extends ScreenBase
 
 const SourceTilemapTextureImpl = preload("res://scripts/SourceTilemapTexture.gd")
 
@@ -51,11 +51,11 @@ func _process(delta: float) -> void:
 	_update_slide()
 
 func _ensure_chrome() -> void:
-	_backdrop = _ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.06, 0.98))
-	_glow = _ensure_rect("CenterGlow", Rect2(130.0, 120.0, 1020.0, 470.0), Color(0.10, 0.28, 0.54, 0.18))
-	_panel = _ensure_rect("CreditsPanel", Rect2(196.0, 166.0, 888.0, 376.0), Color(0.05, 0.10, 0.20, 0.96))
-	_rule = _ensure_rect("CreditsRule", Rect2(270.0, 286.0, 740.0, 5.0), Color(0.28, 0.72, 1.0, 0.72))
-	_page_index_label = _ensure_label("PageIndexLabel", Vector2(510.0, 478.0), Vector2(260.0, 30.0), 14)
+	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.06, 0.98))
+	_glow = ensure_rect("CenterGlow", Rect2(130.0, 120.0, 1020.0, 470.0), Color(0.10, 0.28, 0.54, 0.18))
+	_panel = ensure_rect("CreditsPanel", Rect2(196.0, 166.0, 888.0, 376.0), Color(0.05, 0.10, 0.20, 0.96))
+	_rule = ensure_rect("CreditsRule", Rect2(270.0, 286.0, 740.0, 5.0), Color(0.28, 0.72, 1.0, 0.72))
+	_page_index_label = ensure_label("PageIndexLabel", Vector2(510.0, 478.0), Vector2(260.0, 30.0), 14)
 	_page_index_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_slide_texture = get_node_or_null("OriginalCreditsSlide") as TextureRect
 	if _slide_texture == null:
@@ -72,29 +72,6 @@ func _ensure_chrome() -> void:
 	_glow.z_index = -3
 	_panel.z_index = -2
 	_rule.z_index = -1
-
-func _ensure_rect(node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	var node := get_node_or_null(node_name) as ColorRect
-	if node == null:
-		node = ColorRect.new()
-		node.name = node_name
-		add_child(node)
-	node.position = rect.position
-	node.size = rect.size
-	node.color = color
-	return node
-
-func _ensure_label(node_name: String, pos: Vector2, size: Vector2, font_size: int) -> Label:
-	var node := get_node_or_null(node_name) as Label
-	if node == null:
-		node = Label.new()
-		node.name = node_name
-		add_child(node)
-	node.position = pos
-	node.size = size
-	node.add_theme_font_size_override("font_size", font_size)
-	node.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return node
 
 func _update_chrome(pulse: float) -> void:
 	if _glow:
