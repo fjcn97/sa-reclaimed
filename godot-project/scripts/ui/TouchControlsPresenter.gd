@@ -13,15 +13,15 @@ static func show_gameplay(bridge: Object) -> bool:
 	return show_controls(bridge) and bridge.is_gameplay_active() and not bridge.is_clear_screen() and not bridge.is_intro_screen()
 
 static func show_menu(bridge: Object) -> bool:
-	return show_controls(bridge) and bridge._is_touch_menu_interactive_screen() and not show_gameplay(bridge)
+	return show_controls(bridge) and bridge.is_touch_menu_interactive_screen() and not show_gameplay(bridge)
 
 static func show_menu_horizontal(bridge: Object) -> bool:
 	if not show_menu(bridge):
 		return false
 	if bridge.is_title_screen():
-		return bridge._is_touch_title_adjust_state()
+		return bridge.is_touch_title_adjust_state()
 	if bridge.is_save_options():
-		return bridge._is_touch_save_adjust_state()
+		return bridge.is_touch_save_adjust_state()
 	return false
 
 static func navigation_label(bridge: Object) -> String:

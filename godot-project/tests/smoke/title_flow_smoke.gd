@@ -12,6 +12,10 @@ func _run() -> void:
 		bridge = preload("res://scripts/CoreBridge.gd").new()
 		bridge.name = "CoreBridge"
 		get_root().add_child(bridge)
+	bridge.reset_to_title()
+	# Smoke tests share the project's persisted profile directory, so establish
+	# the locale required by the first source-logo assertion explicitly.
+	bridge._language_index = 1
 	bridge.open_press_start_screen()
 	_check(bridge.get_title_logo_source_tilemap() == "sa2_logo_en", "English title uses original logo")
 	bridge._language_index = 0

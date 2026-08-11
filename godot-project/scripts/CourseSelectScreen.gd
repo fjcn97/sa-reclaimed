@@ -50,8 +50,10 @@ var _map_pulse_time: float = 0.0
 var _banner_slide_x: float = 0.0
 var _banner_target_text: String = ""
 var _banner_display_text: String = ""
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -72,26 +74,28 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_map_pulse_time += delta
-	var screen_visible := CoreBridge.is_course_select_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var screen_visible: bool = _bridge != null and _bridge.is_course_select_screen()
 	_set_screen_visible(screen_visible)
 	if not screen_visible:
 		_map_view.reset()
 		return
 	var pulse := 0.5 + (sin(Time.get_ticks_msec() / 220.0) * 0.5)
 	if title_label:
-		title_label.text = CoreBridge.get_course_select_title()
+		title_label.text = _bridge.get_course_select_title()
 		title_label.position = Vector2(248.0, 116.0)
 		title_label.size = Vector2(620.0, 56.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title_label.modulate = Color(0.98, 0.98, 1.0, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_course_select_prompt()
+		prompt_label.text = _bridge.get_course_select_prompt()
 		prompt_label.position = Vector2(184.0, 548.0)
 		prompt_label.size = Vector2(912.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		prompt_label.modulate = Color(1.0, 0.90, 0.52, 0.72 + (pulse * 0.26))
 	if detail_label:
-		detail_label.text = CoreBridge.get_course_select_detail()
+		detail_label.text = _bridge.get_course_select_detail()
 		detail_label.position = Vector2(164.0, 664.0)
 		detail_label.size = Vector2(952.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -188,31 +192,31 @@ func _ensure_rows() -> void:
 
 func _update_summary() -> void:
 	if _summary_label:
-		_summary_label.text = CoreBridge.get_course_select_summary_text()
+		_summary_label.text = _bridge.get_course_select_summary_text()
 		_summary_label.modulate = Color(0.88, 0.94, 1.0, 0.96)
 	if _zone_label:
-		_zone_label.text = CoreBridge.get_course_select_zone_label()
+		_zone_label.text = _bridge.get_course_select_zone_label()
 		_zone_label.modulate = Color(0.94, 0.97, 1.0, 0.98)
 	if _act_label:
-		_act_label.text = CoreBridge.get_course_select_act_label()
+		_act_label.text = _bridge.get_course_select_act_label()
 		_act_label.modulate = Color(0.94, 0.97, 1.0, 0.98)
 	if _type_label:
-		_type_label.text = CoreBridge.get_course_select_type_label()
+		_type_label.text = _bridge.get_course_select_type_label()
 		_type_label.modulate = Color(0.96, 0.98, 0.90, 0.98)
 	if _badge_label:
-		_badge_label.text = CoreBridge.get_menu_badge_text("ST")
+		_badge_label.text = _bridge.get_menu_badge_text("ST")
 		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.98)
 	_update_banner()
 	_update_launch_fade()
 	_update_intro_fade()
 
 func _update_banner() -> void:
-	var selected_text := CoreBridge.get_course_select_banner_text()
+	var selected_text: String = _bridge.get_course_select_banner_text()
 	if _banner_target_text != selected_text:
 		_banner_target_text = selected_text
 		if _banner_display_text.is_empty():
 			_banner_display_text = selected_text
-	if CoreBridge.is_course_select_traveling():
+	if _bridge.is_course_select_traveling():
 		_banner_slide_x = maxf(-442.0, _banner_slide_x - get_process_delta_time() * 940.0)
 		if _banner_slide_x <= -220.0 and _banner_display_text != _banner_target_text:
 			_banner_display_text = _banner_target_text
@@ -220,11 +224,11 @@ func _update_banner() -> void:
 		if _banner_display_text != _banner_target_text:
 			_banner_display_text = _banner_target_text
 		_banner_slide_x = minf(0.0, _banner_slide_x + get_process_delta_time() * 880.0)
-		if CoreBridge.is_course_select_settling():
-			_banner_slide_x = lerpf(18.0, 0.0, CoreBridge.get_course_select_settle_progress())
+		if _bridge.is_course_select_settling():
+			_banner_slide_x = lerpf(18.0, 0.0, _bridge.get_course_select_settle_progress())
 	if _banner_plate:
 		_banner_plate.position = Vector2(600.0 + _banner_slide_x, 288.0)
-		_banner_plate.color = Color(0.24, 0.44, 0.74, 0.98) if CoreBridge.is_course_select_settling() else Color(0.18, 0.36, 0.66, 0.96)
+		_banner_plate.color = Color(0.24, 0.44, 0.74, 0.98) if _bridge.is_course_select_settling() else Color(0.18, 0.36, 0.66, 0.96)
 	if _banner_shadow:
 		_banner_shadow.position = Vector2(612.0 + _banner_slide_x, 300.0)
 	if _banner_trim:
@@ -232,13 +236,13 @@ func _update_banner() -> void:
 	if _banner_label:
 		_banner_label.position = Vector2(626.0 + _banner_slide_x, 292.0)
 		_banner_label.text = _banner_display_text
-		_banner_label.modulate = Color(1.0, 0.98, 0.90, 1.0) if CoreBridge.is_course_select_settling() else Color(0.98, 0.98, 1.0, 1.0)
+		_banner_label.modulate = Color(1.0, 0.98, 0.90, 1.0) if _bridge.is_course_select_settling() else Color(0.98, 0.98, 1.0, 1.0)
 
 func _update_launch_fade() -> void:
 	if _launch_fade == null:
 		return
-	if CoreBridge.is_course_select_starting():
-		var progress := CoreBridge.get_course_select_start_progress()
+	if _bridge.is_course_select_starting():
+		var progress: float = _bridge.get_course_select_start_progress()
 		_launch_fade.color = Color(0.94, 0.98, 1.0, progress * 0.90)
 	else:
 		_launch_fade.color = Color(0.94, 0.98, 1.0, 0.0)
@@ -246,17 +250,17 @@ func _update_launch_fade() -> void:
 func _update_intro_fade() -> void:
 	if _intro_fade == null:
 		return
-	if CoreBridge.is_course_select_intro():
-		var progress := CoreBridge.get_course_select_intro_progress()
+	if _bridge.is_course_select_intro():
+		var progress: float = _bridge.get_course_select_intro_progress()
 		_intro_fade.color = Color(0.02, 0.05, 0.10, 0.88 * (1.0 - progress))
 	else:
 		_intro_fade.color = Color(0.02, 0.05, 0.10, 0.0)
 
 func _update_map() -> void:
-	_map_view.update(get_process_delta_time(), _map_pulse_time)
+	_map_view.update(_bridge.get_course_select_map_view_state(), get_process_delta_time(), _map_pulse_time)
 
 func _update_emerald_badges() -> void:
-	var rows: Array = CoreBridge.get_course_select_emerald_rows()
+	var rows: Array = _bridge.get_course_select_emerald_rows()
 	for i in range(_emerald_badges.size()):
 		var visible := i < rows.size()
 		_emerald_badges[i].visible = visible
@@ -270,8 +274,8 @@ func _update_emerald_badges() -> void:
 		_emerald_labels[i].modulate = Color(0.04, 0.08, 0.14, 1.0) if active else Color(0.84, 0.90, 0.98, 0.94)
 
 func _update_rows() -> void:
-	var rows: Array = CoreBridge.get_course_select_rows()
-	var row_start := clampi(CoreBridge.get_selected_level_index() - 1, 0, maxi(rows.size() - _row_cards.size(), 0))
+	var rows: Array = _bridge.get_course_select_rows()
+	var row_start: int = clampi(_bridge.get_selected_level_index() - 1, 0, maxi(rows.size() - _row_cards.size(), 0))
 	for i in range(_row_cards.size()):
 		var row_index := row_start + i
 		var visible := row_index < rows.size()
@@ -305,7 +309,7 @@ func _update_rows() -> void:
 			_status_labels[i].modulate = Color(0.78, 0.84, 0.94, 0.92)
 
 func _update_chrome() -> void:
-	var banner_active := CoreBridge.is_course_select_settling()
+	var banner_active: bool = _bridge.is_course_select_settling()
 	var banner_color := Color(0.24, 0.44, 0.74, 0.98) if banner_active else Color(0.18, 0.36, 0.66, 0.96)
 	if _hero_glow:
 		_hero_glow.color = Color(banner_color.r * 0.72, banner_color.g * 0.82, banner_color.b, 0.18)

@@ -44,11 +44,14 @@ func reset() -> void:
 	_selected_map_index = -1
 	_map_ready = false
 
-func update(delta: float, pulse_time: float) -> void:
-	var nodes: Array = CoreBridge.get_course_select_map_nodes()
+## The screen supplies a presentation snapshot; this view has no autoload
+## dependency and can therefore be reused in isolated scene tests.
+func update(map_state: Dictionary, delta: float, pulse_time: float) -> void:
+	var nodes: Array = map_state.get("nodes", [])
 	var marker_pulse := 0.5 + 0.5 * sin(pulse_time * 6.0)
-	var unlock_phase := CoreBridge.get_course_select_unlock_phase()
-	var unlock_progress := CoreBridge.get_course_select_unlock_progress()
+	var unlocking: bool = bool(map_state.get("unlocking", false))
+	var unlock_path_reveal: bool = bool(map_state.get("unlock_path_reveal", false))
+	var unlock_progress: float = float(map_state.get("unlock_progress", 1.0))
 	var course_positions: Dictionary = {}
 	for node_data in nodes:
 		course_positions[int(node_data.get("index", -1))] = Vector2(node_data.get("position", Vector2.ZERO))
@@ -67,8 +70,8 @@ func update(delta: float, pulse_time: float) -> void:
 		_map_links[i].size = Vector2(width, height)
 		var active_path := bool(from_node.get("unlocked", false)) and bool(to_node.get("unlocked", false))
 		var path_color := Color(0.30, 0.64, 0.94, 0.92) if active_path else Color(0.18, 0.34, 0.54, 0.56)
-		if CoreBridge.is_course_select_unlocking() and i == nodes.size() - 2:
-			var reveal_alpha := 0.18 + (unlock_progress * 0.82) if unlock_phase == CoreBridge.COURSE_UNLOCK_PHASE_PATH else 1.0
+		if unlocking and i == nodes.size() - 2:
+			var reveal_alpha := 0.18 + (unlock_progress * 0.82) if unlock_path_reveal else 1.0
 			path_color = Color(1.0, 0.78, 0.28, reveal_alpha)
 		_map_links[i].color = path_color
 	for i in range(_map_nodes.size()):
@@ -99,16 +102,16 @@ func update(delta: float, pulse_time: float) -> void:
 					_marker_from_pos = _marker_target_pos
 					_map_ready = true
 	if _avatar_marker and nodes.size() > 0:
-		if CoreBridge.is_course_select_traveling():
-			var from_index := CoreBridge.get_course_select_travel_from_index()
-			var to_index := CoreBridge.get_course_select_travel_to_index()
+		if bool(map_state.get("traveling", false)):
+			var from_index: int = int(map_state.get("travel_from_index", -1))
+			var to_index: int = int(map_state.get("travel_to_index", -1))
 			if course_positions.has(from_index):
 				var from_pos: Vector2 = course_positions[from_index]
 				_marker_from_pos = Vector2(250.0 + from_pos.x + 3.0, 276.0 + from_pos.y)
 			if course_positions.has(to_index):
 				var to_pos: Vector2 = course_positions[to_index]
 				_marker_target_pos = Vector2(250.0 + to_pos.x + 3.0, 276.0 + to_pos.y)
-			var travel_progress := ease(CoreBridge.get_course_select_travel_progress(), -2.0)
+			var travel_progress := ease(float(map_state.get("travel_progress", 1.0)), -2.0)
 			_marker_visual_pos = _marker_from_pos.lerp(_marker_target_pos, travel_progress)
 		else:
 			var marker_speed := clampf(delta * 8.0, 0.0, 1.0)
@@ -120,10 +123,11 @@ func update(delta: float, pulse_time: float) -> void:
 			_marker_glow.size = Vector2(28.0, 28.0)
 			_marker_glow.color = Color(1.0, 0.90, 0.34, 0.20 + marker_pulse * 0.12)
 		var settle_bonus := 0.0
-		if CoreBridge.is_course_select_settling():
-			settle_bonus = 4.0 * (1.0 - CoreBridge.get_course_select_settle_progress())
+		var settling: bool = bool(map_state.get("settling", false))
+		if settling:
+			settle_bonus = 4.0 * (1.0 - float(map_state.get("settle_progress", 1.0)))
 		_avatar_marker.size = Vector2(16.0 + sin(pulse_time * 6.0) * 2.0 + settle_bonus, 16.0 + sin(pulse_time * 6.0) * 2.0 + settle_bonus)
-		_avatar_marker.color = Color(1.0, 0.94, 0.46, 1.0) if CoreBridge.is_course_select_settling() else Color(1.0, 0.88, 0.32, 0.90 + marker_pulse * 0.10)
+		_avatar_marker.color = Color(1.0, 0.94, 0.46, 1.0) if settling else Color(1.0, 0.88, 0.32, 0.90 + marker_pulse * 0.10)
 		_avatar_marker.visible = true
 		if _marker_glow:
 			_marker_glow.visible = true
@@ -132,8 +136,8 @@ func update(delta: float, pulse_time: float) -> void:
 		if _marker_glow:
 			_marker_glow.visible = false
 
-static func _rect(screen: Object, node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	return screen.call("ensure_rect", node_name, rect, color) as ColorRect
+static func _rect(screen: ScreenBase, node_name: String, rect: Rect2, color: Color) -> ColorRect:
+	return screen.ensure_rect(node_name, rect, color)
 
-static func _label(screen: Object, node_name: String, position: Vector2, size: Vector2, font_size: int) -> Label:
-	return screen.call("ensure_label", node_name, position, size, font_size) as Label
+static func _label(screen: ScreenBase, node_name: String, position: Vector2, size: Vector2, font_size: int) -> Label:
+	return screen.ensure_label(node_name, position, size, font_size)

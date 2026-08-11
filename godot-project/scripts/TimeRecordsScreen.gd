@@ -21,8 +21,10 @@ var _character_card: ColorRect = null
 var _character_glow: ColorRect = null
 var _character_nameplate: ColorRect = null
 var _records_view := TimeRecordsTableView.new()
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -35,33 +37,35 @@ func _ready() -> void:
 	_records_view.character_card = _character_card
 	_records_view.character_glow = _character_glow
 	_records_view.character_nameplate = _character_nameplate
-	_set_screen_visible(CoreBridge.is_time_records_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_time_records_screen())
 
 func _process(_delta: float) -> void:
-	var active: bool = CoreBridge.is_time_records_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_time_records_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	var pulse := 0.5 + (sin(Time.get_ticks_msec() / 210.0) * 0.5)
 	if title_label:
-		title_label.text = CoreBridge.get_time_records_title_text()
+		title_label.text = _bridge.get_time_records_title_text()
 		title_label.position = Vector2(254.0, 116.0)
 		title_label.size = Vector2(612.0, 56.0)
 		title_label.modulate = Color(0.98, 0.98, 1.0, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_time_records_prompt_text()
+		prompt_label.text = _bridge.get_time_records_prompt_text()
 		prompt_label.position = Vector2(176.0, 552.0)
 		prompt_label.size = Vector2(928.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		prompt_label.modulate = Color(1.0, 0.90, 0.52, 0.74 + (pulse * 0.26))
 	if detail_label:
-		detail_label.text = "%s   |   %s" % [CoreBridge.get_time_records_summary_text().replace("\n", "   "), CoreBridge.get_time_records_detail_text()]
+		detail_label.text = "%s   |   %s" % [_bridge.get_time_records_summary_text().replace("\n", "   "), _bridge.get_time_records_detail_text()]
 		detail_label.position = Vector2(170.0, 668.0)
 		detail_label.size = Vector2(940.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		detail_label.modulate = Color(0.80, 0.90, 1.0, 0.92)
 	_update_chrome()
-	_records_view.update()
+	_records_view.update(_bridge.get_time_records_view_state())
 
 func _ensure_chrome() -> void:
 	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.03, 0.04, 0.08, 0.68))
@@ -94,8 +98,8 @@ func _ensure_chrome() -> void:
 	_prompt_band.z_index = -1
 
 func _update_chrome() -> void:
-	var colors := CoreBridge.get_time_records_chrome_colors()
-	var time_attack_context := CoreBridge.is_time_attack_level_select_screen()
+	var colors: Dictionary = _bridge.get_time_records_chrome_colors()
+	var time_attack_context: bool = _bridge.is_time_attack_level_select_screen()
 	if _accent:
 		_accent.color = colors.get("accent", Color(0.26, 0.52, 0.96, 1.0))
 	if _hero_glow:

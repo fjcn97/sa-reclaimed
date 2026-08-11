@@ -4,7 +4,9 @@ class_name HudChromeBuilder
 
 const UI_NODE_FACTORY := preload("res://scripts/ui/UiNodeFactory.gd")
 
-static func build(parent: Node) -> Dictionary:
+## `chrome_colors` is supplied by the HUD state owner; this builder only owns
+## node construction and never reaches into an autoload.
+static func build(parent: Node, chrome_colors: Dictionary = {}) -> Dictionary:
 	var nodes := {}
 	nodes["score_glow"] = _rect(parent, "ScoreGlow", Rect2(10.0, 12.0, 300.0, 56.0), Color(0.14, 0.28, 0.54, 0.18), -6)
 	nodes["score_card"] = _rect(parent, "ScoreCard", Rect2(18.0, 18.0, 278.0, 42.0), Color(0.08, 0.16, 0.38, 0.92), -5)
@@ -23,12 +25,11 @@ static func build(parent: Node) -> Dictionary:
 	nodes["time_title"] = _label(parent, "TimeTitle", Vector2(996.0, 22.0), Vector2(72.0, 20.0), 14)
 	nodes["lives_title"] = _label(parent, "LivesTitle", Vector2(34.0, 636.0), Vector2(60.0, 20.0), 14)
 	nodes["character_label"] = _label(parent, "CharacterLabel", Vector2(34.0, 652.0), Vector2(60.0, 20.0), 16)
-	var chrome: Dictionary = CoreBridge.get_hud_chrome_colors()
-	(nodes["score_title"] as Label).modulate = chrome.get("score_title", Color(0.68, 0.86, 1.0, 0.94))
-	(nodes["rings_title"] as Label).modulate = chrome.get("rings_title", Color(1.0, 0.84, 0.36, 0.96))
-	(nodes["time_title"] as Label).modulate = chrome.get("time_title", Color(0.74, 0.88, 1.0, 0.94))
-	(nodes["lives_title"] as Label).modulate = chrome.get("lives_title", Color(0.72, 0.84, 1.0, 0.94))
-	(nodes["character_label"] as Label).modulate = chrome.get("character", Color(0.98, 0.98, 1.0, 1.0))
+	(nodes["score_title"] as Label).modulate = chrome_colors.get("score_title", Color(0.68, 0.86, 1.0, 0.94))
+	(nodes["rings_title"] as Label).modulate = chrome_colors.get("rings_title", Color(1.0, 0.84, 0.36, 0.96))
+	(nodes["time_title"] as Label).modulate = chrome_colors.get("time_title", Color(0.74, 0.88, 1.0, 0.94))
+	(nodes["lives_title"] as Label).modulate = chrome_colors.get("lives_title", Color(0.72, 0.84, 1.0, 0.94))
+	(nodes["character_label"] as Label).modulate = chrome_colors.get("character", Color(0.98, 0.98, 1.0, 1.0))
 
 	nodes["boss_panel"] = _rect(parent, "BossPanel", Rect2(432.0, 78.0, 416.0, 74.0), Color(0.18, 0.06, 0.10, 0.94), -4)
 	nodes["boss_title"] = _label(parent, "BossTitle", Vector2(448.0, 86.0), Vector2(150.0, 22.0), 14)

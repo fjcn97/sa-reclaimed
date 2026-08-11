@@ -21,8 +21,21 @@ $timeoutOverrides = @{
 $failed = @()
 foreach ($test in $tests) {
     $resourcePath = 'res://tests/smoke/' + $test.Name
-    $process = Start-Process -FilePath $Godot -ArgumentList '--headless','--path',$projectRoot,'--script',$resourcePath -PassThru
-	$testTimeoutSeconds = if ($timeoutOverrides.ContainsKey($test.Name)) { [int]$timeoutOverrides[$test.Name] } else { $TimeoutSeconds }
+    # Use ProcessStartInfo so each test receives an explicit working directory
+    # independent of the caller's shell configuration. Arguments is supported
+    # by both Windows PowerShell and PowerShell 7 (unlike ArgumentList).
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $Godot
+    $startInfo.WorkingDirectory = $projectRoot
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+    $startInfo.Arguments = '--headless --path "{0}" --script "{1}"' -f $projectRoot, $resourcePath
+    $process = [System.Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    if (-not $process.Start()) {
+        throw "Could not start Godot for $($test.Name)"
+    }
+    $testTimeoutSeconds = if ($timeoutOverrides.ContainsKey($test.Name)) { [int]$timeoutOverrides[$test.Name] } else { $TimeoutSeconds }
     if (-not $process.WaitForExit($testTimeoutSeconds * 1000)) {
         Stop-Process -Id $process.Id -Force
         Write-Error "TIMEOUT: $($test.Name) exceeded $testTimeoutSeconds seconds"

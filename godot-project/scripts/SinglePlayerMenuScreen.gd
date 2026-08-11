@@ -22,8 +22,10 @@ var _menu_cards: Array[ColorRect] = []
 var _menu_labels: Array[Label] = []
 var _meta_labels: Array[Label] = []
 var _status_labels: Array[Label] = []
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -36,13 +38,15 @@ func _ready() -> void:
 	_set_screen_visible(false)
 
 func _process(_delta: float) -> void:
-	var screen_visible := CoreBridge.is_single_player_menu_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var screen_visible: bool = _bridge != null and _bridge.is_single_player_menu_screen()
 	_set_screen_visible(screen_visible)
 	if not screen_visible:
 		return
 
 	if title_label:
-		title_label.text = CoreBridge.get_single_player_title_text()
+		title_label.text = _bridge.get_single_player_title_text()
 		title_label.position = Vector2(326.0, 76.0)
 		title_label.size = Vector2(628.0, 52.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -50,7 +54,7 @@ func _process(_delta: float) -> void:
 	if prompt_label:
 		prompt_label.visible = false
 	if detail_label:
-		detail_label.text = CoreBridge.get_single_player_detail_text()
+		detail_label.text = _bridge.get_single_player_detail_text()
 		detail_label.position = Vector2(148.0, 636.0)
 		detail_label.size = Vector2(984.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -98,7 +102,7 @@ func _ensure_menu_rows() -> void:
 		_status_labels.append(status)
 
 func _update_chrome() -> void:
-	var chrome := CoreBridge.get_single_player_chrome_colors()
+	var chrome: Dictionary = _bridge.get_single_player_chrome_colors()
 	if _hero_glow:
 		var header_color := Color(chrome.get("header", Color(0.09, 0.16, 0.31, 0.95)))
 		_hero_glow.color = Color(header_color.r, header_color.g, header_color.b, 0.10)
@@ -135,11 +139,11 @@ func _update_summary() -> void:
 		_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_summary_label.modulate = Color(0.14, 0.22, 0.38, 0.98)
 	if _summary_label:
-		_summary_label.text = CoreBridge.get_single_player_summary_text()
+		_summary_label.text = _bridge.get_single_player_summary_text()
 		_summary_label.visible = true
 
 func _update_menu_rows() -> void:
-	var rows: Array = CoreBridge.get_single_player_rows()
+	var rows: Array = _bridge.get_single_player_rows()
 	for i in range(_menu_cards.size()):
 		var visible := i < rows.size()
 		_menu_cards[i].visible = visible

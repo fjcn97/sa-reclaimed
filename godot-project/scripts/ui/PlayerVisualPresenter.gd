@@ -16,7 +16,7 @@ static func palette() -> Array:
 static func color(bridge: Object, variant: int, cleared: bool = false) -> Color:
 	if cleared:
 		return Color(0.96, 0.86, 0.24, 1.0)
-	if bridge._player_state.super_sonic:
+	if bridge.get_player_state().super_sonic:
 		return Color(1.0, 0.86, 0.18, 1.0)
 	var colors := palette()
 	return colors[clampi(variant, 0, colors.size() - 1)]

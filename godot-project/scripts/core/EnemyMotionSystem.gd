@@ -3,117 +3,22 @@ extends RefCounted
 
 ## Pure motion implementations used by EnemyMotionDispatcher.
 
+const ENEMY_PATROL_MOTION := preload("res://scripts/core/EnemyPatrolMotion.gd")
+const ENEMY_PROJECTILE_CYCLE_MOTION := preload("res://scripts/core/EnemyProjectileCycleMotion.gd")
+const TRANSIENT_ENTITY_MOTION := preload("res://scripts/core/TransientEntityMotion.gd")
+const ENEMY_PLATFORM_MOTION := preload("res://scripts/core/EnemyPlatformMotion.gd")
+
 static func update_pen(entity: EntityState, player_x: float, delta: float) -> void:
-	if entity.pen_turn_timer > 0.0:
-		entity.pen_turn_timer = maxf(0.0, entity.pen_turn_timer - delta)
-		if entity.pen_turn_timer <= 0.000001:
-			entity.pen_turn_timer = 0.0
-			entity.pen_direction = -entity.pen_direction
-			entity.velocity_x = entity.pen_direction * 30.0
-			entity.pen_boosting = false
-		return
-	var player_delta := player_x - entity.world_x
-	entity.pen_boosting = absf(player_delta) < 100.0 and signf(player_delta) == signf(entity.pen_direction) and not is_zero_approx(player_delta)
-	var speed := 120.0 if entity.pen_boosting else 30.0
-	entity.velocity_x = entity.pen_direction * speed
-	entity.world_x += entity.velocity_x * delta
-	if entity.world_x <= entity.patrol_min_x:
-		entity.world_x = entity.patrol_min_x
-		entity.pen_turn_timer = 18.0 / 60.0
-		entity.pen_direction = -1.0
-	elif entity.world_x >= entity.patrol_max_x:
-		entity.world_x = entity.patrol_max_x
-		entity.pen_turn_timer = 18.0 / 60.0
-		entity.pen_direction = 1.0
+	ENEMY_PATROL_MOTION.update_pen(entity, player_x, delta)
 
 static func update_mouse(entity: EntityState, player_x: float, delta: float) -> void:
-	if entity.mouse_turn_timer > 0.0:
-		entity.mouse_turn_timer = maxf(0.0, entity.mouse_turn_timer - delta)
-		if entity.mouse_turn_timer <= 0.000001:
-			entity.mouse_turn_timer = 0.0
-			entity.mouse_direction = -entity.mouse_direction
-			entity.velocity_x = entity.mouse_direction * 30.0
-			entity.mouse_boosting = false
-		return
-	var player_delta := player_x - entity.world_x
-	entity.mouse_boosting = absf(player_delta) < 100.0 and signf(player_delta) == entity.mouse_direction and not is_zero_approx(player_delta)
-	var speed := 120.0 if entity.mouse_boosting else 30.0
-	entity.velocity_x = entity.mouse_direction * speed
-	entity.world_x += entity.velocity_x * delta
-	entity.world_y = entity.origin_y + entity.mouse_position_offset
-	if entity.world_x <= entity.patrol_min_x:
-		entity.world_x = entity.patrol_min_x
-		entity.mouse_turn_timer = 18.0 / 60.0
-		entity.mouse_direction = -1.0
-	elif entity.world_x >= entity.patrol_max_x:
-		entity.world_x = entity.patrol_max_x
-		entity.mouse_turn_timer = 18.0 / 60.0
-		entity.mouse_direction = 1.0
+	ENEMY_PATROL_MOTION.update_mouse(entity, player_x, delta)
 
 static func update_circus(entity: EntityState, delta: float, spawn_projectile: Callable) -> void:
-	entity.circus_phase_timer -= delta
-	if entity.circus_phase == 0:
-		if entity.circus_phase_timer > 0.000001:
-			return
-		entity.circus_phase = 1
-		entity.circus_phase_timer = 30.0 / 60.0
-		entity.circus_projectile_spawned = false
-		entity.variant = 1
-		return
-	if entity.circus_phase == 1:
-		if entity.circus_phase_timer > 0.000001:
-			return
-		entity.circus_phase = 2
-		entity.circus_phase_timer = 50.0 / 60.0
-		entity.variant = 2
-		if not entity.circus_projectile_spawned:
-			entity.circus_projectile_spawned = true
-			spawn_projectile.call(entity)
-		return
-	if entity.circus_phase == 2:
-		if entity.circus_phase_timer > 0.000001:
-			return
-		entity.circus_phase = 3
-		entity.circus_phase_timer = 30.0 / 60.0
-		entity.variant = 3
-		return
-	if entity.circus_phase_timer <= 0.000001:
-		entity.circus_phase = 0
-		entity.circus_phase_timer = 30.0 / 60.0
-		entity.variant = 0
+	ENEMY_PROJECTILE_CYCLE_MOTION.update_circus(entity, delta, spawn_projectile)
 
 static func update_yado(entity: EntityState, player_x: float, delta: float, spawn_projectile: Callable) -> void:
-	if entity.yado_phase == 0:
-		entity.yado_phase_timer -= delta
-		var player_side := -1 if player_x < entity.world_x else 1
-		if player_side != entity.yado_facing and entity.yado_phase_timer > 0.000001:
-			entity.yado_facing = player_side
-			entity.yado_phase = 2
-			entity.yado_phase_timer = 18.0 / 60.0
-			return
-		if entity.yado_phase_timer <= 0.000001:
-			entity.yado_phase = 1
-			entity.yado_phase_timer = 2.0
-			entity.yado_projectile_fired = false
-			entity.variant = 1
-		return
-	if entity.yado_phase == 1:
-		entity.yado_phase_timer -= delta
-		if not entity.yado_projectile_fired and entity.yado_phase_timer <= 1.0:
-			spawn_projectile.call(entity)
-			entity.yado_projectile_fired = true
-		if entity.yado_phase_timer <= 6.0 / 60.0:
-			entity.variant = 2
-		if entity.yado_phase_timer <= 0.000001:
-			entity.yado_phase = 0
-			entity.yado_phase_timer = 2.0
-			entity.variant = 0
-		return
-	entity.yado_phase_timer -= delta
-	if entity.yado_phase_timer <= 0.000001:
-		entity.yado_phase = 0
-		entity.yado_phase_timer = 2.0
-		entity.variant = 0
+	ENEMY_PROJECTILE_CYCLE_MOTION.update_yado(entity, player_x, delta, spawn_projectile)
 
 static func update_straw(entity: EntityState, player_position: Vector2, delta: float) -> void:
 	if entity.straw_phase == 0:
@@ -391,16 +296,7 @@ static func update_balloon(entity: EntityState, delta: float, spawn_projectile: 
 			entity.balloon_projectile_spawned = false
 
 static func update_scattered_ring(entity: EntityState, ground_y: float, min_x: float, max_x: float, delta: float) -> void:
-	entity.state_timer -= delta
-	entity.velocity_y += 620.0 * delta
-	entity.world_x += entity.velocity_x * delta
-	entity.world_y += entity.velocity_y * delta
-	if entity.world_y >= ground_y - 12.0:
-		entity.world_y = ground_y - 12.0
-		entity.velocity_y = -absf(entity.velocity_y) * 0.56
-		entity.velocity_x *= 0.82
-	if entity.state_timer <= 0.0 or entity.world_x < min_x - 40.0 or entity.world_x > max_x + 40.0:
-		entity.active = false
+	TRANSIENT_ENTITY_MOTION.update_scattered_ring(entity, ground_y, min_x, max_x, delta)
 
 static func update_bullet_buzzer(entity: EntityState, delta: float, spawn_projectiles: Callable) -> void:
 	entity.bullet_buzzer_angle = fmod(entity.bullet_buzzer_angle + delta * 60.0, 1024.0)
@@ -424,44 +320,10 @@ static func update_bullet_buzzer(entity: EntityState, delta: float, spawn_projec
 			entity.state_timer = 60.0 / 60.0
 
 static func update_koura(entity: EntityState, delta: float) -> void:
-	entity.state_timer = fmod(entity.state_timer + delta * 20.0 * TAU / 256.0 * 60.0, TAU)
-	if entity.koura_motion_variant < 2:
-		entity.world_x += entity.velocity_x * delta
-		if entity.world_x <= entity.patrol_min_x:
-			entity.world_x = entity.patrol_min_x
-			entity.velocity_x = absf(entity.velocity_x)
-		if entity.world_x >= entity.patrol_max_x:
-			entity.world_x = entity.patrol_max_x
-			entity.velocity_x = -absf(entity.velocity_x)
-		if entity.koura_motion_variant == 0 or entity.koura_motion_variant == 1:
-			entity.world_y = entity.origin_y
-		else:
-			entity.world_y = entity.origin_y + sin(entity.state_timer) * 8.0
-	else:
-		if entity.koura_motion_variant == 2:
-			entity.world_y = entity.origin_y + sin(entity.state_timer) * 8.0
-		else:
-			entity.world_y += entity.velocity_y * delta
-			if entity.koura_patrol_min_y == entity.koura_patrol_max_y:
-				entity.koura_patrol_min_y = entity.origin_y - 96.0
-				entity.koura_patrol_max_y = entity.origin_y + 96.0
-			if entity.world_y <= entity.koura_patrol_min_y:
-				entity.world_y = entity.koura_patrol_min_y
-				entity.velocity_y = absf(entity.velocity_y)
-			if entity.world_y >= entity.koura_patrol_max_y:
-				entity.world_y = entity.koura_patrol_max_y
-				entity.velocity_y = -absf(entity.velocity_y)
+	ENEMY_PLATFORM_MOTION.update_koura(entity, delta)
 
 static func update_pikopiko(entity: EntityState, ground_y: float, delta: float) -> void:
-	entity.world_x += entity.velocity_x * delta
-	if entity.pikopiko_clamp_ground:
-		entity.world_y = ground_y - 16.0
-	if entity.world_x <= entity.patrol_min_x:
-		entity.world_x = entity.patrol_min_x
-		entity.velocity_x = absf(entity.velocity_x)
-	elif entity.world_x >= entity.patrol_max_x:
-		entity.world_x = entity.patrol_max_x
-		entity.velocity_x = -absf(entity.velocity_x)
+	ENEMY_PLATFORM_MOTION.update_pikopiko(entity, ground_y, delta)
 
 static func update_kiki(entity: EntityState, delta: float, spawn_projectile: Callable) -> void:
 	if entity.variant == 0:
@@ -487,20 +349,10 @@ static func update_kiki(entity: EntityState, delta: float, spawn_projectile: Cal
 		entity.kiki_projectile_spawned = false
 
 static func update_kiki_projectile(entity: EntityState, ground_y: float, delta: float, split_projectile: Callable) -> void:
-	entity.state_timer -= delta
-	entity.velocity_y += 156.25 * delta
-	entity.world_x += entity.velocity_x * delta
-	entity.world_y += entity.velocity_y * delta
-	if entity.world_y >= ground_y - 8.0 or entity.state_timer <= 0.0:
-		split_projectile.call(entity)
+	TRANSIENT_ENTITY_MOTION.update_kiki_projectile(entity, ground_y, delta, split_projectile)
 
 static func update_kiki_piece(entity: EntityState, max_y: float, delta: float) -> void:
-	entity.state_timer -= delta
-	entity.velocity_y += 156.25 * delta
-	entity.world_x += entity.velocity_x * delta
-	entity.world_y += entity.velocity_y * delta
-	if entity.state_timer <= 0.0 or entity.world_y > max_y + 40.0:
-		entity.active = false
+	TRANSIENT_ENTITY_MOTION.update_kiki_piece(entity, max_y, delta)
 
 static func update_trapped_animal(entity: EntityState, delta: float) -> void:
 	entity.state_timer += delta

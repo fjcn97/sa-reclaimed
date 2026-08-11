@@ -14,12 +14,12 @@ func _run() -> void:
 	bridge._status_text = "LEFT/RIGHT MOVE   A CARE   B EXIT"
 	_check(bridge.get_status_text() == "LINKS/RECHTS BEWEGEN   A PFLEGEN   B ENDE", "Tiny Chao status follows localization")
 	bridge._language_index = 1
-	bridge._tiny_chao_unlocked = false
+	bridge._tiny_chao_state.unlocked = false
 	var locked_rows: Array = bridge.get_single_player_rows()
 	_check(locked_rows.size() == 3, "single-player menu hides locked Tiny Chao branch")
-	bridge._tiny_chao_unlocked = true
+	bridge._tiny_chao_state.unlocked = true
 	bridge._save_save_data()
-	bridge._tiny_chao_unlocked = false
+	bridge._tiny_chao_state.unlocked = false
 	bridge._load_save_data()
 	_check(bridge.is_tiny_chao_unlocked(), "Tiny Chao unlock survives save/load")
 	var unlocked_rows: Array = bridge.get_single_player_rows()
@@ -36,9 +36,9 @@ func _run() -> void:
 	_check(refreshed_token != initial_token, "new session creates a fresh handoff token")
 	_check(bridge.is_tiny_chao_garden_play_screen(), "confirm enters garden play")
 	_check(bridge.get_tiny_chao_session_id() != "TCG-0000" or initial_token != "TCG-0000", "garden handoff generates a session token")
-	var initial_fruit: int = bridge._tiny_chao_fruit
+	var initial_fruit: int = bridge._tiny_chao_state.fruit
 	bridge.advance_ui_timers(0.1, 0, bridge.A_BUTTON)
-	_check(bridge._tiny_chao_fruit == maxi(0, initial_fruit - 1), "A cares for the selected Chao")
+	_check(bridge._tiny_chao_state.fruit == maxi(0, initial_fruit - 1), "A cares for the selected Chao")
 	bridge.advance_ui_timers(0.1, 0, bridge.B_BUTTON)
 	_check(bridge.get_title_phase() == bridge.TITLE_PHASE_TINY_CHAO_GARDEN, "B returns from garden to Tiny Chao menu")
 	bridge.open_save_options_from_title()

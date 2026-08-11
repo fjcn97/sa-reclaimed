@@ -17,8 +17,10 @@ var _slide_texture: TextureRect = null
 var _slide_cache: Dictionary = {}
 var _active_slide_source := ""
 var _time: float = 0.0
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -27,26 +29,28 @@ func _ready() -> void:
 	if prompt_label == null:
 		prompt_label = get_node_or_null("PromptLabel")
 	_ensure_chrome()
-	_set_screen_visible(CoreBridge.is_credits_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_credits_screen())
 
 func _process(delta: float) -> void:
-	var active := CoreBridge.is_credits_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_credits_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	_time += delta
 	var pulse := 0.5 + sin(_time * 2.0) * 0.5
 	if title_label:
-		title_label.text = CoreBridge.get_credits_title_text()
+		title_label.text = _bridge.get_credits_title_text()
 		title_label.modulate = Color(0.98, 0.98, 1.0, 1.0)
 	if page_label:
-		page_label.text = "%s  |  %s" % [CoreBridge.get_credits_page_text(), CoreBridge.get_credits_source_group_text()]
+		page_label.text = "%s  |  %s" % [_bridge.get_credits_page_text(), _bridge.get_credits_source_group_text()]
 		page_label.modulate = Color(0.76, 0.90, 1.0, 0.82 + pulse * 0.16)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_credits_detail_text()
+		prompt_label.text = _bridge.get_credits_detail_text()
 		prompt_label.modulate = Color(1.0, 0.88, 0.42, 0.76 + pulse * 0.20)
 	if _page_index_label:
-		_page_index_label.text = CoreBridge.get_credits_page_index_text()
+		_page_index_label.text = _bridge.get_credits_page_index_text()
 	_update_chrome(pulse)
 	_update_slide()
 
@@ -82,7 +86,7 @@ func _update_chrome(pulse: float) -> void:
 func _update_slide() -> void:
 	if _slide_texture == null:
 		return
-	var source := CoreBridge.get_credits_source_tilemap()
+	var source: String = _bridge.get_credits_source_tilemap()
 	if source == _active_slide_source:
 		return
 	_active_slide_source = source

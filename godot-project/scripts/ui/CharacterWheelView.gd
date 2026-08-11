@@ -31,8 +31,9 @@ func setup(screen: Object) -> Dictionary:
 		"selected_node_ring": _selected_node_ring,
 	}
 
-func update(delta: float, wheel_time: float) -> void:
-	var rows: Array = CoreBridge.get_character_select_rows()
+## The screen supplies its current presentation rows, so this view stays
+## reusable outside the CoreBridge autoload composition.
+func update(rows: Array, delta: float, wheel_time: float) -> void:
 	var selected_index := -1
 	for i in range(_wheel_nodes.size()):
 		var visible := i < rows.size()
@@ -64,8 +65,8 @@ func update(delta: float, wheel_time: float) -> void:
 		else:
 			_selected_node_ring.visible = false
 
-static func _rect(screen: Object, node_name: String, rect: Rect2, color: Color) -> ColorRect:
-	return screen.call("ensure_rect", node_name, rect, color) as ColorRect
+static func _rect(screen: ScreenBase, node_name: String, rect: Rect2, color: Color) -> ColorRect:
+	return screen.ensure_rect(node_name, rect, color)
 
-static func _label(screen: Object, node_name: String, position: Vector2, size: Vector2, font_size: int) -> Label:
-	return screen.call("ensure_label", node_name, position, size, font_size) as Label
+static func _label(screen: ScreenBase, node_name: String, position: Vector2, size: Vector2, font_size: int) -> Label:
+	return screen.ensure_label(node_name, position, size, font_size)

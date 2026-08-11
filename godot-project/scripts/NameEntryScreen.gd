@@ -31,8 +31,10 @@ var _control_cards: Array[ColorRect] = []
 var _control_labels: Array[Label] = []
 var _preview_slots: Array[ColorRect] = []
 var _preview_labels: Array[Label] = []
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -44,21 +46,23 @@ func _ready() -> void:
 	_ensure_matrix()
 	_ensure_controls()
 	_ensure_preview()
-	_set_screen_visible(CoreBridge.is_name_entry_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_name_entry_screen())
 
 func _process(_delta: float) -> void:
-	var active := CoreBridge.is_name_entry_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_name_entry_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	var pulse := 0.5 + (sin(Time.get_ticks_msec() / 190.0) * 0.5)
 	if title_label:
-		title_label.text = CoreBridge.get_name_entry_title_text()
+		title_label.text = _bridge.get_name_entry_title_text()
 		title_label.position = Vector2(248.0, 116.0)
 		title_label.size = Vector2(628.0, 56.0)
 		title_label.modulate = Color(0.98, 0.98, 1.0, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_name_entry_prompt_text()
+		prompt_label.text = _bridge.get_name_entry_prompt_text()
 		prompt_label.position = Vector2(180.0, 550.0)
 		prompt_label.size = Vector2(920.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -67,7 +71,7 @@ func _process(_delta: float) -> void:
 	if _prompt_band:
 		_prompt_band.visible = false
 	if detail_label:
-		detail_label.text = CoreBridge.get_name_entry_detail_text()
+		detail_label.text = _bridge.get_name_entry_detail_text()
 		detail_label.position = Vector2(164.0, 664.0)
 		detail_label.size = Vector2(952.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -128,8 +132,8 @@ func _ensure_chrome() -> void:
 func _ensure_matrix() -> void:
 	if _matrix_labels.size() > 0:
 		return
-	for row in range(CoreBridge.NAME_ENTRY_MATRIX_VISIBLE_ROWS):
-		for col in range(CoreBridge.NAME_ENTRY_MATRIX_COLS):
+	for row in range(_bridge.NAME_ENTRY_MATRIX_VISIBLE_ROWS):
+		for col in range(_bridge.NAME_ENTRY_MATRIX_COLS):
 			var x := 240.0 + float(col) * 44.0
 			var y := 290.0 + float(row) * 30.0
 			var cell := ensure_rect("MatrixCell_%d_%d" % [row, col], Rect2(x, y, 42.0, 28.0), Color(0.10, 0.16, 0.29, 0.96))
@@ -145,7 +149,7 @@ func _ensure_matrix() -> void:
 func _ensure_controls() -> void:
 	if _control_labels.size() > 0:
 		return
-	var labels := CoreBridge.get_name_entry_control_rows()
+	var labels: Array = _bridge.get_name_entry_control_rows()
 	for i in range(labels.size()):
 		var x := 240.0 + float(i) * 164.0
 		var y := 422.0
@@ -171,18 +175,18 @@ func _ensure_preview() -> void:
 		_preview_labels.append(label)
 
 func _update_matrix() -> void:
-	var rows := CoreBridge.get_name_entry_matrix_rows()
-	var cursor_row := CoreBridge.get_name_entry_cursor_row()
-	var cursor_col := CoreBridge.get_name_entry_cursor_col()
-	for row in range(CoreBridge.NAME_ENTRY_MATRIX_VISIBLE_ROWS):
-		for col in range(CoreBridge.NAME_ENTRY_MATRIX_COLS):
-			var index := row * CoreBridge.NAME_ENTRY_MATRIX_COLS + col
+	var rows: Array = _bridge.get_name_entry_matrix_rows()
+	var cursor_row: int = _bridge.get_name_entry_cursor_row()
+	var cursor_col: int = _bridge.get_name_entry_cursor_col()
+	for row in range(_bridge.NAME_ENTRY_MATRIX_VISIBLE_ROWS):
+		for col in range(_bridge.NAME_ENTRY_MATRIX_COLS):
+			var index: int = row * _bridge.NAME_ENTRY_MATRIX_COLS + col
 			var text := ""
 			if row < rows.size():
 				var row_chars: Array = rows[row]
 				if col < row_chars.size():
 					text = str(row_chars[col])
-			var is_selected := (not CoreBridge.is_name_entry_control_cursor()) and row == cursor_row and col == cursor_col
+			var is_selected: bool = (not _bridge.is_name_entry_control_cursor()) and row == cursor_row and col == cursor_col
 			_matrix_cells[index].color = Color(0.24, 0.44, 0.72, 0.96) if is_selected else Color(0.10, 0.16, 0.29, 0.96)
 			var display_text := "SPACE" if text == " " else text
 			_matrix_labels[index].text = display_text
@@ -191,21 +195,21 @@ func _update_matrix() -> void:
 			_matrix_cells[index].visible = not text.is_empty()
 			_matrix_labels[index].visible = not text.is_empty()
 	if _matrix_cursor:
-		_matrix_cursor.visible = not CoreBridge.is_name_entry_control_cursor()
+		_matrix_cursor.visible = not _bridge.is_name_entry_control_cursor()
 		_matrix_cursor.position = Vector2(240.0 + float(cursor_col) * 44.0, 290.0 + float(cursor_row) * 30.0)
 
 func _on_matrix_cell_gui_input(event: InputEvent, row: int, col: int) -> void:
-	if not CoreBridge.is_name_entry_screen():
+	if _bridge == null or not _bridge.is_name_entry_screen():
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		var rows := CoreBridge.get_name_entry_matrix_rows()
+		var rows: Array = _bridge.get_name_entry_matrix_rows()
 		if row < rows.size() and col < rows[row].size():
-			CoreBridge.enter_name_entry_character(str(rows[row][col]))
+			_bridge.enter_name_entry_character(str(rows[row][col]))
 			get_viewport().set_input_as_handled()
 
 func _update_controls() -> void:
-	var control_selected := CoreBridge.is_name_entry_control_cursor()
-	var control_index := maxi(0, CoreBridge.get_name_entry_cursor_row() - CoreBridge.NAME_ENTRY_CONTROL_ROW_BACK)
+	var control_selected: bool = _bridge.is_name_entry_control_cursor()
+	var control_index: int = maxi(0, _bridge.get_name_entry_cursor_row() - _bridge.NAME_ENTRY_CONTROL_ROW_BACK)
 	for i in range(_control_labels.size()):
 		var is_selected := control_selected and i == control_index
 		_control_cards[i].color = Color(0.24, 0.44, 0.72, 0.96) if is_selected else Color(0.10, 0.16, 0.29, 0.96)
@@ -215,10 +219,10 @@ func _update_controls() -> void:
 		_control_cursor.position = Vector2(240.0 + float(control_index) * 164.0, 422.0)
 
 func _on_control_card_gui_input(event: InputEvent, control_index: int) -> void:
-	if not CoreBridge.is_name_entry_screen():
+	if _bridge == null or not _bridge.is_name_entry_screen():
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		CoreBridge.activate_name_entry_control(control_index)
+		_bridge.activate_name_entry_control(control_index)
 		get_viewport().set_input_as_handled()
 
 func _update_summary() -> void:
@@ -232,7 +236,7 @@ func _update_summary() -> void:
 		_badge_label.visible = false
 
 func _update_chrome() -> void:
-	var chrome := CoreBridge.get_name_entry_chrome_colors()
+	var chrome: Dictionary = _bridge.get_name_entry_chrome_colors()
 	var accent := Color(chrome.get("accent", Color(0.22, 0.78, 0.96, 1.0)))
 	var card := Color(chrome.get("card", Color(0.86, 0.94, 1.0, 0.98)))
 	if _header_plate:
@@ -259,10 +263,10 @@ func _update_chrome() -> void:
 		_control_cursor.color = Color(accent.r, accent.g, accent.b, 0.28)
 
 func _update_preview() -> void:
-	var name_text := CoreBridge.get_profile_name_text()
+	var name_text: String = _bridge.get_profile_name_text()
 	for i in range(_preview_labels.size()):
 		var char_text := name_text.substr(i, 1) if i < name_text.length() else " "
-		var is_selected := i == CoreBridge.get_name_entry_active_slot_index()
+		var is_selected: bool = i == _bridge.get_name_entry_active_slot_index()
 		_preview_labels[i].text = char_text
 		_preview_labels[i].modulate = Color(1.0, 0.98, 0.84, 1.0) if is_selected else Color(0.98, 0.98, 1.0, 1.0)
 		if i < _preview_slots.size():

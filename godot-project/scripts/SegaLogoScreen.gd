@@ -12,8 +12,10 @@ var _glow: ColorRect = null
 var _source_logo: TextureRect = null
 var _source_texture: Texture2D = null
 var _pulse_time: float = 0.0
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -22,29 +24,31 @@ func _ready() -> void:
 	if detail_label == null:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
-	_set_screen_visible(CoreBridge.is_sega_logo_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_sega_logo_screen())
 
 func _process(delta: float) -> void:
-	var active := CoreBridge.is_sega_logo_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_sega_logo_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	_pulse_time += delta * 1.6
 	var pulse := 0.5 + sin(_pulse_time) * 0.5
 	if title_label:
-		title_label.text = CoreBridge.get_sega_logo_title_text()
+		title_label.text = _bridge.get_sega_logo_title_text()
 		title_label.position = Vector2(200.0, 260.0)
 		title_label.size = Vector2(880.0, 120.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title_label.modulate = Color(0.22, 0.58, 0.96, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_sega_logo_prompt_text()
+		prompt_label.text = _bridge.get_sega_logo_prompt_text()
 		prompt_label.position = Vector2(240.0, 402.0)
 		prompt_label.size = Vector2(800.0, 32.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		prompt_label.modulate = Color(0.86, 0.94, 1.0, 0.74 + pulse * 0.20)
 	if detail_label:
-		detail_label.text = CoreBridge.get_sega_logo_detail_text()
+		detail_label.text = _bridge.get_sega_logo_detail_text()
 		detail_label.position = Vector2(320.0, 594.0)
 		detail_label.size = Vector2(640.0, 28.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -77,7 +81,7 @@ func _update_source_logo() -> void:
 	if _source_logo == null:
 		return
 	if _source_texture == null:
-		_source_texture = SourceTilemapTextureImpl.compose(CoreBridge.get_sega_logo_source_tilemap())
+		_source_texture = SourceTilemapTextureImpl.compose(_bridge.get_sega_logo_source_tilemap())
 	_source_logo.texture = _source_texture
 
 func _set_screen_visible(screen_visible: bool) -> void:

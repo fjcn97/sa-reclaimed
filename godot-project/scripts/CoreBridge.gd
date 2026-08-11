@@ -103,6 +103,19 @@ const STAGE_TRAVERSAL_SYSTEM := preload("res://scripts/core/StageTraversalSystem
 const STAGE_INTERACTION_SYSTEM := preload("res://scripts/core/StageInteractionSystem.gd")
 const TINY_CHAO_GARDEN_SYSTEM := preload("res://scripts/core/TinyChaoGardenSystem.gd")
 const TITLE_FRONTEND_UPDATE_FLOW := preload("res://scripts/core/TitleFrontendUpdateFlow.gd")
+const COURSE_SELECT_UNLOCK_FLOW := preload("res://scripts/core/CourseSelectUnlockFlow.gd")
+const GAMEPLAY_RESULTS_RESET_FLOW := preload("res://scripts/core/GameplayResultsResetFlow.gd")
+const COURSE_SELECT_TRAVEL_STATE := preload("res://scripts/core/CourseSelectTravelState.gd")
+const COURSE_SELECT_PRESENTATION_STATE := preload("res://scripts/core/CourseSelectPresentationState.gd")
+const TITLE_FRONTEND_RESET_FLOW := preload("res://scripts/core/TitleFrontendResetFlow.gd")
+const PHYSICS_FRONTEND_FLOW := preload("res://scripts/core/PhysicsFrontendFlow.gd")
+const GAMEPLAY_WORLD_UPDATE_FLOW := preload("res://scripts/core/GameplayWorldUpdateFlow.gd")
+const GAMEPLAY_FRAME_PREPARATION_FLOW := preload("res://scripts/core/GameplayFramePreparationFlow.gd")
+const GAMEPLAY_INPUT_FRAME_FLOW := preload("res://scripts/core/GameplayInputFrameFlow.gd")
+const GAMEPLAY_PLAYER_SIMULATION_FLOW := preload("res://scripts/core/GameplayPlayerSimulationFlow.gd")
+const GAMEPLAY_RECOVERY_FLOW := preload("res://scripts/core/GameplayRecoveryFlow.gd")
+const GAMEPLAY_READ_MODEL := preload("res://scripts/core/GameplayReadModel.gd")
+const GAMEPLAY_RUNTIME_STATE := preload("res://scripts/core/GameplayRuntimeState.gd")
 const ENDING_AND_MESSAGE_UPDATE_FLOW := preload("res://scripts/core/EndingAndMessageUpdateFlow.gd")
 const RESULTS_AND_SPECIAL_STAGE_UPDATE_FLOW := preload("res://scripts/core/ResultsAndSpecialStageUpdateFlow.gd")
 const STAGE_SURFACE_STATE_SYSTEM := preload("res://scripts/core/StageSurfaceStateSystem.gd")
@@ -110,10 +123,12 @@ const STAGE_MOTION_SYSTEM := preload("res://scripts/core/StageMotionSystem.gd")
 const HUD_STATE_PRESENTER := preload("res://scripts/ui/HudStatePresenter.gd")
 const SPECIAL_STAGE_SYSTEM := preload("res://scripts/core/SpecialStageSystem.gd")
 const ENTITY_TYPES := preload("res://scripts/core/EntityTypes.gd")
+const ITEM_BOX_KINDS := preload("res://scripts/core/ItemBoxKinds.gd")
 const SAVE_FILE_STORE := preload("res://scripts/core/SaveFileStore.gd")
 const SAVE_PROFILE_CODEC := preload("res://scripts/core/SaveProfileCodec.gd")
 const SAVE_PROFILE_SANITIZER := preload("res://scripts/core/SaveProfileSanitizer.gd")
 const MULTIPLAYER_RECORD_SYSTEM := preload("res://scripts/core/MultiplayerRecordSystem.gd")
+const MULTIPLAYER_SESSION_POLICY := preload("res://scripts/core/MultiplayerSessionPolicy.gd")
 const TIME_ATTACK_RECORD_SYSTEM := preload("res://scripts/core/TimeAttackRecordSystem.gd")
 const CHAOS_EMERALD_PROGRESSION_SYSTEM := preload("res://scripts/core/ChaosEmeraldProgressionSystem.gd")
 const STORY_UNLOCK_SYSTEM := preload("res://scripts/core/StoryUnlockSystem.gd")
@@ -139,6 +154,31 @@ const RECORDS_MENU_PRESENTER := preload("res://scripts/ui/RecordsMenuPresenter.g
 const RECORDS_VIEW_MODEL := preload("res://scripts/ui/RecordsViewModel.gd")
 const TIME_ATTACK_RESULTS_PRESENTER := preload("res://scripts/ui/TimeAttackResultsPresenter.gd")
 const GAME_OVER_PRESENTER := preload("res://scripts/ui/GameOverPresenter.gd")
+const GAME_OVER_STATE := preload("res://scripts/core/GameOverState.gd")
+const SCREEN_FADE_STATE := preload("res://scripts/core/ScreenFadeState.gd")
+const TITLE_DEMO_STATE := preload("res://scripts/core/TitleDemoState.gd")
+const PAUSE_MENU_STATE := preload("res://scripts/core/PauseMenuState.gd")
+const FRONTEND_INTRO_STATE := preload("res://scripts/core/FrontendIntroState.gd")
+const TINY_CHAO_GARDEN_STATE := preload("res://scripts/core/TinyChaoGardenState.gd")
+const MULTIPLAYER_LOBBY_STATE := preload("res://scripts/core/MultiplayerLobbyState.gd")
+const MULTIPLAYER_FRONTEND_STATE := preload("res://scripts/core/MultiplayerFrontendState.gd")
+const CLEAR_RESULT_STATE := preload("res://scripts/core/ClearResultState.gd")
+const CREDITS_STATE := preload("res://scripts/core/CreditsState.gd")
+const MESSAGE_CARD_STATE := preload("res://scripts/core/MessageCardState.gd")
+const CHARACTER_UNLOCK_STATE := preload("res://scripts/core/CharacterUnlockState.gd")
+const TIME_ATTACK_SESSION_STATE := preload("res://scripts/core/TimeAttackSessionState.gd")
+const STAGE_INTRO_STATE := preload("res://scripts/core/StageIntroState.gd")
+const STAGE_INTRO_SYSTEM := preload("res://scripts/core/StageIntroSystem.gd")
+const CHECKPOINT_STATE := preload("res://scripts/core/CheckpointState.gd")
+const PLAYER_ABILITY_STATE := preload("res://scripts/core/PlayerAbilityState.gd")
+const DASH_EFFECT_STATE := preload("res://scripts/core/DashEffectState.gd")
+const DASH_EFFECT_SYSTEM := preload("res://scripts/core/DashEffectSystem.gd")
+const STAGE_SURFACE_STATE := preload("res://scripts/core/StageSurfaceState.gd")
+const TITLE_NAVIGATION_STATE := preload("res://scripts/core/TitleNavigationState.gd")
+const OPTIONS_NAVIGATION_STATE := preload("res://scripts/core/OptionsNavigationState.gd")
+const RUN_MODE_STATE := preload("res://scripts/core/RunModeState.gd")
+const CHARACTER_SELECTION_STATE := preload("res://scripts/core/CharacterSelectionState.gd")
+const SPECIAL_STAGE_STATE := preload("res://scripts/core/SpecialStageState.gd")
 const SPECIAL_STAGE_PRESENTER := preload("res://scripts/ui/SpecialStagePresenter.gd")
 const ENDING_PRESENTATION_PRESENTER := preload("res://scripts/ui/EndingPresentationPresenter.gd")
 const CLEAR_RESULTS_PRESENTER := preload("res://scripts/ui/ClearResultsPresenter.gd")
@@ -165,6 +205,7 @@ const SPECIAL_STAGE_CATALOG := preload("res://scripts/core/SpecialStageCatalog.g
 const CREDITS_CATALOG := preload("res://scripts/core/CreditsCatalog.gd")
 const LEVEL_CATALOG := preload("res://scripts/core/LevelCatalog.gd")
 const PROFILE_CATALOG := preload("res://scripts/core/ProfileCatalog.gd")
+const PROFILE_STATE := preload("res://scripts/core/ProfileState.gd")
 const RUNTIME_SETTINGS := preload("res://scripts/core/RuntimeSettings.gd")
 const LOCALIZATION_CATALOG := preload("res://scripts/core/LocalizationCatalog.gd")
 const FLOW_STATES := preload("res://scripts/core/FlowStates.gd")
@@ -188,15 +229,15 @@ const DASH_RING_DOWN = 4
 const DASH_RING_DOWN_LEFT = 5
 const DASH_RING_LEFT = 6
 const DASH_RING_UP_LEFT = 7
-const ITEM_BOX_KIND_RINGS = 0
-const ITEM_BOX_KIND_SHIELD = 1
-const ITEM_BOX_KIND_INVINCIBILITY = 2
-const ITEM_BOX_KIND_ONE_UP = 3
-const ITEM_BOX_KIND_SPEED_UP = 4
-const ITEM_BOX_KIND_MAGNETIC_SHIELD = 5
-const ITEM_BOX_KIND_RINGS_RANDOM = 6
-const ITEM_BOX_KIND_RINGS_5 = 7
-const ITEM_BOX_KIND_RINGS_10 = 8
+const ITEM_BOX_KIND_RINGS = ITEM_BOX_KINDS.RINGS
+const ITEM_BOX_KIND_SHIELD = ITEM_BOX_KINDS.SHIELD
+const ITEM_BOX_KIND_INVINCIBILITY = ITEM_BOX_KINDS.INVINCIBILITY
+const ITEM_BOX_KIND_ONE_UP = ITEM_BOX_KINDS.ONE_UP
+const ITEM_BOX_KIND_SPEED_UP = ITEM_BOX_KINDS.SPEED_UP
+const ITEM_BOX_KIND_MAGNETIC_SHIELD = ITEM_BOX_KINDS.MAGNETIC_SHIELD
+const ITEM_BOX_KIND_RINGS_RANDOM = ITEM_BOX_KINDS.RINGS_RANDOM
+const ITEM_BOX_KIND_RINGS_5 = ITEM_BOX_KINDS.RINGS_5
+const ITEM_BOX_KIND_RINGS_10 = ITEM_BOX_KINDS.RINGS_10
 const GAME_STATE_TITLE = FLOW_STATES.GAME_STATE_TITLE
 const GAME_STATE_PLAYING = FLOW_STATES.GAME_STATE_PLAYING
 const GAME_STATE_CLEAR = FLOW_STATES.GAME_STATE_CLEAR
@@ -301,235 +342,611 @@ var _camera_motion_system: CameraMotionSystem = CAMERA_MOTION_SYSTEM.new()
 var _level_state: LevelState = LevelState.new()
 var _source_map_manifest: Dictionary = {}
 var _input_buffer_system: InputBufferSystem = INPUT_BUFFER_SYSTEM.new()
-var _frame_input: int = 0
-var _spindash_charging: bool = false
-var _spindash_charge: float = 0.0
-var _spindash_release_timer: float = 0.0
-var _spindash_velocity_x: float = 0.0
-var _facing_direction: float = 1.0
-var _braking_dust_cooldown: float = 0.0
-var _velocity_y: float = 0.0
-var _elapsed_time: float = 0.0
-var _move_speed: float = 230.0
-var _jump_speed: float = 435.0
-var _gravity: float = 1060.0
-var _spring_jump_speed: float = 560.0
-var _enemy_speed: float = 90.0
-var _dash_timer: float = 0.0
-var _dash_velocity_x: float = 0.0
-var _dash_velocity_y: float = 0.0
-var _boost_effect_timer: float = 0.0
-var _boost_position_history: Array = []
-var _ring_effect_limit: int = 8
-var _grind_timer: float = 0.0
-var _grind_velocity_x: float = 0.0
-var _grind_end_x: float = 0.0
-var _grind_y: float = 0.0
-var _grind_end_mode: int = 0
-var _grind_effect_entity: EntityState = null
-var _cheese_entity: EntityState = null
-var _gravity_inverted: bool = false
-var _player_layer: int = 0
-var _corkscrew_timer: float = 0.0
-var _corkscrew_origin: Vector2 = Vector2.ZERO
-var _corkscrew_direction: float = 1.0
-var _corkscrew_active_entity: EntityState = null
-var _pipe_active: bool = false
-var _pipe_origin: Vector2 = Vector2.ZERO
-var _pipe_target: Vector2 = Vector2.ZERO
-var _pipe_timer: float = 0.0
-var _pipe_target_entity: EntityState = null
-var _hook_active: bool = false
-var _hook_origin: Vector2 = Vector2.ZERO
-var _hook_target: Vector2 = Vector2.ZERO
-var _hook_timer: float = 0.0
-var _on_slidy_ice: bool = false
-var _on_slowing_snow: bool = false
-var _attack_timer: float = 0.0
-var _flight_timer: float = 0.0
-var _glide_timer: float = 0.0
-var _damage_cooldown: float = 0.0
-var _invincibility_timer: float = 0.0
-var _speed_up_timer: float = 0.0
-var _magnetic_shielded: bool = false
-var _defeat_score_index: int = 0
-var _spawn_x: float = 0.0
-var _spawn_y: float = 0.0
-var _respawn_x: float = 0.0
-var _respawn_y: float = 0.0
-var _checkpoint_time: float = 0.0
-var _player_half_width: float = 14.0
-var _player_half_height: float = 20.0
-var _level_complete: bool = false
-var _intro_timer: float = 0.0
-var _final_intro_timer: float = 0.0
-var _final_intro_pending: bool = false
-var _intro_primed: bool = false
-var _intro_speed_boost: bool = false
-var _intro_boost_disabled: bool = false
-var _race_start_message_timer: float = 0.0
-var _start_boost_timer: float = 0.0
-var _clear_time_snapshot: float = 0.0
-var _clear_score_snapshot: int = 0
-var _clear_final_score_snapshot: int = 0
-var _clear_rank_text: String = "D"
-var _clear_ring_snapshot: int = 0
-var _clear_special_ring_snapshot: int = 0
-var _clear_previous_best_time: float = -1.0
-var _clear_new_best_time: bool = false
-var _clear_time_attack_record_rank: int = 0
-var _time_attack_result_timer: float = 0.0
-var _time_attack_exit_timer: float = 0.0
-var _clear_time_bonus_remaining: int = 0
-var _clear_ring_bonus_remaining: int = 0
-var _clear_special_ring_bonus_remaining: int = 0
-var _clear_total_display_score: int = 0
-var _clear_count_step_accumulator: float = 0.0
-var _clear_count_delay_timer: float = 0.0
-var _clear_input_lock_timer: float = 0.0
-var _clear_counting_done: bool = false
-var _clear_from_goal: bool = false
-var _game_over_timer: float = 0.0
-var _game_over_input_lock_timer: float = 0.0
-var _game_over_time_over: bool = false
-var _chaos_emeralds_timer: float = 0.0
+var _gameplay_runtime = GAMEPLAY_RUNTIME_STATE.new()
+var _frame_input: int:
+	get: return _gameplay_runtime.frame_input
+	set(value): _gameplay_runtime.frame_input = value
+var _spindash_charging: bool:
+	get: return _gameplay_runtime.spindash_charging
+	set(value): _gameplay_runtime.spindash_charging = value
+var _spindash_charge: float:
+	get: return _gameplay_runtime.spindash_charge
+	set(value): _gameplay_runtime.spindash_charge = value
+var _spindash_release_timer: float:
+	get: return _gameplay_runtime.spindash_release_timer
+	set(value): _gameplay_runtime.spindash_release_timer = value
+var _spindash_velocity_x: float:
+	get: return _gameplay_runtime.spindash_velocity_x
+	set(value): _gameplay_runtime.spindash_velocity_x = value
+var _facing_direction: float:
+	get: return _gameplay_runtime.facing_direction
+	set(value): _gameplay_runtime.facing_direction = value
+var _braking_dust_cooldown: float:
+	get: return _gameplay_runtime.braking_dust_cooldown
+	set(value): _gameplay_runtime.braking_dust_cooldown = value
+var _velocity_y: float:
+	get: return _gameplay_runtime.velocity_y
+	set(value): _gameplay_runtime.velocity_y = value
+var _elapsed_time: float:
+	get: return _gameplay_runtime.elapsed_time
+	set(value): _gameplay_runtime.elapsed_time = value
+var _move_speed: float:
+	get: return _gameplay_runtime.move_speed
+	set(value): _gameplay_runtime.move_speed = value
+var _jump_speed: float:
+	get: return _gameplay_runtime.jump_speed
+	set(value): _gameplay_runtime.jump_speed = value
+var _gravity: float:
+	get: return _gameplay_runtime.gravity
+	set(value): _gameplay_runtime.gravity = value
+var _spring_jump_speed: float:
+	get: return _gameplay_runtime.spring_jump_speed
+	set(value): _gameplay_runtime.spring_jump_speed = value
+var _enemy_speed: float:
+	get: return _gameplay_runtime.enemy_speed
+	set(value): _gameplay_runtime.enemy_speed = value
+var _dash_effect_state = DASH_EFFECT_STATE.new()
+var _dash_timer: float:
+	get: return _dash_effect_state.dash_timer
+	set(value): _dash_effect_state.dash_timer = value
+var _dash_velocity_x: float:
+	get: return _dash_effect_state.dash_velocity_x
+	set(value): _dash_effect_state.dash_velocity_x = value
+var _dash_velocity_y: float:
+	get: return _dash_effect_state.dash_velocity_y
+	set(value): _dash_effect_state.dash_velocity_y = value
+var _boost_effect_timer: float:
+	get: return _dash_effect_state.boost_effect_timer
+	set(value): _dash_effect_state.boost_effect_timer = value
+var _boost_position_history: Array:
+	get: return _dash_effect_state.boost_position_history
+	set(value): _dash_effect_state.boost_position_history = value
+var _ring_effect_limit: int:
+	get: return _gameplay_runtime.ring_effect_limit
+	set(value): _gameplay_runtime.ring_effect_limit = value
+var _grind_timer: float:
+	get: return _gameplay_runtime.grind_timer
+	set(value): _gameplay_runtime.grind_timer = value
+var _grind_velocity_x: float:
+	get: return _gameplay_runtime.grind_velocity_x
+	set(value): _gameplay_runtime.grind_velocity_x = value
+var _grind_end_x: float:
+	get: return _gameplay_runtime.grind_end_x
+	set(value): _gameplay_runtime.grind_end_x = value
+var _grind_y: float:
+	get: return _gameplay_runtime.grind_y
+	set(value): _gameplay_runtime.grind_y = value
+var _grind_end_mode: int:
+	get: return _gameplay_runtime.grind_end_mode
+	set(value): _gameplay_runtime.grind_end_mode = value
+var _grind_effect_entity: EntityState:
+	get: return _gameplay_runtime.grind_effect_entity
+	set(value): _gameplay_runtime.grind_effect_entity = value
+var _cheese_entity: EntityState:
+	get: return _gameplay_runtime.cheese_entity
+	set(value): _gameplay_runtime.cheese_entity = value
+var _gravity_inverted: bool:
+	get: return _gameplay_runtime.gravity_inverted
+	set(value): _gameplay_runtime.gravity_inverted = value
+var _player_layer: int:
+	get: return _gameplay_runtime.player_layer
+	set(value): _gameplay_runtime.player_layer = value
+var _corkscrew_timer: float:
+	get: return _gameplay_runtime.corkscrew_timer
+	set(value): _gameplay_runtime.corkscrew_timer = value
+var _corkscrew_origin: Vector2:
+	get: return _gameplay_runtime.corkscrew_origin
+	set(value): _gameplay_runtime.corkscrew_origin = value
+var _corkscrew_direction: float:
+	get: return _gameplay_runtime.corkscrew_direction
+	set(value): _gameplay_runtime.corkscrew_direction = value
+var _corkscrew_active_entity: EntityState:
+	get: return _gameplay_runtime.corkscrew_active_entity
+	set(value): _gameplay_runtime.corkscrew_active_entity = value
+var _pipe_active: bool:
+	get: return _gameplay_runtime.pipe_active
+	set(value): _gameplay_runtime.pipe_active = value
+var _pipe_origin: Vector2:
+	get: return _gameplay_runtime.pipe_origin
+	set(value): _gameplay_runtime.pipe_origin = value
+var _pipe_target: Vector2:
+	get: return _gameplay_runtime.pipe_target
+	set(value): _gameplay_runtime.pipe_target = value
+var _pipe_timer: float:
+	get: return _gameplay_runtime.pipe_timer
+	set(value): _gameplay_runtime.pipe_timer = value
+var _pipe_target_entity: EntityState:
+	get: return _gameplay_runtime.pipe_target_entity
+	set(value): _gameplay_runtime.pipe_target_entity = value
+var _hook_active: bool:
+	get: return _gameplay_runtime.hook_active
+	set(value): _gameplay_runtime.hook_active = value
+var _hook_origin: Vector2:
+	get: return _gameplay_runtime.hook_origin
+	set(value): _gameplay_runtime.hook_origin = value
+var _hook_target: Vector2:
+	get: return _gameplay_runtime.hook_target
+	set(value): _gameplay_runtime.hook_target = value
+var _hook_timer: float:
+	get: return _gameplay_runtime.hook_timer
+	set(value): _gameplay_runtime.hook_timer = value
+var _stage_surface_state = STAGE_SURFACE_STATE.new()
+var _player_ability_state = PLAYER_ABILITY_STATE.new()
+var _attack_timer: float:
+	get: return _player_ability_state.attack_timer
+	set(value): _player_ability_state.attack_timer = value
+var _flight_timer: float:
+	get: return _player_ability_state.flight_timer
+	set(value): _player_ability_state.flight_timer = value
+var _glide_timer: float:
+	get: return _player_ability_state.glide_timer
+	set(value): _player_ability_state.glide_timer = value
+var _damage_cooldown: float:
+	get: return _player_ability_state.damage_cooldown
+	set(value): _player_ability_state.damage_cooldown = value
+var _invincibility_timer: float:
+	get: return _player_ability_state.invincibility_timer
+	set(value): _player_ability_state.invincibility_timer = value
+var _speed_up_timer: float:
+	get: return _gameplay_runtime.speed_up_timer
+	set(value): _gameplay_runtime.speed_up_timer = value
+var _magnetic_shielded: bool:
+	get: return _gameplay_runtime.magnetic_shielded
+	set(value): _gameplay_runtime.magnetic_shielded = value
+var _defeat_score_index: int:
+	get: return _gameplay_runtime.defeat_score_index
+	set(value): _gameplay_runtime.defeat_score_index = value
+var _checkpoint_state = CHECKPOINT_STATE.new()
+var _spawn_x: float:
+	get: return _checkpoint_state.spawn_x
+	set(value): _checkpoint_state.spawn_x = value
+var _spawn_y: float:
+	get: return _checkpoint_state.spawn_y
+	set(value): _checkpoint_state.spawn_y = value
+var _respawn_x: float:
+	get: return _checkpoint_state.respawn_x
+	set(value): _checkpoint_state.respawn_x = value
+var _respawn_y: float:
+	get: return _checkpoint_state.respawn_y
+	set(value): _checkpoint_state.respawn_y = value
+var _checkpoint_time: float:
+	get: return _checkpoint_state.checkpoint_time
+	set(value): _checkpoint_state.checkpoint_time = value
+var _player_half_width: float:
+	get: return _gameplay_runtime.player_half_width
+	set(value): _gameplay_runtime.player_half_width = value
+var _player_half_height: float:
+	get: return _gameplay_runtime.player_half_height
+	set(value): _gameplay_runtime.player_half_height = value
+var _level_complete: bool:
+	get: return _gameplay_runtime.level_complete
+	set(value): _gameplay_runtime.level_complete = value
+var _stage_intro_state = STAGE_INTRO_STATE.new()
+var _intro_timer: float:
+	get: return _stage_intro_state.intro_timer
+	set(value): _stage_intro_state.intro_timer = value
+var _final_intro_timer: float:
+	get: return _stage_intro_state.final_intro_timer
+	set(value): _stage_intro_state.final_intro_timer = value
+var _final_intro_pending: bool:
+	get: return _stage_intro_state.final_intro_pending
+	set(value): _stage_intro_state.final_intro_pending = value
+var _intro_primed: bool:
+	get: return _stage_intro_state.intro_primed
+	set(value): _stage_intro_state.intro_primed = value
+var _intro_speed_boost: bool:
+	get: return _stage_intro_state.intro_speed_boost
+	set(value): _stage_intro_state.intro_speed_boost = value
+var _intro_boost_disabled: bool:
+	get: return _stage_intro_state.intro_boost_disabled
+	set(value): _stage_intro_state.intro_boost_disabled = value
+var _race_start_message_timer: float:
+	get: return _stage_intro_state.race_start_message_timer
+	set(value): _stage_intro_state.race_start_message_timer = value
+var _start_boost_timer: float:
+	get: return _stage_intro_state.start_boost_timer
+	set(value): _stage_intro_state.start_boost_timer = value
+var _clear_result_state = CLEAR_RESULT_STATE.new()
+var _clear_time_snapshot: float:
+	get: return _clear_result_state.time_snapshot
+	set(value): _clear_result_state.time_snapshot = value
+var _clear_score_snapshot: int:
+	get: return _clear_result_state.score_snapshot
+	set(value): _clear_result_state.score_snapshot = value
+var _clear_final_score_snapshot: int:
+	get: return _clear_result_state.final_score_snapshot
+	set(value): _clear_result_state.final_score_snapshot = value
+var _clear_rank_text: String:
+	get: return _clear_result_state.rank_text
+	set(value): _clear_result_state.rank_text = value
+var _clear_ring_snapshot: int:
+	get: return _clear_result_state.ring_snapshot
+	set(value): _clear_result_state.ring_snapshot = value
+var _clear_special_ring_snapshot: int:
+	get: return _clear_result_state.special_ring_snapshot
+	set(value): _clear_result_state.special_ring_snapshot = value
+var _clear_previous_best_time: float:
+	get: return _clear_result_state.previous_best_time
+	set(value): _clear_result_state.previous_best_time = value
+var _clear_new_best_time: bool:
+	get: return _clear_result_state.new_best_time
+	set(value): _clear_result_state.new_best_time = value
+var _clear_time_attack_record_rank: int:
+	get: return _clear_result_state.time_attack_record_rank
+	set(value): _clear_result_state.time_attack_record_rank = value
+var _time_attack_session_state = TIME_ATTACK_SESSION_STATE.new()
+var _time_attack_result_timer: float:
+	get: return _time_attack_session_state.result_timer
+	set(value): _time_attack_session_state.result_timer = value
+var _time_attack_exit_timer: float:
+	get: return _time_attack_session_state.exit_timer
+	set(value): _time_attack_session_state.exit_timer = value
+var _clear_time_bonus_remaining: int:
+	get: return _clear_result_state.time_bonus_remaining
+	set(value): _clear_result_state.time_bonus_remaining = value
+var _clear_ring_bonus_remaining: int:
+	get: return _clear_result_state.ring_bonus_remaining
+	set(value): _clear_result_state.ring_bonus_remaining = value
+var _clear_special_ring_bonus_remaining: int:
+	get: return _clear_result_state.special_ring_bonus_remaining
+	set(value): _clear_result_state.special_ring_bonus_remaining = value
+var _clear_total_display_score: int:
+	get: return _clear_result_state.total_display_score
+	set(value): _clear_result_state.total_display_score = value
+var _clear_count_step_accumulator: float:
+	get: return _clear_result_state.count_step_accumulator
+	set(value): _clear_result_state.count_step_accumulator = value
+var _clear_count_delay_timer: float:
+	get: return _clear_result_state.count_delay_timer
+	set(value): _clear_result_state.count_delay_timer = value
+var _clear_input_lock_timer: float:
+	get: return _clear_result_state.input_lock_timer
+	set(value): _clear_result_state.input_lock_timer = value
+var _clear_counting_done: bool:
+	get: return _clear_result_state.counting_done
+	set(value): _clear_result_state.counting_done = value
+var _clear_from_goal: bool:
+	get: return _clear_result_state.from_goal
+	set(value): _clear_result_state.from_goal = value
+var _game_over_state: GameOverState = GAME_OVER_STATE.new()
+var _message_card_state = MESSAGE_CARD_STATE.new()
+var _chaos_emeralds_timer: float:
+	get: return _message_card_state.chaos_emeralds_timer
+	set(value): _message_card_state.chaos_emeralds_timer = value
 ## missing_emeralds.c holds the card for 0xF0 frames, fades, then waits 0xB4.
-var _chaos_emeralds_duration: float = 7.0
-var _chaos_emeralds_message_seen: bool = false
-var _missing_emeralds_timer: float = 0.0
-var _missing_emeralds_duration: float = 7.0
-var _to_be_continued_timer: float = 0.0
+var _chaos_emeralds_duration: float:
+	get: return _message_card_state.chaos_emeralds_duration
+	set(value): _message_card_state.chaos_emeralds_duration = value
+var _chaos_emeralds_message_seen: bool:
+	get: return _profile_state.chaos_emeralds_message_seen
+	set(value): _profile_state.chaos_emeralds_message_seen = value
+var _missing_emeralds_timer: float:
+	get: return _message_card_state.missing_emeralds_timer
+	set(value): _message_card_state.missing_emeralds_timer = value
+var _missing_emeralds_duration: float:
+	get: return _message_card_state.missing_emeralds_duration
+	set(value): _message_card_state.missing_emeralds_duration = value
+var _to_be_continued_timer: float:
+	get: return _message_card_state.to_be_continued_timer
+	set(value): _message_card_state.to_be_continued_timer = value
 # endings.c holds the transition for 0xB4 frames before the ending cutscene.
-var _to_be_continued_duration: float = 3.0
-var _sega_logo_timer: float = 0.0
+var _to_be_continued_duration: float:
+	get: return _message_card_state.to_be_continued_duration
+	set(value): _message_card_state.to_be_continued_duration = value
+var _sega_logo_timer: float:
+	get: return _message_card_state.sega_logo_timer
+	set(value): _message_card_state.sega_logo_timer = value
 # title_screen.c holds each boot logo for FRAME_TIME_SECONDS(2).
-var _sega_logo_duration: float = 2.0
-var _sonic_team_timer: float = 0.0
-var _sonic_team_duration: float = 2.0
-var _chaos_emerald_mask: int = 0 # Legacy single-character save field.
-var _chaos_emerald_masks: Array = [0, 0, 0, 0, 0]
-var _credits_timer: float = 0.0
-var _credits_page: int = 0
-var _credits_page_duration: float = 2.5
-var _credits_page_count: int = 25
+var _sega_logo_duration: float:
+	get: return _message_card_state.sega_logo_duration
+	set(value): _message_card_state.sega_logo_duration = value
+var _sonic_team_timer: float:
+	get: return _message_card_state.sonic_team_timer
+	set(value): _message_card_state.sonic_team_timer = value
+var _sonic_team_duration: float:
+	get: return _message_card_state.sonic_team_duration
+	set(value): _message_card_state.sonic_team_duration = value
+var _chaos_emerald_mask: int: # Legacy single-character save field.
+	get: return _profile_state.chaos_emerald_mask
+	set(value): _profile_state.chaos_emerald_mask = value
+var _chaos_emerald_masks: Array:
+	get: return _profile_state.chaos_emerald_masks
+	set(value): _profile_state.chaos_emerald_masks = value
+var _credits_state = CREDITS_STATE.new()
+var _credits_timer: float:
+	get: return _credits_state.timer
+	set(value): _credits_state.timer = value
+var _credits_page: int:
+	get: return _credits_state.page
+	set(value): _credits_state.page = value
+var _credits_page_duration: float:
+	get: return _credits_state.page_duration
+	set(value): _credits_state.page_duration = value
+var _credits_page_count: int:
+	get: return _credits_state.page_count
+	set(value): _credits_state.page_count = value
 var _ending_variant: int = ENDING_VARIANT_NORMAL
-var _extra_ending_credits_played: bool = false
+var _extra_ending_credits_played: bool:
+	get: return _profile_state.extra_ending_credits_played
+	set(value): _profile_state.extra_ending_credits_played = value
 var _copyright_timer: float = 0.0
 # credits_end.c assigns delayFrames = 270 before the copyright card advances.
 var _copyright_duration: float = 4.5
-var _credits_end_timer: float = 0.0
-var _credits_end_duration: float = 4.5
-var _credits_end_story_frame: int = 0
-var _credits_end_story_timer: float = 0.0
-var _credits_end_show_missing_emeralds: bool = false
+var _credits_end_timer: float:
+	get: return _credits_state.end_timer
+	set(value): _credits_state.end_timer = value
+var _credits_end_duration: float:
+	get: return _credits_state.end_duration
+	set(value): _credits_state.end_duration = value
+var _credits_end_story_frame: int:
+	get: return _credits_state.end_story_frame
+	set(value): _credits_state.end_story_frame = value
+var _credits_end_story_timer: float:
+	get: return _credits_state.end_story_timer
+	set(value): _credits_state.end_story_timer = value
+var _credits_end_show_missing_emeralds: bool:
+	get: return _credits_state.end_show_missing_emeralds
+	set(value): _credits_state.end_show_missing_emeralds = value
 const CHARACTER_UNLOCK_SEGMENT_COUNT = 4
 const CHARACTER_UNLOCK_SEGMENT_FRAMES = 340
 const CHARACTER_UNLOCK_FINAL_FRAMES = 300
-var _character_unlock_timer: float = 0.0
-var _character_unlock_segment: int = 0
-var _character_unlock_scene_frame: float = 0.0
-var _character_unlock_pending: int = -1
-var _character_select_intro_timer: float = 0.0
-var _play_mode_intro_timer: float = 0.0
-var _time_attack_mode_intro_timer: float = 0.0
-var _multiplayer_mode_intro_timer: float = 0.0
-var _special_stage_timer: float = 0.0
-var _special_stage_entry_duration: float = 2.6
-var _special_stage_run_duration: float = 120.0
-var _special_stage_phase: int = 0
-var _special_stage_pending: bool = false
-var _special_stage_ring_count: int = 0
-var _special_stage_score: int = 0
-var _special_stage_points_remaining: int = 0
-var _special_stage_bonus_remaining: int = 0
-var _special_stage_result_hold_started: bool = false
-var _special_stage_emerald_index: int = 0
-var _special_stage_lane: int = 1
-var _special_stage_progress: float = 0.0
-var _special_stage_last_segment: int = -1
-var _special_stage_target_reached: bool = false
-var _special_stage_paused: bool = false
-var _special_stage_pause_cursor: int = 0
-var _special_stage_multiplier: int = 1
-var _special_stage_multiplier_streak: int = 0
-var _special_stage_multiplier_timer: float = 0.0
-var _special_stage_robo_progress: float = 0.15
-var _special_stage_robo_lane: int = 1
-var _special_stage_robo_speed: float = 0.18
-var _special_stage_robo_zone_speeds: Array = SPECIAL_STAGE_CATALOG.robo_zone_speeds()
-var _special_stage_robo_lane_timer: float = 0.0
-var _special_stage_robo_cooldown: float = 0.0
-var _special_stage_run_target: int = 300
-var _special_stage_speed: float = 1.0
-var _special_stage_jump_timer: float = 0.0
+var _character_unlock_state = CHARACTER_UNLOCK_STATE.new()
+var _character_unlock_timer: float:
+	get: return _character_unlock_state.timer
+	set(value): _character_unlock_state.timer = value
+var _character_unlock_segment: int:
+	get: return _character_unlock_state.segment
+	set(value): _character_unlock_state.segment = value
+var _character_unlock_scene_frame: float:
+	get: return _character_unlock_state.scene_frame
+	set(value): _character_unlock_state.scene_frame = value
+var _character_unlock_pending: int:
+	get: return _character_unlock_state.pending_character
+	set(value): _character_unlock_state.pending_character = value
+var _special_stage_state = SPECIAL_STAGE_STATE.new()
+var _special_stage_timer: float:
+	get: return _special_stage_state.timer
+	set(value): _special_stage_state.timer = value
+var _special_stage_entry_duration: float:
+	get: return _special_stage_state.entry_duration
+	set(value): _special_stage_state.entry_duration = value
+var _special_stage_run_duration: float:
+	get: return _special_stage_state.run_duration
+	set(value): _special_stage_state.run_duration = value
+var _special_stage_phase: int:
+	get: return _special_stage_state.phase
+	set(value): _special_stage_state.phase = value
+var _special_stage_pending: bool:
+	get: return _special_stage_state.pending
+	set(value): _special_stage_state.pending = value
+var _special_stage_ring_count: int:
+	get: return _special_stage_state.ring_count
+	set(value): _special_stage_state.ring_count = value
+var _special_stage_score: int:
+	get: return _special_stage_state.score
+	set(value): _special_stage_state.score = value
+var _special_stage_points_remaining: int:
+	get: return _special_stage_state.points_remaining
+	set(value): _special_stage_state.points_remaining = value
+var _special_stage_bonus_remaining: int:
+	get: return _special_stage_state.bonus_remaining
+	set(value): _special_stage_state.bonus_remaining = value
+var _special_stage_result_hold_started: bool:
+	get: return _special_stage_state.result_hold_started
+	set(value): _special_stage_state.result_hold_started = value
+var _special_stage_emerald_index: int:
+	get: return _special_stage_state.emerald_index
+	set(value): _special_stage_state.emerald_index = value
+var _special_stage_lane: int:
+	get: return _special_stage_state.lane
+	set(value): _special_stage_state.lane = value
+var _special_stage_progress: float:
+	get: return _special_stage_state.progress
+	set(value): _special_stage_state.progress = value
+var _special_stage_last_segment: int:
+	get: return _special_stage_state.last_segment
+	set(value): _special_stage_state.last_segment = value
+var _special_stage_target_reached: bool:
+	get: return _special_stage_state.target_reached
+	set(value): _special_stage_state.target_reached = value
+var _special_stage_paused: bool:
+	get: return _special_stage_state.paused
+	set(value): _special_stage_state.paused = value
+var _special_stage_pause_cursor: int:
+	get: return _special_stage_state.pause_cursor
+	set(value): _special_stage_state.pause_cursor = value
+var _special_stage_multiplier: int:
+	get: return _special_stage_state.multiplier
+	set(value): _special_stage_state.multiplier = value
+var _special_stage_multiplier_streak: int:
+	get: return _special_stage_state.multiplier_streak
+	set(value): _special_stage_state.multiplier_streak = value
+var _special_stage_multiplier_timer: float:
+	get: return _special_stage_state.multiplier_timer
+	set(value): _special_stage_state.multiplier_timer = value
+var _special_stage_robo_progress: float:
+	get: return _special_stage_state.robo_progress
+	set(value): _special_stage_state.robo_progress = value
+var _special_stage_robo_lane: int:
+	get: return _special_stage_state.robo_lane
+	set(value): _special_stage_state.robo_lane = value
+var _special_stage_robo_speed: float:
+	get: return _special_stage_state.robo_speed
+	set(value): _special_stage_state.robo_speed = value
+var _special_stage_robo_zone_speeds: Array:
+	get: return _special_stage_state.robo_zone_speeds
+	set(value): _special_stage_state.robo_zone_speeds = value
+var _special_stage_robo_lane_timer: float:
+	get: return _special_stage_state.robo_lane_timer
+	set(value): _special_stage_state.robo_lane_timer = value
+var _special_stage_robo_cooldown: float:
+	get: return _special_stage_state.robo_cooldown
+	set(value): _special_stage_state.robo_cooldown = value
+var _special_stage_run_target: int:
+	get: return _special_stage_state.run_target
+	set(value): _special_stage_state.run_target = value
+var _special_stage_speed: float:
+	get: return _special_stage_state.speed
+	set(value): _special_stage_state.speed = value
+var _special_stage_jump_timer: float:
+	get: return _special_stage_state.jump_timer
+	set(value): _special_stage_state.jump_timer = value
 # The source marks special-ring objects with unk7. These compact checkpoints
 # preserve that distinction while the full spatial object field is migrated.
-var _special_stage_ring_targets: Array = SPECIAL_STAGE_CATALOG.ring_targets()
-var _special_stage_ring_kinds: Array = SPECIAL_STAGE_CATALOG.ring_kinds()
+var _special_stage_ring_targets: Array:
+	get: return _special_stage_state.ring_targets
+	set(value): _special_stage_state.ring_targets = value
+var _special_stage_ring_kinds: Array:
+	get: return _special_stage_state.ring_kinds
+	set(value): _special_stage_state.ring_kinds = value
 var _status_text: String = ""
 var _title_text: String = "SONIC ADVANCE RECLAIMED"
 var _pause_text: String = "PRESS ENTER TO RESUME"
-var _screen_fade_alpha: float = 0.0
-var _screen_fade_last_state: int = -1
-var _screen_fade_last_phase: int = -1
-var _screen_fade_speed: float = 3.6
-var _pause_menu_index: int = 0
-var _pause_a_hold_lock: bool = false
-var _pause_a_previous_held: bool = false
+var _screen_fade_state: ScreenFadeState = SCREEN_FADE_STATE.new()
+var _pause_menu_state: PauseMenuState = PAUSE_MENU_STATE.new()
 var _save_menu_text: String = "SAVE OPTIONS"
 var _game_state: int = GAME_STATE_TITLE
 var _boot_intro_pending: bool = false
-var _selected_level_index: int = 0
+var _selected_level_index: int:
+	get: return _profile_state.selected_level_index
+	set(value): _profile_state.selected_level_index = value
 var _level_names: Array = LEVEL_CATALOG.names()
-var _save_menu_index: int = 0
+var _save_menu_index: int:
+	get: return _options_navigation_state.save_menu_index
+	set(value): _options_navigation_state.save_menu_index = value
 var _save_reset_pending: bool = false
-var _unlocked_level_index: int = 0
-var _character_unlocked_level_indices: Array = [0, 0, 0, 0, 0]
-var _best_scores: Array = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-var _profile_score: int = 0
-var _level_cleared_flags: Array = [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
-var _time_attack_best_times: Dictionary = {}
-var _time_attack_record_tables: Dictionary = {}
+var _profile_state = PROFILE_STATE.new()
+var _unlocked_level_index: int:
+	get: return _profile_state.unlocked_level_index
+	set(value): _profile_state.unlocked_level_index = value
+var _character_unlocked_level_indices: Array:
+	get: return _profile_state.character_unlocked_level_indices
+	set(value): _profile_state.character_unlocked_level_indices = value
+var _best_scores: Array:
+	get: return _profile_state.best_scores
+	set(value): _profile_state.best_scores = value
+var _profile_score: int:
+	get: return _profile_state.profile_score
+	set(value): _profile_state.profile_score = value
+var _level_cleared_flags: Array:
+	get: return _profile_state.level_cleared_flags
+	set(value): _profile_state.level_cleared_flags = value
+var _time_attack_best_times: Dictionary:
+	get: return _profile_state.time_attack_best_times
+	set(value): _profile_state.time_attack_best_times = value
+var _time_attack_record_tables: Dictionary:
+	get: return _profile_state.time_attack_record_tables
+	set(value): _profile_state.time_attack_record_tables = value
 var _save_path: String = "user://save_data.json"
-var _save_id: int = 0
-var _title_phase: int = TITLE_PHASE_PRESS_START
-var _title_menu_index: int = 0
-var _title_idle_timer: float = 0.0
-var _demo_mode: bool = false
-var _demo_elapsed: float = 0.0
-var _single_player_intro_timer: float = 0.0
-var _options_mode: int = OPTIONS_MODE_MAIN
-var _options_menu_index: int = 0
-var _player_data_menu_index: int = 0
-var _difficulty_index: int = 0
-var _difficulty_before_edit: int = 0
-var _time_limit_enabled: bool = true
-var _time_limit_before_edit: bool = true
-var _language_index: int = 1
-var _pending_language_index: int = 1
-var _language_index_before_edit: int = 1
-var _button_config_index: int = 0
-var _button_bindings_before_edit: Array = PROFILE_CATALOG.default_button_bindings()
-var _sound_test_menu_index: int = 0
-var _sound_test_track_index: int = 0
-var _sound_test_state: int = SOUND_TEST_STATE_STOPPED
-var _sound_test_unlocked: bool = false
-var _time_records_menu_index: int = 0
-var _time_records_view: int = TIME_RECORDS_VIEW_MODE_CHOICE
-var _time_records_context: int = TIME_RECORDS_CONTEXT_OPTIONS
-var _time_records_boss_mode: bool = false
-var _time_records_character_index: int = 0
-var _time_records_course_index: int = 0
-var _time_records_act_index: int = 0
-var _multi_records_menu_index: int = 0
-var _name_entry_menu_index: int = 0
-var _name_entry_cursor_col: int = 0
-var _name_entry_cursor_row: int = 0
-var _name_entry_matrix_page_index: int = 0
-var _name_entry_snapshot: Array = ["S", "O", "N", "I", "C", " "]
-var _delete_confirm_index: int = 1
-var _player_profile_name: Array = ["S", "O", "N", "I", "C", " "]
-var _button_bindings: Array = PROFILE_CATALOG.default_button_bindings()
+var _save_id: int:
+	get: return _profile_state.save_id
+	set(value): _profile_state.save_id = value
+var _title_navigation_state = TITLE_NAVIGATION_STATE.new()
+var _title_phase: int:
+	get: return _title_navigation_state.phase
+	set(value): _title_navigation_state.phase = value
+var _title_menu_index: int:
+	get: return _title_navigation_state.menu_index
+	set(value): _title_navigation_state.menu_index = value
+var _title_demo_state: TitleDemoState = TITLE_DEMO_STATE.new()
+var _frontend_intro_state = FRONTEND_INTRO_STATE.new()
+var _options_navigation_state = OPTIONS_NAVIGATION_STATE.new()
+var _options_mode: int:
+	get: return _options_navigation_state.mode
+	set(value): _options_navigation_state.mode = value
+var _options_menu_index: int:
+	get: return _options_navigation_state.menu_index
+	set(value): _options_navigation_state.menu_index = value
+var _player_data_menu_index: int:
+	get: return _options_navigation_state.player_data_menu_index
+	set(value): _options_navigation_state.player_data_menu_index = value
+var _difficulty_index: int:
+	get: return _profile_state.difficulty_index
+	set(value): _profile_state.difficulty_index = value
+var _difficulty_before_edit: int:
+	get: return _profile_state.difficulty_before_edit
+	set(value): _profile_state.difficulty_before_edit = value
+var _time_limit_enabled: bool:
+	get: return _profile_state.time_limit_enabled
+	set(value): _profile_state.time_limit_enabled = value
+var _time_limit_before_edit: bool:
+	get: return _profile_state.time_limit_before_edit
+	set(value): _profile_state.time_limit_before_edit = value
+var _language_index: int:
+	get: return _profile_state.language_index
+	set(value): _profile_state.language_index = value
+var _pending_language_index: int:
+	get: return _profile_state.pending_language_index
+	set(value): _profile_state.pending_language_index = value
+var _language_index_before_edit: int:
+	get: return _profile_state.language_index_before_edit
+	set(value): _profile_state.language_index_before_edit = value
+var _button_config_index: int:
+	get: return _options_navigation_state.button_config_index
+	set(value): _options_navigation_state.button_config_index = value
+var _button_bindings_before_edit: Array:
+	get: return _profile_state.button_bindings_before_edit
+	set(value): _profile_state.button_bindings_before_edit = value
+var _sound_test_menu_index: int:
+	get: return _options_navigation_state.sound_test_menu_index
+	set(value): _options_navigation_state.sound_test_menu_index = value
+var _sound_test_track_index: int:
+	get: return _profile_state.sound_test_track_index
+	set(value): _profile_state.sound_test_track_index = value
+var _sound_test_state: int:
+	get: return _profile_state.sound_test_state
+	set(value): _profile_state.sound_test_state = value
+var _sound_test_unlocked: bool:
+	get: return _profile_state.sound_test_unlocked
+	set(value): _profile_state.sound_test_unlocked = value
+var _time_records_menu_index: int:
+	get: return _options_navigation_state.time_records_menu_index
+	set(value): _options_navigation_state.time_records_menu_index = value
+var _time_records_view: int:
+	get: return _options_navigation_state.time_records_view
+	set(value): _options_navigation_state.time_records_view = value
+var _time_records_context: int:
+	get: return _options_navigation_state.time_records_context
+	set(value): _options_navigation_state.time_records_context = value
+var _time_records_boss_mode: bool:
+	get: return _options_navigation_state.time_records_boss_mode
+	set(value): _options_navigation_state.time_records_boss_mode = value
+var _time_records_character_index: int:
+	get: return _options_navigation_state.time_records_character_index
+	set(value): _options_navigation_state.time_records_character_index = value
+var _time_records_course_index: int:
+	get: return _options_navigation_state.time_records_course_index
+	set(value): _options_navigation_state.time_records_course_index = value
+var _time_records_act_index: int:
+	get: return _options_navigation_state.time_records_act_index
+	set(value): _options_navigation_state.time_records_act_index = value
+var _multi_records_menu_index: int:
+	get: return _options_navigation_state.multiplayer_records_menu_index
+	set(value): _options_navigation_state.multiplayer_records_menu_index = value
+var _name_entry_menu_index: int:
+	get: return _options_navigation_state.name_entry_menu_index
+	set(value): _options_navigation_state.name_entry_menu_index = value
+var _name_entry_cursor_col: int:
+	get: return _options_navigation_state.name_entry_cursor_col
+	set(value): _options_navigation_state.name_entry_cursor_col = value
+var _name_entry_cursor_row: int:
+	get: return _options_navigation_state.name_entry_cursor_row
+	set(value): _options_navigation_state.name_entry_cursor_row = value
+var _name_entry_matrix_page_index: int:
+	get: return _options_navigation_state.name_entry_matrix_page_index
+	set(value): _options_navigation_state.name_entry_matrix_page_index = value
+var _name_entry_snapshot: Array:
+	get: return _options_navigation_state.name_entry_snapshot
+	set(value): _options_navigation_state.name_entry_snapshot = value
+var _delete_confirm_index: int:
+	get: return _options_navigation_state.delete_confirm_index
+	set(value): _options_navigation_state.delete_confirm_index = value
+var _player_profile_name: Array:
+	get: return _profile_state.player_profile_name
+	set(value): _profile_state.player_profile_name = value
+var _button_bindings: Array:
+	get: return _profile_state.button_bindings
+	set(value): _profile_state.button_bindings = value
 var _sound_test_tracks: Array = SOUND_TEST_CATALOG.tracks()
 var _sound_test_bonus_tracks: Array = SOUND_TEST_CATALOG.bonus_tracks()
 var _sound_test_completed_order: Array = SOUND_TEST_CATALOG.completed_order()
@@ -539,257 +956,250 @@ var _time_record_rows: Array = [
 	["TAILS", "01'02\"36"],
 	["KNUCKLES", "01'08\"47"],
 ]
-var _multi_record_rows: Array = []
-var _multiplayer_record_totals: Dictionary = {"wins": 0, "losses": 0, "draws": 0}
-var _selected_character_index: int = 0
-var _title_notice_text: String = ""
-var _character_select_context: int = CHARACTER_SELECT_CONTEXT_GAME_START
-var _boss_time_attack_unlocked: bool = false
-var _return_to_multiplayer_after_name_entry: bool = false
-var _return_to_title_after_new_profile: bool = false
-var _creating_new_profile: bool = false
-var _return_to_multiplayer_menu_index: int = 0
-var _multiplayer_name_entry_snapshot: Array = []
-var _multiplayer_pak_mode: int = 0
-var _multiplayer_link_players: Array = ["YOU", "P2", "P3", "P4"]
-var _multiplayer_link_connected: Array = [true, false, false, false]
-var _multiplayer_player_characters: Array = [0, 1, 2, 3]
-var _multiplayer_player_ranks: Array = [0, 1, 2, 3]
-var _multiplayer_link_ready: bool = false
-var _multiplayer_disconnect_timer: float = 0.0
-var _singlepak_download_progress: int = 0
-var _singlepak_download_timer: float = 0.0
-var _singlepak_sync_step: int = 0
-var _multiplayer_result_mode: int = MULTIPLAYER_RESULTS_MODE_COURSE_COMPLETE
-var _multiplayer_result_snapshot: Array = []
-var _singlepak_results_cursor: int = 0
-var _singlepak_results_timer: float = 0.0
-var _singlepak_results_character_duration: float = 1.0
-var _singlepak_results_course_duration: float = 5.0
-var _multiplayer_lobby_cursor: int = 0
-var _multiplayer_lobby_waiting: bool = false
-var _multiplayer_lobby_wait_timer: float = 0.0
-var _multiplayer_lobby_wait_duration: float = 0.8
-var _multiplayer_lobby_exit_timer: float = 0.0
-var _multiplayer_outcome_type: int = 0
-var _multiplayer_outcome_timer: float = 0.0
-# communication_outcome.c holds the result for 0x78 frames, then raises the
-# blend for 16 more frames before entering character select/title.
-var _multiplayer_outcome_duration: float = (120.0 + 16.0) / 60.0
-var _multiplayer_outcome_return_phase: int = TITLE_PHASE_MULTI_CONNECT
-var _multiplayer_course_results_committed: bool = false
-var _time_attack_lobby_cursor: int = 0
-var _time_attack_boss_mode: bool = false
-var _course_select_return_phase: int = TITLE_PHASE_TIME_ATTACK_LOBBY
-var _course_select_travel_timer: float = 0.0
-var _course_select_travel_duration: float = 0.18
-var _course_select_settle_timer: float = 0.0
-var _course_select_settle_duration: float = 0.10
-var _course_select_confirm_pending: bool = false
+var _multi_record_rows: Array:
+	get: return _profile_state.multiplayer_record_rows
+	set(value): _profile_state.multiplayer_record_rows = value
+var _multiplayer_record_totals: Dictionary:
+	get: return _profile_state.multiplayer_record_totals
+	set(value): _profile_state.multiplayer_record_totals = value
+var _character_selection_state = CHARACTER_SELECTION_STATE.new()
+# Transitional compatibility aliases for existing tests and integration tools.
+# CharacterSelectionState remains the single owner of these values.
+var _selected_character_index: int:
+	get: return _character_selection_state.selected_index
+	set(value): _character_selection_state.selected_index = value
+var _character_select_intro_timer: float:
+	get: return _frontend_intro_state.timer("character_select")
+	set(value): _frontend_intro_state.timers["character_select"] = maxf(0.0, value)
+var _multiplayer_mode_intro_timer: float:
+	get: return _frontend_intro_state.timer("multiplayer_mode")
+	set(value): _frontend_intro_state.timers["multiplayer_mode"] = maxf(0.0, value)
+var _title_notice_text: String:
+	get: return _title_navigation_state.notice_text
+	set(value): _title_navigation_state.notice_text = value
+var _boss_time_attack_unlocked: bool:
+	get: return _profile_state.boss_time_attack_unlocked
+	set(value): _profile_state.boss_time_attack_unlocked = value
+var _multiplayer_frontend_state = MULTIPLAYER_FRONTEND_STATE.new()
+var _return_to_multiplayer_after_name_entry: bool:
+	get: return _multiplayer_frontend_state.return_to_multiplayer_after_name_entry
+	set(value): _multiplayer_frontend_state.return_to_multiplayer_after_name_entry = value
+var _return_to_title_after_new_profile: bool:
+	get: return _multiplayer_frontend_state.return_to_title_after_new_profile
+	set(value): _multiplayer_frontend_state.return_to_title_after_new_profile = value
+var _creating_new_profile: bool:
+	get: return _multiplayer_frontend_state.creating_new_profile
+	set(value): _multiplayer_frontend_state.creating_new_profile = value
+var _return_to_multiplayer_menu_index: int:
+	get: return _multiplayer_frontend_state.return_to_multiplayer_menu_index
+	set(value): _multiplayer_frontend_state.return_to_multiplayer_menu_index = value
+var _multiplayer_name_entry_snapshot: Array:
+	get: return _multiplayer_frontend_state.name_entry_snapshot
+	set(value): _multiplayer_frontend_state.name_entry_snapshot = value
+var _multiplayer_pak_mode: int:
+	get: return _multiplayer_frontend_state.pak_mode
+	set(value): _multiplayer_frontend_state.pak_mode = value
+var _multiplayer_link_players: Array:
+	get: return _multiplayer_frontend_state.link_players
+	set(value): _multiplayer_frontend_state.link_players = value
+var _multiplayer_link_connected: Array:
+	get: return _multiplayer_frontend_state.link_connected
+	set(value): _multiplayer_frontend_state.link_connected = value
+var _multiplayer_player_characters: Array:
+	get: return _multiplayer_frontend_state.player_characters
+	set(value): _multiplayer_frontend_state.player_characters = value
+var _multiplayer_player_ranks: Array:
+	get: return _multiplayer_frontend_state.player_ranks
+	set(value): _multiplayer_frontend_state.player_ranks = value
+var _multiplayer_link_ready: bool:
+	get: return _multiplayer_frontend_state.link_ready
+	set(value): _multiplayer_frontend_state.link_ready = value
+var _multiplayer_disconnect_timer: float:
+	get: return _multiplayer_frontend_state.disconnect_timer
+	set(value): _multiplayer_frontend_state.disconnect_timer = value
+var _singlepak_download_progress: int:
+	get: return _multiplayer_frontend_state.download_progress
+	set(value): _multiplayer_frontend_state.download_progress = value
+var _singlepak_download_timer: float:
+	get: return _multiplayer_frontend_state.download_timer
+	set(value): _multiplayer_frontend_state.download_timer = value
+var _singlepak_sync_step: int:
+	get: return _multiplayer_frontend_state.sync_step
+	set(value): _multiplayer_frontend_state.sync_step = value
+var _multiplayer_result_mode: int:
+	get: return _multiplayer_frontend_state.result_mode
+	set(value): _multiplayer_frontend_state.result_mode = value
+var _multiplayer_result_snapshot: Array:
+	get: return _multiplayer_frontend_state.result_snapshot
+	set(value): _multiplayer_frontend_state.result_snapshot = value
+var _singlepak_results_cursor: int:
+	get: return _multiplayer_frontend_state.results_cursor
+	set(value): _multiplayer_frontend_state.results_cursor = value
+var _singlepak_results_timer: float:
+	get: return _multiplayer_frontend_state.results_timer
+	set(value): _multiplayer_frontend_state.results_timer = value
+var _singlepak_results_character_duration: float:
+	get: return _multiplayer_frontend_state.results_character_duration
+	set(value): _multiplayer_frontend_state.results_character_duration = value
+var _singlepak_results_course_duration: float:
+	get: return _multiplayer_frontend_state.results_course_duration
+	set(value): _multiplayer_frontend_state.results_course_duration = value
+var _multiplayer_lobby_state = MULTIPLAYER_LOBBY_STATE.new()
+var _time_attack_lobby_cursor: int:
+	get: return _time_attack_session_state.lobby_cursor
+	set(value): _time_attack_session_state.lobby_cursor = value
+var _time_attack_boss_mode: bool:
+	get: return _time_attack_session_state.boss_mode
+	set(value): _time_attack_session_state.boss_mode = value
 const COURSE_UNLOCK_PHASE_PATH := 0
 const COURSE_UNLOCK_PHASE_SCROLL_BACK := 1
 const COURSE_UNLOCK_PHASE_SCROLL_NEXT := 2
 const COURSE_UNLOCK_PHASE_PAUSE := 3
 const COURSE_UNLOCK_PATH_FRAMES := 18
 const COURSE_UNLOCK_PAUSE_FRAMES := 61
-var _course_select_unlock_timer: float = 0.0
-var _course_select_unlock_phase: int = COURSE_UNLOCK_PHASE_PATH
-var _course_select_unlock_phase_timer: float = 0.0
-var _course_select_unlock_phase_duration: float = 0.0
-var _course_select_start_timer: float = 0.0
-var _course_select_start_duration: float = 0.24
-var _course_select_intro_timer: float = 0.0
-var _course_select_intro_duration: float = 0.34
-var _course_select_from_index: int = 0
-var _course_select_to_index: int = 0
-var _run_from_time_attack: bool = false
-var _run_from_multiplayer: bool = false
-var _tiny_chao_session_id: String = "TCG-0000"
-var _tiny_chao_unlocked: bool = false
-var _tiny_chao_play_x: float = 0.0
-var _tiny_chao_play_y: float = 0.0
-var _tiny_chao_hunger: int = 50
-var _tiny_chao_mood: int = 50
-var _tiny_chao_fruit: int = 3
-var _tiny_chao_care_count: int = 0
-var _tiny_chao_action_timer: float = 0.0
-var _tiny_chao_action_text: String = "WELCOME TO THE GARDEN"
-var _tiny_chao_selected_index: int = 0
-var _tiny_chao_roster: Array = CHARACTER_CATALOG.default_tiny_chao_roster()
-var _true_area_unlocked: bool = false
-var _extra_zone_status: int = 0
+var _course_select_unlock_flow: CourseSelectUnlockFlow = COURSE_SELECT_UNLOCK_FLOW.new()
+var _course_select_travel_state: CourseSelectTravelState = COURSE_SELECT_TRAVEL_STATE.new()
+var _course_select_presentation_state: CourseSelectPresentationState = COURSE_SELECT_PRESENTATION_STATE.new()
+var _run_mode_state = RUN_MODE_STATE.new()
+var _run_from_time_attack: bool:
+	get: return _run_mode_state.from_time_attack
+	set(value): _run_mode_state.from_time_attack = value
+var _run_from_multiplayer: bool:
+	get: return _run_mode_state.from_multiplayer
+	set(value): _run_mode_state.from_multiplayer = value
+var _tiny_chao_state = TINY_CHAO_GARDEN_STATE.new()
+var _true_area_unlocked: bool:
+	get: return _profile_state.true_area_unlocked
+	set(value): _profile_state.true_area_unlocked = value
+var _extra_zone_status: int:
+	get: return _profile_state.extra_zone_status
+	set(value): _profile_state.extra_zone_status = value
 var _character_names: Array = CHARACTER_CATALOG.names()
 var _character_descriptions: Array = CHARACTER_CATALOG.descriptions()
-var _character_unlocked: Array = [true, false, false, false, false]
-var _completed_character_routes: Array = [false, false, false, false, false]
+var _character_unlocked: Array:
+	get: return _profile_state.character_unlocked
+	set(value): _profile_state.character_unlocked = value
+var _completed_character_routes: Array:
+	get: return _profile_state.completed_character_routes
+	set(value): _profile_state.completed_character_routes = value
 var _profile_name_chars: Array = PROFILE_CATALOG.name_characters()
 
 func _ready() -> void:
+	_profile_state.configure(PROFILE_CATALOG.default_button_bindings())
+	_special_stage_state.configure(SPECIAL_STAGE_CATALOG.robo_zone_speeds(), SPECIAL_STAGE_CATALOG.ring_targets(), SPECIAL_STAGE_CATALOG.ring_kinds())
 	_load_save_data()
 	if _save_id == 0 or not has_profile_name():
 		open_profile_name_from_game_start()
 	else:
 		_open_boot_intro()
 
+## Public domain-context accessors. New flows and presenters should use these
+## instead of depending on compatibility-backed private aliases.
+func get_profile_state() -> ProfileState:
+	return _profile_state
+
+func get_options_navigation_state() -> OptionsNavigationState:
+	return _options_navigation_state
+
+func get_multiplayer_frontend_state():
+	return _multiplayer_frontend_state
+
+func get_gameplay_runtime_state() -> GameplayRuntimeState:
+	return _gameplay_runtime
+
+func get_player_ability_state() -> PlayerAbilityState:
+	return _player_ability_state
+
+func get_clear_result_state() -> ClearResultState:
+	return _clear_result_state
+
+func get_title_navigation_state() -> TitleNavigationState:
+	return _title_navigation_state
+
+func get_run_mode_state() -> RunModeState:
+	return _run_mode_state
+
+func get_game_over_state() -> GameOverState:
+	return _game_over_state
+
+func get_special_stage_state() -> SpecialStageState:
+	return _special_stage_state
+
+func get_screen_fade_state() -> ScreenFadeState:
+	return _screen_fade_state
+
+func get_title_demo_state() -> TitleDemoState:
+	return _title_demo_state
+
+func get_input_buffer_system() -> InputBufferSystem:
+	return _input_buffer_system
+
+func get_dash_effect_state() -> DashEffectState:
+	return _dash_effect_state
+
+func get_pause_menu_state() -> PauseMenuState:
+	return _pause_menu_state
+
+func get_course_select_travel_state() -> CourseSelectTravelState:
+	return _course_select_travel_state
+
+func get_course_select_unlock_flow() -> CourseSelectUnlockFlow:
+	return _course_select_unlock_flow
+
+func get_stage_surface_state():
+	return _stage_surface_state
+
+func get_character_unlock_state():
+	return _character_unlock_state
+
+
+func get_message_card_state():
+	return _message_card_state
+
+func is_boss_intro() -> bool:
+	return _is_boss_intro()
+
+func read_save_dictionary(path: String) -> Variant:
+	return _read_save_dictionary(path)
+
+func get_save_path() -> String:
+	return _save_path
+
+func get_copyright_timer() -> float:
+	return _copyright_timer
+
+func set_copyright_timer(timer: float) -> void:
+	_copyright_timer = timer
+
+func get_stage_intro_state() -> StageIntroState:
+	return _stage_intro_state
+
+func get_time_attack_session_state() -> TimeAttackSessionState:
+	return _time_attack_session_state
+
+func get_credits_state() -> CreditsState:
+	return _credits_state
+
+func get_frontend_intro_state() -> FrontendIntroState:
+	return _frontend_intro_state
+
+func get_character_selection_state() -> CharacterSelectionState:
+	return _character_selection_state
+
+func get_multiplayer_lobby_state() -> MultiplayerLobbyState:
+	return _multiplayer_lobby_state
+
+func get_course_select_presentation_state() -> CourseSelectPresentationState:
+	return _course_select_presentation_state
+
+func get_tiny_chao_state() -> TinyChaoGardenState:
+	return _tiny_chao_state
+
 func reset_to_title() -> void:
 	_boot_intro_pending = false
 	_game_state = GAME_STATE_TITLE
-	_screen_fade_alpha = 0.0
-	_screen_fade_last_state = -1
-	_screen_fade_last_phase = -1
-	_elapsed_time = 0.0
-	_velocity_y = 0.0
-	_level_complete = false
-	_intro_timer = 0.0
-	_final_intro_timer = 0.0
-	_final_intro_pending = false
-	_intro_primed = false
-	_intro_speed_boost = false
-	_intro_boost_disabled = false
-	_race_start_message_timer = 0.0
-	_start_boost_timer = 0.0
-	_clear_time_snapshot = 0.0
-	_clear_score_snapshot = 0
-	_clear_final_score_snapshot = 0
-	_clear_rank_text = "D"
-	_clear_ring_snapshot = 0
-	_clear_special_ring_snapshot = 0
-	_clear_previous_best_time = -1.0
-	_clear_new_best_time = false
-	_clear_time_attack_record_rank = 0
-	_time_attack_result_timer = 0.0
-	_time_attack_exit_timer = 0.0
-	_clear_time_bonus_remaining = 0
-	_clear_ring_bonus_remaining = 0
-	_clear_special_ring_bonus_remaining = 0
-	_clear_total_display_score = 0
-	_clear_count_step_accumulator = 0.0
-	_clear_count_delay_timer = 0.0
-	_clear_input_lock_timer = 0.0
-	_clear_counting_done = false
-	_clear_from_goal = false
-	_pause_a_hold_lock = false
-	_pause_a_previous_held = false
-	_game_over_timer = 0.0
-	_game_over_input_lock_timer = 0.0
-	_game_over_time_over = false
-	_chaos_emeralds_timer = 0.0
-	_to_be_continued_timer = 0.0
-	_sega_logo_timer = 0.0
-	_sonic_team_timer = 0.0
-	_copyright_timer = 0.0
-	_credits_end_timer = 0.0
-	_credits_end_show_missing_emeralds = false
-	_character_unlock_timer = 0.0
-	_character_unlock_segment = 0
-	_character_unlock_scene_frame = 0.0
-	_character_unlock_pending = -1
-	_character_select_intro_timer = 0.0
-	_play_mode_intro_timer = 0.0
-	_time_attack_mode_intro_timer = 0.0
-	_multiplayer_mode_intro_timer = 0.0
-	_special_stage_timer = 0.0
-	_special_stage_pending = false
-	_special_stage_phase = 0
-	_special_stage_lane = 1
-	_special_stage_progress = 0.0
-	_special_stage_last_segment = -1
-	_special_stage_target_reached = false
-	_special_stage_paused = false
-	_special_stage_pause_cursor = 0
-	_special_stage_multiplier = 1
-	_special_stage_multiplier_streak = 0
-	_special_stage_multiplier_timer = 0.0
-	_special_stage_robo_progress = 0.15
-	_special_stage_robo_lane = 1
-	_special_stage_robo_speed = 0.18
-	_special_stage_robo_lane_timer = 0.35
-	_special_stage_robo_cooldown = 0.0
-	_special_stage_speed = 1.0
-	_special_stage_jump_timer = 0.0
-	_special_stage_points_remaining = 0
-	_special_stage_bonus_remaining = 0
-	_special_stage_result_hold_started = false
-	_save_reset_pending = false
-	_status_text = get_title_prompt_text()
-	_title_text = "SONIC ADVANCE RECLAIMED"
-	_pause_text = get_pause_text()
-	_save_menu_text = "SAVE OPTIONS"
-	_selected_level_index = clamp(_selected_level_index, 0, _unlocked_level_index)
-	_save_menu_index = 0
-	_title_phase = TITLE_PHASE_PRESS_START
-	_title_menu_index = 0
-	_title_idle_timer = 0.0
-	_demo_mode = false
-	_demo_elapsed = 0.0
-	_single_player_intro_timer = 0.0
-	_options_mode = OPTIONS_MODE_MAIN
-	_options_menu_index = 0
-	_player_data_menu_index = 0
-	_button_config_index = 0
-	_sound_test_menu_index = 0
-	_sound_test_track_index = 0
-	_sound_test_state = SOUND_TEST_STATE_STOPPED
-	_time_records_menu_index = 0
-	_time_records_view = TIME_RECORDS_VIEW_MODE_CHOICE
-	_time_records_context = TIME_RECORDS_CONTEXT_OPTIONS
-	_time_records_boss_mode = false
-	_time_records_character_index = 0
-	_time_records_course_index = 0
-	_time_records_act_index = 0
-	_multi_records_menu_index = 0
-	_name_entry_menu_index = 0
-	_delete_confirm_index = 1
-	_save_reset_pending = false
-	_selected_character_index = 0
-	_title_notice_text = ""
-	_character_select_context = CHARACTER_SELECT_CONTEXT_GAME_START
-	_return_to_multiplayer_after_name_entry = false
-	_return_to_title_after_new_profile = false
-	_creating_new_profile = false
-	_multiplayer_pak_mode = 0
-	_multiplayer_link_connected = [true, false, false, false]
-	_multiplayer_player_characters = [0, 1, 2, 3]
-	_multiplayer_player_ranks = [0, 1, 2, 3]
-	_multiplayer_link_ready = false
-	_multiplayer_disconnect_timer = 0.0
-	_singlepak_download_progress = 0
-	_singlepak_download_timer = 0.0
-	_singlepak_sync_step = 0
-	_multiplayer_result_mode = MULTIPLAYER_RESULTS_MODE_COURSE_COMPLETE
-	_multiplayer_result_snapshot = []
-	_singlepak_results_cursor = 0
-	_singlepak_results_timer = 0.0
-	_multiplayer_lobby_cursor = 0
-	_multiplayer_lobby_waiting = false
-	_multiplayer_lobby_wait_timer = 0.0
-	_multiplayer_lobby_exit_timer = 0.0
-	_multiplayer_outcome_type = 0
-	_multiplayer_outcome_timer = 0.0
-	_multiplayer_outcome_return_phase = TITLE_PHASE_MULTI_CONNECT
-	_multiplayer_course_results_committed = false
-	_time_attack_lobby_cursor = 0
-	_time_attack_boss_mode = false
-	_course_select_return_phase = TITLE_PHASE_TIME_ATTACK_LOBBY
-	_course_select_travel_timer = 0.0
-	_course_select_settle_timer = 0.0
-	_course_select_confirm_pending = false
-	_course_select_unlock_timer = 0.0
-	_course_select_start_timer = 0.0
-	_course_select_from_index = _selected_level_index
-	_course_select_to_index = _selected_level_index
-	_run_from_time_attack = false
-	_run_from_multiplayer = false
-	_tiny_chao_session_id = "TCG-0000"
-	_tiny_chao_play_x = 0.0
-	_tiny_chao_play_y = 0.0
-	_tiny_chao_hunger = 50
-	_tiny_chao_mood = 50
-	_tiny_chao_fruit = 3
-	_tiny_chao_care_count = 0
-	_tiny_chao_action_timer = 0.0
-	_tiny_chao_action_text = "WELCOME TO THE GARDEN"
-	_tiny_chao_selected_index = 0
+	GAMEPLAY_RESULTS_RESET_FLOW.reset(self)
+	TITLE_FRONTEND_RESET_FLOW.reset(self)
 	_level_state = LevelState.new()
 	_level_state.level_id = 0
 	_level_state.name = "Title Screen"
@@ -813,42 +1223,42 @@ func open_press_start_screen(notice_text: String = "") -> void:
 func open_title_screen_at_play_mode_menu(selected_index: int = 0, notice_text: String = "", animate_intro: bool = false) -> void:
 	TITLE_TRANSITION_FLOW.open_menu(self, TITLE_PHASE_PLAY_MODE, selected_index, notice_text, 16.0 / 60.0 if animate_intro else 0.0)
 func is_play_mode_input_ready() -> bool:
-	return _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_PLAY_MODE and _play_mode_intro_timer <= 0.0
+	return _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_PLAY_MODE and _frontend_intro_state.is_ready("play_mode")
 
 func open_title_screen_at_single_player_menu(selected_index: int = 0, notice_text: String = "", animate_intro: bool = false) -> void:
 	TITLE_TRANSITION_FLOW.open_menu(self, TITLE_PHASE_SINGLE_PLAYER, selected_index, notice_text, 13.0 / 60.0 if animate_intro else 0.0)
 func is_single_player_input_ready() -> bool:
-	return _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_SINGLE_PLAYER and _single_player_intro_timer <= 0.0
+	return _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_SINGLE_PLAYER and _frontend_intro_state.is_ready("single_player")
 
 func open_title_screen_at_multiplayer_menu(selected_index: int = 0, notice_text: String = "") -> void:
 	TITLE_TRANSITION_FLOW.open_menu(self, TITLE_PHASE_MULTI_PLAYER, selected_index, notice_text, 47.0 / 60.0)
 func is_multiplayer_mode_input_ready() -> bool:
-	return _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_MULTI_PLAYER and _multiplayer_mode_intro_timer <= 0.0
+	return _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_MULTI_PLAYER and _frontend_intro_state.is_ready("multiplayer_mode")
 
 func skip_multiplayer_mode_intro() -> void:
 	if not (_game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_MULTI_PLAYER):
 		return
-	_multiplayer_mode_intro_timer = minf(_multiplayer_mode_intro_timer, 32.0 / 60.0)
+	_frontend_intro_state.cap("multiplayer_mode", 32.0 / 60.0)
 
 func get_multiplayer_mode_intro_progress() -> float:
 	if not is_multiplayer_mode_screen():
 		return 1.0
-	return clampf(1.0 - (_multiplayer_mode_intro_timer / (47.0 / 60.0)), 0.0, 1.0)
+	return _frontend_intro_state.progress("multiplayer_mode", 47.0 / 60.0)
 
 func open_title_screen_at_time_attack_menu(selected_index: int = 0, notice_text: String = "") -> void:
 	TITLE_TRANSITION_FLOW.open_menu(self, TITLE_PHASE_TIME_ATTACK, selected_index, notice_text, 47.0 / 60.0)
 func is_time_attack_mode_input_ready() -> bool:
-	return _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_TIME_ATTACK and _time_attack_mode_intro_timer <= 0.0
+	return _game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_TIME_ATTACK and _frontend_intro_state.is_ready("time_attack_mode")
 
 func get_time_attack_mode_intro_progress() -> float:
 	if not is_time_attack_mode_screen():
 		return 1.0
-	return clampf(1.0 - (_time_attack_mode_intro_timer / (47.0 / 60.0)), 0.0, 1.0)
+	return _frontend_intro_state.progress("time_attack_mode", 47.0 / 60.0)
 
 func skip_time_attack_mode_intro() -> void:
 	if not (_game_state == GAME_STATE_TITLE and _title_phase == TITLE_PHASE_TIME_ATTACK):
 		return
-	_time_attack_mode_intro_timer = minf(_time_attack_mode_intro_timer, 32.0 / 60.0)
+	_frontend_intro_state.cap("time_attack_mode", 32.0 / 60.0)
 
 func open_tiny_chao_garden_menu(selected_index: int = 0, notice_text: String = "") -> void:
 	TITLE_TRANSITION_FLOW.open_tiny_chao_menu(self, TITLE_PHASE_TINY_CHAO_GARDEN, selected_index, notice_text)
@@ -873,7 +1283,7 @@ func open_time_attack_level_select_screen(is_boss_mode: bool = _time_attack_boss
 	_time_records_view = TIME_RECORDS_VIEW_COURSES
 	_time_records_boss_mode = is_boss_mode
 	_time_records_menu_index = 0
-	_time_records_character_index = _selected_character_index
+	_time_records_character_index = _character_selection_state.selected_index
 	_time_records_course_index = 0
 	_time_records_act_index = 0
 	update_save_menu_status()
@@ -916,317 +1326,17 @@ func _begin_level_run(level_id: int, from_time_attack: bool, from_multiplayer: b
 	init_level(level_id, from_time_attack, from_multiplayer)
 
 func physics_tick(held_input: int, frame_input: int, delta: float) -> void:
-	_frame_input = frame_input
-	_update_screen_shake(delta)
-	_record_input_frame(frame_input)
-	_input_buffer_system.advance(delta)
-	_input_buffer_system.request_jump(frame_input, _player_state.is_grounded, JUMP_BUFFER_DURATION, A_BUTTON)
-	_damage_cooldown = maxf(0.0, _damage_cooldown - delta)
-	_invincibility_timer = maxf(0.0, _invincibility_timer - delta)
-	_speed_up_timer = maxf(0.0, _speed_up_timer - delta)
-	_boost_effect_timer = maxf(0.0, _boost_effect_timer - delta)
-	_spindash_release_timer = maxf(0.0, _spindash_release_timer - delta)
-	_braking_dust_cooldown = maxf(0.0, _braking_dust_cooldown - delta)
-	if _game_state == GAME_STATE_TITLE:
-		if frame_input & DPAD_UP:
-			_selected_level_index = max(0, _selected_level_index - 1)
-			_save_save_data()
-			_status_text = get_title_prompt_text()
-		if frame_input & DPAD_DOWN:
-			_selected_level_index = min(_unlocked_level_index, _selected_level_index + 1)
-			_save_save_data()
-			_status_text = get_title_prompt_text()
-		if frame_input & B_BUTTON:
-			_game_state = GAME_STATE_SAVE_OPTIONS
-			_save_menu_index = 0
-			_status_text = _save_menu_text
-		if frame_input & START_BUTTON or frame_input & A_BUTTON:
-			init_level(_selected_level_index)
-		_update_camera()
-		return
-
-	if _game_state == GAME_STATE_SAVE_OPTIONS:
-		if _save_reset_pending:
-			if frame_input & START_BUTTON or frame_input & A_BUTTON:
-				_reset_progress()
-				_save_reset_pending = false
-				open_press_start_screen()
-			if frame_input & B_BUTTON or frame_input & SELECT_BUTTON:
-				_save_reset_pending = false
-			_update_camera()
-			return
-		if frame_input & DPAD_UP or frame_input & DPAD_DOWN:
-			_save_menu_index = 1 - _save_menu_index
-		if frame_input & START_BUTTON or frame_input & A_BUTTON:
-			if _save_menu_index == 0:
-				_save_reset_pending = true
-				_status_text = "CONFIRM RESET? %s YES, %s NO" % [get_confirm_label(), get_secondary_label()]
-			else:
-				open_press_start_screen()
-		if frame_input & B_BUTTON or frame_input & SELECT_BUTTON:
-			open_press_start_screen()
-		_update_camera()
-		return
-
-	if _game_state == GAME_STATE_INTRO:
-		# countdown.c checks gPressedKeys, not the held directional state:
-		# pressing Right during the boost window enables the start boost, but
-		# holding it from earlier does not.
-		if frame_input & DPAD_RIGHT:
-			# countdown.c enables the boost only below the five-frame boundary.
-			if _intro_timer < INTRO_BOOST_WINDOW and not _intro_boost_disabled:
-				_intro_speed_boost = true
-			elif _intro_timer >= INTRO_BOOST_WINDOW:
-				_intro_boost_disabled = true
-		# stage_intro.c only skips single-player non-boss intros with A or B.
-		if (frame_input & A_BUTTON or frame_input & B_BUTTON) and _intro_timer > INTRO_COUNTDOWN_START and can_skip_intro():
-			_intro_timer = INTRO_COUNTDOWN_START
-		_intro_timer = max(0.0, _intro_timer - delta)
-		if _intro_timer <= INTRO_GO_TIME:
-			_intro_primed = true
-			_status_text = "GO!"
-		elif _intro_timer <= INTRO_COUNTDOWN_START:
-			_intro_primed = true
-			_status_text = "BOSS READY" if _is_boss_intro() else get_intro_countdown_text()
-		else:
-			_status_text = "READY!"
-		if _intro_timer <= 0.0:
-			_game_state = GAME_STATE_PLAYING
-			# countdown.c displays the race-start message for normal courses;
-			# boss intros hand control straight to the encounter.
-			_race_start_message_timer = 0.0 if _is_boss_intro() else 1.0
-			_start_boost_timer = INTRO_BOOST_DURATION if _intro_speed_boost and not _intro_boost_disabled else 0.0
-			_player_state.speed_x = INTRO_BOOST_SPEED if _start_boost_timer > 0.0 else 0.0
-			_player_state.ground_speed = _player_state.speed_x
-			_status_text = "DEFEAT THE BOSS" if _is_boss_intro() else ("OUTRUN RIVALS" if _run_from_multiplayer else "REACH THE GOAL")
-		_update_camera()
-		return
-
-	if _game_state == GAME_STATE_CLEAR:
-		if not is_clear_input_ready():
-			# SA2's result counter is fast-forwarded by A, not START.
-			# The original ignores A during the opening results delay and only
-			# accepts it once score counting has started.
-			var is_final_or_extra_stage := _selected_level_index >= _level_names.size() - 2
-			# stage_results.c begins accepting A on the frame the 150-frame
-			# opening delay expires; the timer is decremented later this tick.
-			if frame_input & A_BUTTON and _clear_count_delay_timer <= delta and not is_final_or_extra_stage:
-				_finish_clear_counting(true)
-		else:
-			if frame_input & START_BUTTON or frame_input & A_BUTTON:
-				clear_replay()
-			if frame_input & B_BUTTON or frame_input & SELECT_BUTTON:
-				clear_return_to_title()
-		_update_camera()
-		return
-
-	if _game_state == GAME_STATE_PAUSED:
-		_update_pause_menu_input(held_input, frame_input)
-		return
-
-	if _demo_mode:
-		if held_input != 0 or frame_input != 0:
-			open_press_start_screen("DEMO INTERRUPTED")
-			return
-		_demo_elapsed += delta
-		if _demo_elapsed >= 20.0:
-			open_press_start_screen()
-			return
-
-	# stage.c creates the pause task only for single-player runs.
-	if _game_state == GAME_STATE_PLAYING and frame_input & START_BUTTON and not _run_from_multiplayer:
-		toggle_pause(held_input)
-		_update_camera()
+	GAMEPLAY_INPUT_FRAME_FLOW.advance(self, frame_input, delta)
+	if PHYSICS_FRONTEND_FLOW.handle(self, held_input, frame_input, delta):
 		return
 
 	if not _player_state.is_alive:
 		return
 
-	_elapsed_time += delta
-	_update_super_sonic(delta)
-	_start_boost_timer = maxf(0.0, _start_boost_timer - delta)
-	_attack_timer = maxf(0.0, _attack_timer - delta)
-	_flight_timer = maxf(0.0, _flight_timer - delta)
-	_glide_timer = maxf(0.0, _glide_timer - delta)
-	var time_limit_active := _run_from_time_attack or _time_limit_enabled
-	if time_limit_active and _elapsed_time >= MAX_COURSE_TIME_SECONDS:
-		# stage.c sends time-attack deaths straight back to its lobby; the
-		# TIME OVER card is reserved for the regular stage life-loss path.
-		if _run_from_time_attack:
-			open_time_attack_lobby(_time_attack_boss_mode)
-			_update_camera()
-			return
-		_open_game_over(true)
-		_update_camera()
+	if GAMEPLAY_FRAME_PREPARATION_FLOW.advance(self, delta):
 		return
-	_update_enemy_motion(delta)
-	_update_flying_spring_motion(delta)
-	_update_flying_handle_state(delta)
-	_update_slidy_ice_state()
-	_update_slowing_snow_state()
-	_update_light_bridge_state(delta)
-	_update_spike_platform_state()
-	_update_turnaround_bar_state(delta)
-	_update_keyboard_state(delta)
-	_update_pole_state()
-	_update_light_globe_state(delta)
-	_update_windup_stick_state(delta)
-	_update_german_flute_state(delta, held_input)
-	_update_small_windmill_state(delta)
-	_update_chord_state(delta)
-	_update_note_state(delta)
-	_update_note_particle_state(delta)
-	_update_half_pipe_state(frame_input)
-	_update_iron_ball_state(delta)
-	_update_crane_state(delta)
-	_update_ceiling_slope_state(delta)
-	_update_gapped_loop_state(delta)
-	_update_funnel_sphere_state(delta)
-	_update_music_entry_state(delta)
-	var previous_world_x := _player_state.world_x
-	var previous_world_y := _player_state.world_y
-	_update_platform_motion(delta)
-
-	var move_direction := 0
-	if held_input & DPAD_LEFT:
-		move_direction -= 1
-	if held_input & DPAD_RIGHT:
-		move_direction += 1
-	var speed_multiplier := 1.35 if _speed_up_timer > 0.0 else 1.0
-	var snow_multiplier := 0.95 if _on_slowing_snow else 1.0
-	var current_move_speed := (INTRO_BOOST_SPEED if _start_boost_timer > 0.0 else _move_speed) * speed_multiplier * snow_multiplier
-	if _player_state.super_sonic:
-		# Super Sonic's directional task uses the extra-boss top speed rather
-		# than the regular character acceleration profile.
-		current_move_speed = 900.0 * speed_multiplier
-	var current_move_direction := 1 if _start_boost_timer > 0.0 and move_direction == 0 else move_direction
-	var gravity_direction := -1.0 if _gravity_inverted else 1.0
-	if _player_state.is_grounded and current_move_direction != 0 and absf(_player_state.speed_x) > 160.0 and signf(_player_state.speed_x) != signf(current_move_direction) and _braking_dust_cooldown <= 0.0:
-		_spawn_dust_cloud(_player_state.world_x, _player_state.world_y)
-		_braking_dust_cooldown = 0.10
-	if frame_input & B_BUTTON:
-		if _player_state.is_grounded and held_input & DPAD_DOWN:
-			_spindash_charging = true
-			_spindash_charge = maxf(_spindash_charge, 0.08)
-			_spindash_direction_from_player()
-		elif _player_state.variant == 3 and not _player_state.is_grounded:
-			_glide_timer = 1.0
-			_player_state.char_state = 7
-		else:
-			_attack_timer = 0.22
-			_player_state.char_state = 8
-			if _player_state.variant == 4:
-				_spawn_amy_attack_hearts()
-			elif _player_state.variant == 2:
-				_spawn_character_attack_effect(ENTITY_TAIL_SWIPE)
-			elif _player_state.variant == 3:
-				_spawn_character_attack_effect(ENTITY_KNUCKLES_FIRE)
-			elif _player_state.variant == 0:
-				_spawn_character_attack_effect(ENTITY_SONIC_SKID)
-
-	if _dash_timer > 0.0:
-		_dash_timer = maxf(0.0, _dash_timer - delta)
-		_player_state.is_grounded = false
-		_player_state.world_x += _dash_velocity_x * delta
-		_player_state.speed_x = _dash_velocity_x
-		_velocity_y = _dash_velocity_y
-	elif _spindash_charging:
-		_player_state.is_grounded = true
-		_player_state.speed_x = 0.0
-		_player_state.ground_speed = 0.0
-		_player_state.char_state = 8
-		_player_state.anim_id = 2
-		if held_input & DPAD_DOWN:
-			_spindash_charge = minf(1.0, _spindash_charge + delta * 1.8)
-		else:
-			_spindash_charging = false
-			_spindash_release_timer = 0.55
-			_spindash_velocity_x = _facing_direction * (260.0 + _spindash_charge * 360.0)
-			_spindash_charge = 0.0
-			_spawn_dust_cloud(_player_state.world_x, _player_state.world_y)
-	elif _spindash_release_timer > 0.0:
-		_player_state.is_grounded = true
-		_player_state.world_x += _spindash_velocity_x * delta
-		_player_state.speed_x = _spindash_velocity_x
-		_player_state.ground_speed = _spindash_velocity_x
-		_player_state.char_state = 5
-		_player_state.anim_id = 2
-		if fmod(_spindash_release_timer, 0.12) < delta:
-			_spawn_dust_cloud(_player_state.world_x, _player_state.world_y)
-	elif _grind_timer > 0.0:
-		_grind_timer = maxf(0.0, _grind_timer - delta)
-		var reached_end := (_grind_velocity_x > 0.0 and _player_state.world_x >= _grind_end_x) or (_grind_velocity_x < 0.0 and _player_state.world_x <= _grind_end_x)
-		var jump_off := frame_input & A_BUTTON and _grind_end_mode != 0
-		if reached_end or jump_off or _grind_timer <= 0.0:
-			_grind_timer = 0.0
-			_player_state.world_x = _grind_end_x if reached_end else _player_state.world_x
-			if _grind_end_mode != 0 or jump_off:
-				_velocity_y = -_jump_speed
-				_player_state.is_grounded = false
-				_player_state.char_state = 1
-			else:
-				_velocity_y = 0.0
-				_player_state.world_y = _grind_y
-				_player_state.is_grounded = true
-		else:
-			_player_state.world_x += _grind_velocity_x * delta
-			_player_state.world_y = _grind_y
-			_player_state.speed_x = _grind_velocity_x
-			_player_state.speed_y = 0.0
-			_player_state.is_grounded = false
-			_player_state.char_state = 6
-	else:
-		if _on_slidy_ice and _player_state.is_grounded:
-			var ice_target_speed := current_move_direction * current_move_speed
-			if current_move_direction != 0:
-				_player_state.speed_x = move_toward(_player_state.speed_x, ice_target_speed, 420.0 * delta)
-			else:
-				_player_state.speed_x = move_toward(_player_state.speed_x, 0.0, 24.0 * delta)
-			_player_state.ground_speed = _player_state.speed_x
-		else:
-			_player_state.ground_speed = current_move_direction * current_move_speed
-			_player_state.speed_x = current_move_direction * current_move_speed
-		if current_move_direction != 0:
-			_facing_direction = signf(current_move_direction)
-
-		if _player_state.is_grounded:
-			_player_state.world_x += _player_state.speed_x * delta
-			if frame_input & A_BUTTON or _input_buffer_system.jump_buffer_timer > 0.0:
-				_velocity_y = -_jump_speed * gravity_direction
-				_player_state.is_grounded = false
-				_player_state.char_state = 1
-				_input_buffer_system.consume_jump()
-		else:
-			_velocity_y += _gravity * gravity_direction * delta
-
-	if not _player_state.is_grounded and (_player_state.variant == 1 or _player_state.variant == 2) and held_input & A_BUTTON:
-		if frame_input & A_BUTTON:
-			_flight_timer = CREAM_FLIGHT_DURATION if _player_state.variant == 1 else TAILS_FLIGHT_DURATION
-		if _flight_timer > 0.0:
-			_velocity_y = -120.0 * gravity_direction
-			_player_state.world_x += current_move_direction * current_move_speed * 0.65 * delta
-			_player_state.char_state = 9
-		else:
-			_player_state.char_state = 10
-	elif not _player_state.is_grounded and _player_state.variant == 3 and _glide_timer > 0.0:
-		_velocity_y = 80.0 * gravity_direction
-		_player_state.world_x += current_move_direction * current_move_speed * 0.8 * delta
-		_player_state.char_state = 7
-
-	_player_state.world_y += _velocity_y * delta
-	_player_state.speed_y = _velocity_y
-
-	_player_state.world_x = clamp(_player_state.world_x, _level_state.min_x, _level_state.max_x)
-	_resolve_platforms(previous_world_x, previous_world_y)
-	_handle_fall_and_restart()
-
-	_player_state.anim_id = 1 if _player_state.is_grounded and move_direction != 0 else 0
-	_player_state.rotation = int(clamp(_velocity_y / 8.0, -16.0, 16.0))
-
-	_handle_entity_interactions(held_input, frame_input, delta)
-	_sync_grind_effect()
-	_store_boost_effect_position()
-	_update_camera()
+	GAMEPLAY_WORLD_UPDATE_FLOW.advance(self, held_input, frame_input, delta)
+	GAMEPLAY_PLAYER_SIMULATION_FLOW.advance(self, held_input, frame_input, delta)
 
 func advance_ui_timers(delta: float, held_input: int = 0, frame_input: int = 0) -> void:
 	if FRONTEND_UPDATE_FLOW.advance_critical(self, delta, held_input, frame_input):
@@ -1250,20 +1360,10 @@ func _update_pause_menu_input(held_input: int, frame_input: int) -> void:
 		cancel_pause_selection()
 		_update_camera()
 		return
-	if _pause_a_previous_held and not a_held:
-		if _pause_a_hold_lock:
-			# The A release that created the pause is consumed by the source.
-			_pause_a_hold_lock = false
-		else:
-			_pause_a_previous_held = false
-			confirm_pause_selection()
-			_update_camera()
-			return
-	_pause_a_previous_held = a_held
-	# pause_menu.c records whether A was already held when the menu was
-	# created; that initial release must not confirm Continue.
-	if _pause_a_hold_lock and not (held_input & A_BUTTON):
-		_pause_a_hold_lock = false
+	if _pause_menu_state.consume_a_release(a_held):
+		confirm_pause_selection()
+		_update_camera()
+		return
 	_update_camera()
 
 func _update_screen_fade(delta: float) -> void:
@@ -1272,62 +1372,39 @@ func _update_screen_fade(delta: float) -> void:
 	# Menu cursor movement must never trigger a screen-wide flash. Menu screens
 	# are already rendered as persistent layers, so their phase changes should
 	# update content in place rather than fade the whole viewport.
-	if _game_state == GAME_STATE_TITLE or _game_state == GAME_STATE_SAVE_OPTIONS or _game_state == GAME_STATE_PAUSED or _game_state == GAME_STATE_CHARACTER_SELECT:
-		_screen_fade_alpha = 0.0
-		_screen_fade_last_state = _game_state
-		_screen_fade_last_phase = _title_phase
-		return
-	var state_changed := _screen_fade_last_state != _game_state
-	var phase_changed := _game_state == GAME_STATE_TITLE and _screen_fade_last_phase != _title_phase
-	if _screen_fade_last_state >= 0 and (state_changed or phase_changed) and _game_state != GAME_STATE_PAUSED:
-		_screen_fade_alpha = 1.0
-	_screen_fade_last_state = _game_state
-	_screen_fade_last_phase = _title_phase
-	_screen_fade_alpha = maxf(0.0, _screen_fade_alpha - delta * _screen_fade_speed)
+	var suppress_fade := _game_state == GAME_STATE_TITLE or _game_state == GAME_STATE_SAVE_OPTIONS or _game_state == GAME_STATE_PAUSED or _game_state == GAME_STATE_CHARACTER_SELECT
+	_screen_fade_state.advance(delta, _game_state, _title_phase, suppress_fade, _game_state == GAME_STATE_TITLE, _game_state == GAME_STATE_PAUSED)
 
 func get_screen_fade_alpha() -> float:
-	return clampf(_screen_fade_alpha, 0.0, 1.0)
+	return _screen_fade_state.opacity()
 
 func _start_title_demo() -> void:
-	_title_idle_timer = 0.0
-	_selected_character_index = 0
+	_title_demo_state.idle_time = 0.0
+	_character_selection_state.selected_index = 0
 	init_level(0)
 	# title_screen.c starts the recorded stage directly through GameStageStart;
 	# it does not show the normal stage-intro countdown for a demo.
 	_intro_timer = 0.0
 	_game_state = GAME_STATE_PLAYING
-	_demo_mode = true
-	_demo_elapsed = 0.0
+	_title_demo_state.start()
 	_status_text = "DEMO PLAYBACK"
 
 func is_demo_mode() -> bool:
-	return _demo_mode
+	return _title_demo_state.active
 
 func get_demo_held_input() -> int:
 	return DPAD_RIGHT
 
 func get_demo_frame_input() -> int:
-	return A_BUTTON if fmod(_demo_elapsed, 2.4) < 0.08 else 0
+	return _title_demo_state.frame_input(A_BUTTON)
 
 func _update_tiny_chao_garden(held_input: int, frame_input: int, delta: float) -> void:
-	var state := TINY_CHAO_GARDEN_SYSTEM.update(_tiny_chao_roster, _tiny_chao_selected_index, _tiny_chao_play_x, _tiny_chao_play_y, _tiny_chao_hunger, _tiny_chao_mood, _tiny_chao_fruit, _tiny_chao_care_count, _tiny_chao_action_timer, _tiny_chao_action_text, held_input, frame_input, delta, DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, A_BUTTON, B_BUTTON, SELECT_BUTTON, START_BUTTON)
-	_tiny_chao_selected_index = state.selected_index
-	_tiny_chao_play_x = state.play_x
-	_tiny_chao_play_y = state.play_y
-	_tiny_chao_hunger = state.hunger
-	_tiny_chao_mood = state.mood
-	_tiny_chao_fruit = state.fruit
-	_tiny_chao_care_count = state.care
-	_tiny_chao_action_timer = state.action_timer
-	_tiny_chao_action_text = state.action_text
-	if state.should_return:
+	var next_state := TINY_CHAO_GARDEN_SYSTEM.update(_tiny_chao_state.roster, _tiny_chao_state.selected_index, _tiny_chao_state.play_x, _tiny_chao_state.play_y, _tiny_chao_state.hunger, _tiny_chao_state.mood, _tiny_chao_state.fruit, _tiny_chao_state.care_count, _tiny_chao_state.action_timer, _tiny_chao_state.action_text, held_input, frame_input, delta, DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, A_BUTTON, B_BUTTON, SELECT_BUTTON, START_BUTTON)
+	if _tiny_chao_state.apply_update(next_state):
 		open_tiny_chao_garden_menu(0, "RETURNED FROM GARDEN")
 
 func _sync_tiny_chao_selection() -> void:
-	var state := TINY_CHAO_GARDEN_SYSTEM.sync_selection(_tiny_chao_roster, _tiny_chao_selected_index)
-	_tiny_chao_hunger = state.hunger
-	_tiny_chao_mood = state.mood
-	_tiny_chao_care_count = state.care
+	_tiny_chao_state.apply_selection(TINY_CHAO_GARDEN_SYSTEM.sync_selection(_tiny_chao_state.roster, _tiny_chao_state.selected_index))
 
 func _advance_clear_count_step() -> void:
 	var state := CLEAR_RESULT_COUNTER_SYSTEM.advance(_clear_time_bonus_remaining, _clear_ring_bonus_remaining, _clear_special_ring_bonus_remaining, _clear_total_display_score, CLEAR_RESULT_FAST_TAIL_SECONDS, CLEAR_RESULT_TAIL_SECONDS)
@@ -1338,6 +1415,7 @@ func _finish_clear_counting(fast_forward: bool = false) -> void:
 	_apply_clear_counter_state(state)
 
 func _apply_clear_counter_state(state: Dictionary, update_input_lock: bool = true) -> void:
+	_clear_result_state.apply_counter(state, update_input_lock)
 	_clear_time_bonus_remaining = int(state.time_bonus)
 	_clear_ring_bonus_remaining = int(state.ring_bonus)
 	_clear_special_ring_bonus_remaining = int(state.special_ring_bonus)
@@ -1348,7 +1426,7 @@ func _apply_clear_counter_state(state: Dictionary, update_input_lock: bool = tru
 		_clear_input_lock_timer = float(state.input_lock)
 
 func _should_show_chaos_emeralds_message() -> bool:
-	if _chaos_emeralds_message_seen:
+	if _message_card_state.chaos_emeralds_message_seen:
 		return false
 	if _run_from_time_attack or _run_from_multiplayer:
 		return false
@@ -1383,14 +1461,14 @@ func _open_next_single_player_course() -> void:
 
 func _open_chaos_emeralds_message() -> void:
 	_game_state = GAME_STATE_CHAOS_EMERALDS
-	_chaos_emeralds_timer = _chaos_emeralds_duration
-	_chaos_emeralds_message_seen = true
+	_message_card_state.chaos_emeralds_timer = _message_card_state.chaos_emeralds_duration
+	_message_card_state.chaos_emeralds_message_seen = true
 	_status_text = "ALL CHAOS EMERALDS COLLECTED"
 	_save_save_data()
 
 func _open_missing_emeralds_message() -> void:
 	_game_state = GAME_STATE_MISSING_EMERALDS
-	_missing_emeralds_timer = _missing_emeralds_duration
+	_message_card_state.missing_emeralds_timer = _message_card_state.missing_emeralds_duration
 	_status_text = "COLLECT ALL CHAOS EMERALDS"
 
 func _resolve_missing_emeralds_message() -> void:
@@ -1408,7 +1486,7 @@ func _resolve_chaos_emeralds_message() -> void:
 func _open_to_be_continued() -> void:
 	_update_ending_variant()
 	_game_state = GAME_STATE_TO_BE_CONTINUED
-	_to_be_continued_timer = _to_be_continued_duration
+	_message_card_state.to_be_continued_timer = _message_card_state.to_be_continued_duration
 	_status_text = "TO BE CONTINUED"
 
 func _resolve_to_be_continued() -> void:
@@ -1421,7 +1499,7 @@ func _resolve_to_be_continued() -> void:
 func _open_sega_logo() -> void:
 	_update_ending_variant()
 	_game_state = GAME_STATE_SEGA_LOGO
-	_sega_logo_timer = _sega_logo_duration
+	_message_card_state.sega_logo_timer = _message_card_state.sega_logo_duration
 	_status_text = "PRESENTED BY SEGA"
 
 func _open_boot_intro() -> void:
@@ -1444,7 +1522,7 @@ func skip_sega_logo() -> void:
 
 func _open_sonic_team_logo() -> void:
 	_game_state = GAME_STATE_SONIC_TEAM
-	_sonic_team_timer = _sonic_team_duration
+	_message_card_state.sonic_team_timer = _message_card_state.sonic_team_duration
 	_status_text = "CREATED BY SONIC TEAM"
 
 func _resolve_sonic_team_logo() -> void:
@@ -1477,8 +1555,8 @@ func _open_credits_end() -> void:
 	_credits_end_story_frame = 0
 	_credits_end_story_timer = 0.0
 	_status_text = get_ending_variant_label()
-	var selected_is_amy := _selected_character_index == CHARACTER_NAMES_AMY_INDEX()
-	var selected_route_complete := bool(_completed_character_routes[clampi(_selected_character_index, 0, _completed_character_routes.size() - 1)])
+	var selected_is_amy: bool = _character_selection_state.selected_index == CHARACTER_NAMES_AMY_INDEX()
+	var selected_route_complete := bool(_completed_character_routes[clampi(_character_selection_state.selected_index, 0, _completed_character_routes.size() - 1)])
 	# credits_end.c routes Final Zone completion through missing_emeralds.c
 	# unless Amy is selected or the current runner has a complete route.
 	if _ending_variant == ENDING_VARIANT_FINAL and not selected_is_amy:
@@ -1516,18 +1594,16 @@ func _resolve_credits_end() -> void:
 	_open_copyright()
 
 func _open_character_unlock() -> void:
-	if _character_unlock_pending < 0 or _character_unlock_pending >= _character_names.size():
+	if _character_unlock_state.pending_character < 0 or _character_unlock_state.pending_character >= _character_names.size():
 		return
 	_game_state = GAME_STATE_CHARACTER_UNLOCK
-	_character_unlock_timer = (CHARACTER_UNLOCK_SEGMENT_COUNT * (CHARACTER_UNLOCK_SEGMENT_FRAMES + 2) + CHARACTER_UNLOCK_FINAL_FRAMES + 2) / 60.0
-	_character_unlock_segment = 0
-	_character_unlock_scene_frame = 0.0
-	_status_text = "%s UNLOCKED" % _character_names[_character_unlock_pending]
+	_character_unlock_state.begin(_character_unlock_state.pending_character, CHARACTER_UNLOCK_SEGMENT_COUNT, CHARACTER_UNLOCK_SEGMENT_FRAMES, CHARACTER_UNLOCK_FINAL_FRAMES)
+	_status_text = "%s UNLOCKED" % _character_names[_character_unlock_state.pending_character]
 
 func _resolve_character_unlock() -> void:
 	if _game_state != GAME_STATE_CHARACTER_UNLOCK:
 		return
-	_character_unlock_pending = -1
+	_character_unlock_state.pending_character = -1
 	_save_save_data()
 	_game_state = GAME_STATE_CLEAR
 	_open_course_select_after_unlock()
@@ -1594,35 +1670,31 @@ func _finish_special_stage() -> void:
 	SPECIAL_STAGE_SYSTEM.finish_special_stage(self)
 
 func _resolve_game_over_timeout() -> void:
-	if _game_state != GAME_STATE_GAME_OVER:
-		return
-	if _run_from_time_attack and _game_over_time_over:
-		open_time_attack_lobby(_time_attack_boss_mode)
-		return
-	if _game_over_time_over:
-		_init_restart()
-		return
-	reset_to_title()
+	GAMEPLAY_RECOVERY_FLOW.resolve_timeout(self)
 
 func get_player_state() -> PlayerState:
 	return _player_state
 
+func get_level_state() -> LevelState:
+	return _level_state
+
+func build_level(level_id: int) -> LevelState:
+	return _build_level(level_id)
+
+func add_entity(level: LevelState, entity_type: int, x: float, y: float) -> EntityState:
+	return _add_entity(level, entity_type, x, y)
+
+func set_level_state(level_state: LevelState) -> void:
+	_level_state = level_state
+
 func _store_boost_effect_position() -> void:
-	_boost_position_history.push_front(Vector2(_player_state.world_x, _player_state.world_y))
-	while _boost_position_history.size() > 16:
-		_boost_position_history.pop_back()
+	_dash_effect_state.record_trail(Vector2(_player_state.world_x, _player_state.world_y))
 
 func get_boost_trail_positions() -> Array:
-	var positions: Array = []
-	for frame_offset in [2, 4, 6]:
-		if frame_offset < _boost_position_history.size():
-			positions.append(_boost_position_history[frame_offset])
-		else:
-			positions.append(Vector2(_player_state.world_x, _player_state.world_y))
-	return positions
+	return GAMEPLAY_READ_MODEL.boost_trail_positions(self)
 
 func is_player_boosting() -> bool:
-	return not _run_from_multiplayer and (_player_state.super_sonic or _start_boost_timer > 0.0 or _dash_timer > 0.0 or _boost_effect_timer > 0.0)
+	return GAMEPLAY_READ_MODEL.is_player_boosting(self)
 
 func get_camera_state() -> CameraState:
 	return _camera_motion_system.camera_state
@@ -1633,11 +1705,11 @@ func get_entities() -> Array:
 func get_source_map_manifest() -> Dictionary:
 	return _source_map_manifest
 
+func set_source_map_manifest(manifest: Dictionary) -> void:
+	_source_map_manifest = manifest
+
 func get_source_map_summary() -> String:
-	if _source_map_manifest.is_empty():
-		return "SOURCE MAP DATA UNLOADED"
-	var status := "SOURCE MAP" if _source_map_manifest.valid else "SOURCE MAP FALLBACK"
-	return "%s %dx%d / %d OBJECTS" % [status, _source_map_manifest.region_width, _source_map_manifest.region_height, _source_map_manifest.entity_count]
+	return GAMEPLAY_READ_MODEL.source_map_summary(self)
 
 func get_elapsed_time() -> float:
 	return _elapsed_time
@@ -1688,16 +1760,16 @@ func is_special_ring_hud_visible() -> bool:
 	return HUD_STATE_PRESENTER.special_ring_visible(self)
 
 func get_level_name() -> String:
-	return _level_state.name
+	return GAMEPLAY_READ_MODEL.level_name(self)
 
 func get_level_id() -> int:
-	return _level_state.level_id
+	return GAMEPLAY_READ_MODEL.level_id(self)
 
 func get_stage_backdrop_profile() -> Dictionary:
-	return STAGE_BACKDROP_CATALOG.profile(_level_state.level_id)
+	return GAMEPLAY_READ_MODEL.stage_backdrop_profile(self)
 
 func get_entity_visual_profile(entity_type: int, activated: bool = false) -> Dictionary:
-	return ENTITY_VISUAL_CATALOG.profile(entity_type, activated)
+	return GAMEPLAY_READ_MODEL.entity_visual_profile(self, entity_type, activated)
 
 
 
@@ -1942,13 +2014,13 @@ func _music_entry_exit_velocity(is_pipe: bool, kind: int) -> Vector2:
 	return horn_exits[clampi(kind, 0, horn_exits.size() - 1)]
 
 func _update_slowing_snow_state() -> void:
-	_on_slowing_snow = STAGE_SURFACE_STATE_SYSTEM.is_on_slowing_snow(_level_state, _player_state)
+	_stage_surface_state.on_slowing_snow = STAGE_SURFACE_STATE_SYSTEM.is_on_slowing_snow(_level_state, _player_state)
 
 func _update_light_bridge_state(delta: float) -> void:
 	_player_layer = STAGE_SURFACE_STATE_SYSTEM.update_light_bridges(_level_state, _player_state, delta, _player_layer)
 
 func _update_slidy_ice_state() -> void:
-	_on_slidy_ice = STAGE_SURFACE_STATE_SYSTEM.is_on_slidy_ice(_level_state, _player_state)
+	_stage_surface_state.on_slidy_ice = STAGE_SURFACE_STATE_SYSTEM.is_on_slidy_ice(_level_state, _player_state)
 
 func _update_flying_spring_motion(delta: float) -> void:
 	STAGE_MOTION_SYSTEM.update_flying_springs(_level_state, delta)
@@ -2283,75 +2355,16 @@ func _resolve_platforms(previous_world_x: float, previous_world_y: float) -> voi
 	_velocity_y = PLATFORM_COLLISION.resolve(_level_state, _player_state, previous_world_x, previous_world_y, _velocity_y, _gravity_inverted, _player_layer, _player_half_width, _player_half_height)
 
 func _handle_fall_and_restart() -> void:
-	var outside_bottom := not _gravity_inverted and _player_state.world_y > _level_state.max_y + 160.0
-	var outside_top := _gravity_inverted and _player_state.world_y < _level_state.min_y - 160.0
-	if not outside_bottom and not outside_top:
-		return
-	_player_state.lives = max(0, _player_state.lives - 1)
-	if _player_state.lives == 0:
-		_open_game_over()
-	else:
-		_respawn_player()
+	GAMEPLAY_RECOVERY_FLOW.handle_fall(self)
 
 func _restart_level() -> void:
-	_level_state = _build_level(_level_state.level_id)
-	_respawn_x = _level_state.spawn_x
-	_respawn_y = _level_state.spawn_y
-	_checkpoint_time = 0.0
-	_invincibility_timer = 0.0
-	_reset_player()
+	GAMEPLAY_RECOVERY_FLOW.restart_level(self)
 
 func _respawn_player() -> void:
-	_player_state.world_x = _respawn_x
-	_player_state.world_y = _respawn_y
-	_boost_position_history.clear()
-	for i in range(16):
-		_boost_position_history.append(Vector2(_respawn_x, _respawn_y))
-	_elapsed_time = _checkpoint_time
-	_velocity_y = 0.0
-	_dash_timer = 0.0
-	_dash_velocity_x = 0.0
-	_dash_velocity_y = 0.0
-	_grind_timer = 0.0
-	_grind_velocity_x = 0.0
-	_grind_end_x = 0.0
-	_grind_y = 0.0
-	_grind_end_mode = 0
-	_gravity_inverted = false
-	_pipe_active = false
-	_pipe_timer = 0.0
-	_pipe_target_entity = null
-	_hook_active = false
-	_hook_timer = 0.0
-	_player_layer = 0
-	_corkscrew_timer = 0.0
-	_start_boost_timer = 0.0
-	_boost_effect_timer = 0.0
-	_attack_timer = 0.0
-	_flight_timer = 0.0
-	_glide_timer = 0.0
-	_player_state.speed_x = 0.0
-	_player_state.speed_y = 0.0
-	_player_state.ground_speed = 0.0
-	_player_state.is_grounded = true
-	_player_state.char_state = 0
-	_player_state.rotation = 0
-	_player_state.rings = 0
-	_player_state.special_rings = 0
-	_player_state.shielded = false
-	_invincibility_timer = 0.0
-	_speed_up_timer = 0.0
-	_magnetic_shielded = false
-	_defeat_score_index = 0
+	GAMEPLAY_RECOVERY_FLOW.respawn_player(self)
 
 func _open_game_over(time_over: bool = false) -> void:
-	_game_state = GAME_STATE_GAME_OVER
-	_player_state.is_alive = false
-	_game_over_time_over = time_over
-	_game_over_timer = TIME_OVER_DURATION_SECONDS if time_over else GAME_OVER_DURATION_SECONDS
-	# game_over.c is an automatic cutscene; A/B do not alter its destination.
-	_game_over_input_lock_timer = 0.0
-	_status_text = "TIME OVER" if time_over else "GAME OVER"
+	GAMEPLAY_RECOVERY_FLOW.open_game_over(self, time_over)
 
 
 func _handle_entity_interactions(held_input: int, frame_input: int, delta: float) -> void:
@@ -3388,6 +3401,7 @@ func _complete_boss() -> void:
 	_time_attack_exit_timer = 0.0
 	_clear_input_lock_timer = 2.666 if _run_from_time_attack else 1.2
 	_clear_counting_done = _run_from_time_attack
+	_clear_result_state.begin(_clear_time_snapshot, _clear_score_snapshot, _clear_ring_snapshot, _clear_special_ring_snapshot, _clear_rank_text, _clear_time_bonus_remaining, _clear_ring_bonus_remaining, _clear_special_ring_bonus_remaining, _clear_count_delay_timer, _clear_input_lock_timer, _run_from_time_attack)
 	_store_clear_time_attack_result()
 	_update_progress_for_clear()
 
@@ -3822,6 +3836,7 @@ func _try_reach_goal(entity: EntityState) -> void:
 		_time_attack_exit_timer = 0.0
 		_clear_input_lock_timer = 2.666 if _run_from_time_attack else 1.2
 		_clear_counting_done = _run_from_time_attack
+		_clear_result_state.begin(_clear_time_snapshot, _clear_score_snapshot, _clear_ring_snapshot, _clear_special_ring_snapshot, _clear_rank_text, _clear_time_bonus_remaining, _clear_ring_bonus_remaining, _clear_special_ring_bonus_remaining, _clear_count_delay_timer, _clear_input_lock_timer, _run_from_time_attack)
 		_store_clear_time_attack_result()
 		_update_progress_for_clear()
 
@@ -3865,7 +3880,7 @@ func _reset_player() -> void:
 	_player_state.ground_speed = 0.0
 	_player_state.anim_id = 0
 	_player_state.anim_frame = 0
-	_player_state.variant = clampi(_selected_character_index, 0, _character_names.size() - 1)
+	_player_state.variant = clampi(_character_selection_state.selected_index, 0, _character_names.size() - 1)
 	_player_state.rotation = 0
 	_player_state.move_state = 0
 	_player_state.char_state = 0
@@ -3944,12 +3959,694 @@ func is_player_super_sonic() -> bool:
 	return _player_state.super_sonic
 
 func save_checkpoint(x: float, y: float) -> void:
-	_respawn_x = x
-	_respawn_y = y
-	_checkpoint_time = _elapsed_time
+	_checkpoint_state.set_checkpoint(Vector2(x, y), _elapsed_time)
+
+func save_profile() -> void:
+	_save_save_data()
+
+func sync_tiny_chao_selection() -> void:
+	_sync_tiny_chao_selection()
+
+func should_show_to_be_continued() -> bool:
+	return _should_show_to_be_continued()
+
+func prepare_multiplayer_results_snapshot(mode: int) -> void:
+	_prepare_multiplayer_results_snapshot(mode)
+
+func generate_tiny_chao_session_id() -> void:
+	_generate_tiny_chao_session_id()
+
+func return_from_name_entry_to_multiplayer(saved: bool) -> void:
+	_return_from_name_entry_to_multiplayer(saved)
+
+func get_default_multiplayer_record_totals() -> Dictionary:
+	return _get_default_multiplayer_record_totals()
+
+func get_default_tiny_chao_roster() -> Array:
+	return _get_default_tiny_chao_roster()
+
+func get_time_records_level_index() -> int:
+	return _get_time_records_level_index()
+
+func get_time_attack_best_time(record_key: String) -> float:
+	return _get_time_attack_best_time(record_key)
+
+func get_selected_chaos_emerald_mask() -> int:
+	return _get_selected_chaos_emerald_mask()
+
+func get_checkpoint_state() -> CheckpointState:
+	return _checkpoint_state
+
+func get_multiplayer_record_totals() -> Dictionary:
+	return _multiplayer_record_totals
+
+func begin_level_run(level_id: int, from_time_attack: bool, from_multiplayer: bool = false) -> void:
+	_begin_level_run(level_id, from_time_attack, from_multiplayer)
+
+func start_course_select_travel(direction: int) -> void:
+	_start_course_select_travel(direction)
+
+func advance_singlepak_transfer_step() -> void:
+	_advance_singlepak_transfer_step()
+
+func update_camera() -> void:
+	_update_camera()
+
+func update_pause_menu_input(held_input: int, frame_input: int) -> void:
+	_update_pause_menu_input(held_input, frame_input)
+
+func set_save_menu_text(text: String) -> void:
+	_save_menu_text = text
+
+func set_title_text(text: String) -> void:
+	_title_text = text
+
+func set_pause_text(text: String) -> void:
+	_pause_text = text
+
+func spawn_dust_cloud(x: float, y: float) -> void:
+	_spawn_dust_cloud(x, y)
+
+func spawn_character_attack_effect(effect_type: int) -> void:
+	_spawn_character_attack_effect(effect_type)
+
+func try_hit_enemy(entity: EntityState) -> void:
+	_try_hit_enemy(entity)
+
+func try_projectile(entity: EntityState) -> void:
+	_try_projectile(entity)
+
+func advance_clear_count_step() -> void:
+	_advance_clear_count_step()
+
+func try_note_block(entity: EntityState) -> void:
+	_try_note_block(entity)
+
+func try_note_sphere(entity: EntityState) -> void:
+	_try_note_sphere(entity)
+
+func try_pipe_start(entity: EntityState, delta: float) -> void:
+	_try_pipe_start(entity, delta)
+
+func try_pole(entity: EntityState, held_input: int, frame_input: int) -> void:
+	_try_pole(entity, held_input, frame_input)
+
+func try_fan(entity: EntityState, held_input: int, delta: float) -> void:
+	_try_fan(entity, held_input, delta)
+
+func try_corkscrew(entity: EntityState, frame_input: int, delta: float) -> void:
+	_try_corkscrew(entity, frame_input, delta)
+
+func try_funnel_sphere(entity: EntityState) -> void:
+	_try_funnel_sphere(entity)
+
+func try_layer_toggle(entity: EntityState) -> void:
+	_try_layer_toggle(entity)
+
+func try_launcher(entity: EntityState, frame_input: int, delta: float) -> void:
+	_try_launcher(entity, frame_input, delta)
+
+func try_light_globe(entity: EntityState) -> void:
+	_try_light_globe(entity)
+
+func try_music_entry(entity: EntityState) -> void:
+	_try_music_entry(entity)
+
+func try_koura(entity: EntityState) -> void:
+	_try_koura(entity)
+
+func try_lap_trigger(entity: EntityState) -> void:
+	_try_lap_trigger(entity)
+
+func try_collect_ring(entity: EntityState) -> void:
+	_try_collect_ring(entity)
+
+func try_collect_special_ring(entity: EntityState) -> void:
+	_try_collect_special_ring(entity)
+
+func try_whirlwind(entity: EntityState, delta: float) -> void:
+	_try_whirlwind(entity, delta)
+
+func try_propeller(entity: EntityState, held_input: int, delta: float) -> void:
+	_try_propeller(entity, held_input, delta)
+
+func try_booster(entity: EntityState, delta: float) -> void:
+	_try_booster(entity, delta)
+
+func try_dash_ring(entity: EntityState, delta: float) -> void:
+	_try_dash_ring(entity, delta)
+
+func try_grind_rail(entity: EntityState) -> void:
+	_try_grind_rail(entity)
+
+func try_gravity_toggle(entity: EntityState) -> void:
+	_try_gravity_toggle(entity)
+
+func try_bouncy_spring(entity: EntityState, delta: float) -> void:
+	_try_bouncy_spring(entity, delta)
+
+func try_conveyor(entity: EntityState, delta: float) -> void:
+	_try_conveyor(entity, delta)
+
+func try_ramp(entity: EntityState, frame_input: int) -> void:
+	_try_ramp(entity, frame_input)
+
+func try_rotating_handle(entity: EntityState, held_input: int, frame_input: int, delta: float) -> void:
+	_try_rotating_handle(entity, held_input, frame_input, delta)
+
+func try_flying_handle(entity: EntityState, frame_input: int) -> void:
+	_try_flying_handle(entity, frame_input)
+
+func try_cannon(entity: EntityState, held_input: int, delta: float) -> void:
+	_try_cannon(entity, held_input, delta)
+
+func try_hook_rail(entity: EntityState, frame_input: int, delta: float) -> void:
+	_try_hook_rail(entity, frame_input, delta)
+
+func try_spikes(entity: EntityState) -> void:
+	_try_spikes(entity)
+
+func try_spike_platform(entity: EntityState) -> void:
+	_try_spike_platform(entity)
+
+func try_turnaround_bar(entity: EntityState) -> void:
+	_try_turnaround_bar(entity)
+
+func try_keyboard(entity: EntityState) -> void:
+	_try_keyboard(entity)
+
+func try_windup_stick(entity: EntityState, held_input: int) -> void:
+	_try_windup_stick(entity, held_input)
+
+func try_german_flute(entity: EntityState) -> void:
+	_try_german_flute(entity)
+
+func try_small_windmill(entity: EntityState) -> void:
+	_try_small_windmill(entity)
+
+func try_chord(entity: EntityState) -> void:
+	_try_chord(entity)
+
+func try_half_pipe(entity: EntityState) -> void:
+	_try_half_pipe(entity)
+
+func try_iron_ball(entity: EntityState) -> void:
+	_try_iron_ball(entity)
+
+func try_crane(entity: EntityState) -> void:
+	_try_crane(entity)
+
+func try_ceiling_slope(entity: EntityState) -> void:
+	_try_ceiling_slope(entity)
+
+func try_gapped_loop(entity: EntityState) -> void:
+	_try_gapped_loop(entity)
+
+func try_damage_region(entity: EntityState) -> void:
+	_try_damage_region(entity)
+
+func try_item_box(entity: EntityState) -> void:
+	_try_item_box(entity)
+
+func try_bounce_from_spring(entity: EntityState, delta: float) -> void:
+	_try_bounce_from_spring(entity, delta)
+
+func try_star(entity: EntityState) -> void:
+	_try_star(entity)
+
+func try_boss(entity: EntityState) -> void:
+	_try_boss(entity)
+
+func try_activate_checkpoint(entity: EntityState) -> void:
+	_try_activate_checkpoint(entity)
+
+func try_reach_goal(entity: EntityState) -> void:
+	_try_reach_goal(entity)
+
+func try_goal_lever(entity: EntityState) -> void:
+	_try_goal_lever(entity)
+
+func update_trapped_animal_motion(entity: EntityState, delta: float) -> void:
+	_update_trapped_animal_motion(entity, delta)
+
+func update_ring_effect_motion(entity: EntityState, delta: float) -> void:
+	_update_ring_effect_motion(entity, delta)
+
+func update_heart_effect_motion(entity: EntityState, delta: float) -> void:
+	_update_heart_effect_motion(entity, delta)
+
+func update_dust_effect_motion(entity: EntityState, delta: float) -> void:
+	_update_dust_effect_motion(entity, delta)
+
+func update_grind_effect_motion(entity: EntityState, delta: float) -> void:
+	_update_grind_effect_motion(entity, delta)
+
+func update_cheese_motion(entity: EntityState, delta: float) -> void:
+	_update_cheese_motion(entity, delta)
+
+func update_character_attack_effect(entity: EntityState, delta: float) -> void:
+	_update_character_attack_effect(entity, delta)
+
+func update_item_box_effect(entity: EntityState, delta: float) -> void:
+	_update_item_box_effect(entity, delta)
+
+func update_special_ring_motion(entity: EntityState, delta: float) -> void:
+	_update_special_ring_motion(entity, delta)
+
+func update_scattered_ring(entity: EntityState, delta: float) -> void:
+	_update_scattered_ring(entity, delta)
+
+func update_buzzer_motion(entity: EntityState, delta: float) -> void:
+	_update_buzzer_motion(entity, delta)
+
+func update_balloon_motion(entity: EntityState, delta: float) -> void:
+	_update_balloon_motion(entity, delta)
+
+func update_bullet_buzzer_motion(entity: EntityState, delta: float) -> void:
+	_update_bullet_buzzer_motion(entity, delta)
+
+func update_koura_motion(entity: EntityState, delta: float) -> void:
+	_update_koura_motion(entity, delta)
+
+func update_star_motion(entity: EntityState, delta: float) -> void:
+	_update_star_motion(entity, delta)
+
+func update_kiki_motion(entity: EntityState, delta: float) -> void:
+	_update_kiki_motion(entity, delta)
+
+func update_pen_motion(entity: EntityState, delta: float) -> void:
+	_update_pen_motion(entity, delta)
+
+func update_bell_motion(entity: EntityState, delta: float) -> void:
+	_update_bell_motion(entity, delta)
+
+func update_mouse_motion(entity: EntityState, delta: float) -> void:
+	_update_mouse_motion(entity, delta)
+
+func update_circus_motion(entity: EntityState, delta: float) -> void:
+	_update_circus_motion(entity, delta)
+
+func update_yado_motion(entity: EntityState, delta: float) -> void:
+	_update_yado_motion(entity, delta)
+
+func update_gohla_motion(entity: EntityState, delta: float) -> void:
+	_update_gohla_motion(entity, delta)
+
+func update_hammerhead_motion(entity: EntityState, delta: float) -> void:
+	_update_hammerhead_motion(entity, delta)
+
+func update_kura_kura_motion(entity: EntityState, delta: float) -> void:
+	_update_kura_kura_motion(entity, delta)
+
+func update_gejigeji_motion(entity: EntityState, delta: float) -> void:
+	_update_gejigeji_motion(entity, delta)
+
+func update_kubinaga_motion(entity: EntityState, delta: float) -> void:
+	_update_kubinaga_motion(entity, delta)
+
+func update_madillo_motion(entity: EntityState, delta: float) -> void:
+	_update_madillo_motion(entity, delta)
+
+func update_kyura_motion(entity: EntityState, delta: float) -> void:
+	_update_kyura_motion(entity, delta)
+
+func update_flickey_motion(entity: EntityState, delta: float) -> void:
+	_update_flickey_motion(entity, delta)
+
+func update_mon_motion(entity: EntityState, delta: float) -> void:
+	_update_mon_motion(entity, delta)
+
+func update_pikopiko_motion(entity: EntityState, delta: float) -> void:
+	_update_pikopiko_motion(entity, delta)
+
+func update_straw_motion(entity: EntityState, delta: float) -> void:
+	_update_straw_motion(entity, delta)
+
+func update_kiki_projectile(entity: EntityState, delta: float) -> void:
+	_update_kiki_projectile(entity, delta)
+
+func update_kiki_piece(entity: EntityState, delta: float) -> void:
+	_update_kiki_piece(entity, delta)
+
+func update_flying_handle_state(delta: float) -> void:
+	_update_flying_handle_state(delta)
+
+func update_slidy_ice_state() -> void:
+	_update_slidy_ice_state()
+
+func update_slowing_snow_state() -> void:
+	_update_slowing_snow_state()
+
+func update_light_bridge_state(delta: float) -> void:
+	_update_light_bridge_state(delta)
+
+func update_spike_platform_state() -> void:
+	_update_spike_platform_state()
+
+func update_turnaround_bar_state(delta: float) -> void:
+	_update_turnaround_bar_state(delta)
+
+func update_keyboard_state(delta: float) -> void:
+	_update_keyboard_state(delta)
+
+func update_pole_state() -> void:
+	_update_pole_state()
+
+func update_light_globe_state(delta: float) -> void:
+	_update_light_globe_state(delta)
+
+func update_windup_stick_state(delta: float) -> void:
+	_update_windup_stick_state(delta)
+
+func update_german_flute_state(delta: float, held_input: int) -> void:
+	_update_german_flute_state(delta, held_input)
+
+func update_small_windmill_state(delta: float) -> void:
+	_update_small_windmill_state(delta)
+
+func update_chord_state(delta: float) -> void:
+	_update_chord_state(delta)
+
+func update_note_state(delta: float) -> void:
+	_update_note_state(delta)
+
+func update_note_particle_state(delta: float) -> void:
+	_update_note_particle_state(delta)
+
+func update_half_pipe_state(frame_input: int) -> void:
+	_update_half_pipe_state(frame_input)
+
+func update_iron_ball_state(delta: float) -> void:
+	_update_iron_ball_state(delta)
+
+func update_crane_state(delta: float) -> void:
+	_update_crane_state(delta)
+
+func update_ceiling_slope_state(delta: float) -> void:
+	_update_ceiling_slope_state(delta)
+
+func update_gapped_loop_state(delta: float) -> void:
+	_update_gapped_loop_state(delta)
+
+func update_funnel_sphere_state(delta: float) -> void:
+	_update_funnel_sphere_state(delta)
+
+func update_music_entry_state(delta: float) -> void:
+	_update_music_entry_state(delta)
+
+func update_enemy_motion(delta: float) -> void:
+	_update_enemy_motion(delta)
+
+func update_flying_spring_motion(delta: float) -> void:
+	_update_flying_spring_motion(delta)
+
+func open_character_unlock() -> void:
+	_open_character_unlock()
+
+func open_special_stage() -> void:
+	_open_special_stage()
+
+func advance_special_stage() -> void:
+	_advance_special_stage()
+
+func update_special_stage_run(delta: float, held_input: int, frame_input: int = 0) -> void:
+	_update_special_stage_run(delta, held_input, frame_input)
+
+func update_special_stage_guard_robo(delta: float) -> void:
+	_update_special_stage_guard_robo(delta)
+
+func update_special_stage_results(delta: float) -> void:
+	_update_special_stage_results(delta)
+
+func resolve_to_be_continued() -> void:
+	_resolve_to_be_continued()
+
+func resolve_sega_logo() -> void:
+	_resolve_sega_logo()
+
+func resolve_sonic_team_logo() -> void:
+	_resolve_sonic_team_logo()
+
+func advance_credits_page() -> void:
+	_advance_credits_page()
+
+func resolve_copyright() -> void:
+	_resolve_copyright()
+
+func advance_credits_end_story(delta: float) -> void:
+	_advance_credits_end_story(delta)
+
+func resolve_credits_end() -> void:
+	_resolve_credits_end()
+
+func resolve_character_unlock() -> void:
+	_resolve_character_unlock()
+
+func resolve_chaos_emeralds_message() -> void:
+	_resolve_chaos_emeralds_message()
+
+func resolve_missing_emeralds_message() -> void:
+	_resolve_missing_emeralds_message()
+
+func resolve_game_over_timeout() -> void:
+	_resolve_game_over_timeout()
+
+func get_default_multiplayer_record_rows() -> Array:
+	return _get_default_multiplayer_record_rows()
+
+func get_cleared_multiplayer_record_rows() -> Array:
+	return _get_cleared_multiplayer_record_rows()
+
+func sanitize_time_attack_best_times(raw_value: Variant) -> Dictionary:
+	return _sanitize_time_attack_best_times(raw_value)
+
+func sanitize_time_attack_record_tables(raw_value: Variant) -> Dictionary:
+	return _sanitize_time_attack_record_tables(raw_value)
+
+func sanitize_tiny_chao_roster(raw_value: Variant) -> Array:
+	return _sanitize_tiny_chao_roster(raw_value)
+
+func sanitize_button_bindings(raw_bindings: Variant) -> Array:
+	return _sanitize_button_bindings(raw_bindings)
+
+func sanitize_profile_name(raw_name: Variant) -> Array:
+	return _sanitize_profile_name(raw_name)
+
+func sanitize_multiplayer_record_rows(raw_rows: Variant) -> Array:
+	return _sanitize_multiplayer_record_rows(raw_rows)
+
+func sanitize_multiplayer_record_totals(raw_totals: Variant) -> Dictionary:
+	return _sanitize_multiplayer_record_totals(raw_totals)
+
+func get_sound_test_catalog_track_count() -> int:
+	return _sound_test_tracks.size()
+
+func sync_active_character_level_progress() -> void:
+	_sync_active_character_level_progress()
+
+func update_platform_motion(delta: float) -> void:
+	_update_platform_motion(delta)
+
+func resolve_platforms(previous_world_x: float, previous_world_y: float) -> void:
+	_resolve_platforms(previous_world_x, previous_world_y)
+
+func handle_fall_and_restart() -> void:
+	_handle_fall_and_restart()
+
+func handle_entity_interactions(held_input: int, frame_input: int, delta: float) -> void:
+	_handle_entity_interactions(held_input, frame_input, delta)
+
+func sync_grind_effect() -> void:
+	_sync_grind_effect()
+
+func store_boost_effect_position() -> void:
+	_store_boost_effect_position()
+
+func spindash_direction_from_player() -> void:
+	_spindash_direction_from_player()
+
+func spawn_amy_attack_hearts() -> void:
+	_spawn_amy_attack_hearts()
+
+func clear_screen_shake() -> void:
+	_clear_screen_shake()
+
+func reset_input_buffer() -> void:
+	_reset_input_buffer()
+
+func spawn_cheese_companion() -> void:
+	_spawn_cheese_companion()
+
+func get_options_item_index(item_label: String) -> int:
+	return _get_options_item_index(item_label)
+
+func cycle_button_config_binding(direction: int) -> void:
+	_cycle_button_config_binding(direction)
+
+func finalize_button_config_a_stage() -> void:
+	_finalize_button_config_a_stage()
+
+func finalize_button_config_b_stage() -> void:
+	_finalize_button_config_b_stage()
+
+func commit_button_config_bindings() -> void:
+	_commit_button_config_bindings()
+
+func move_sound_test_vertical(direction: int) -> void:
+	_move_sound_test_vertical(direction)
+
+func move_name_entry_cursor_vertical(direction: int) -> void:
+	_move_name_entry_cursor_vertical(direction)
+
+func move_name_entry_cursor_horizontal(direction: int) -> void:
+	_move_name_entry_cursor_horizontal(direction)
+
+func apply_name_entry_selected_cell() -> void:
+	_apply_name_entry_selected_cell()
+
+func advance_time_records_course(direction: int) -> void:
+	_advance_time_records_course(direction)
+
+func advance_course_select_unlock_cutscene(delta: float) -> void:
+	_advance_course_select_unlock_cutscene(delta)
+
+func continue_multiplayer_after_course_select() -> void:
+	_continue_multiplayer_after_course_select()
+
+func resolve_multiplayer_lobby_choice() -> void:
+	_resolve_multiplayer_lobby_choice()
+
+func advance_singlepak_results_flow() -> void:
+	_advance_singlepak_results_flow()
+
+func update_tiny_chao_garden(held_input: int, frame_input: int, delta: float) -> void:
+	_update_tiny_chao_garden(held_input, frame_input, delta)
+
+func start_title_demo() -> void:
+	_start_title_demo()
+
+func request_screen_shake(amplitude: float, duration: float, phase_speed: float, horizontal: bool, vertical: bool, random_value: bool) -> void:
+	_request_screen_shake(amplitude, duration, phase_speed, horizontal, vertical, random_value)
+
+func update_screen_fade(delta: float) -> void:
+	_update_screen_fade(delta)
+
+func update_super_sonic(delta: float) -> void:
+	_update_super_sonic(delta)
+
+func open_game_over(time_over: bool = false) -> void:
+	_open_game_over(time_over)
+
+func update_screen_shake(delta: float) -> void:
+	_update_screen_shake(delta)
+
+func record_input_frame(frame_input: int) -> void:
+	_record_input_frame(frame_input)
+
+func init_restart() -> void:
+	_init_restart()
+
+func start_course_select_unlock_cutscene() -> void:
+	_start_course_select_unlock_cutscene()
+
+func start_multiplayer_mode(pak_mode: int) -> void:
+	_start_multiplayer_mode(pak_mode)
+
+func open_multiplayer_outcome(outcome: int, return_phase: int) -> void:
+	_open_multiplayer_outcome(outcome, return_phase)
+
+func get_selected_zone_index() -> int:
+	return _get_selected_zone_index()
+
+func finish_special_stage() -> void:
+	_finish_special_stage()
+
+func collect_chaos_emerald_for_clear() -> void:
+	_collect_chaos_emerald_for_clear()
+
+func delete_name_entry_character() -> void:
+	_delete_name_entry_character()
+
+func finish_clear_counting(fast_forward: bool = false) -> void:
+	_finish_clear_counting(fast_forward)
+
+func get_current_time_attack_record_key() -> String:
+	return _get_current_time_attack_record_key()
+
+func get_character_description_count() -> int:
+	return _character_descriptions.size()
+
+func ensure_multiplayer_session_arrays() -> void:
+	_ensure_multiplayer_session_arrays()
+
+func is_touch_menu_interactive_screen() -> bool:
+	return _is_touch_menu_interactive_screen()
+
+func is_touch_title_adjust_state() -> bool:
+	return _is_touch_title_adjust_state()
+
+func is_touch_save_adjust_state() -> bool:
+	return _is_touch_save_adjust_state()
+
+func get_time_attack_record_key(character_index: int, course_index: int, act_index: int, boss_mode: bool) -> String:
+	return _get_time_attack_record_key(character_index, course_index, act_index, boss_mode)
+
+func set_frame_input(frame_input: int) -> void:
+	_frame_input = frame_input
+
+func move_name_entry_active_slot(direction: int) -> void:
+	_move_name_entry_active_slot(direction)
+
+func persist_frontend_state() -> void:
+	_persist_frontend_state()
+
+func reset_progress() -> void:
+	_reset_progress()
+
+func reset_player() -> void:
+	_reset_player()
+
+func reset_name_entry_navigation() -> void:
+	_reset_name_entry_navigation()
+
+func should_show_chaos_emeralds_message() -> bool:
+	return _should_show_chaos_emeralds_message()
+
+func open_to_be_continued() -> void:
+	_open_to_be_continued()
+
+func open_next_single_player_course() -> void:
+	_open_next_single_player_course()
+
+func open_chaos_emeralds_message() -> void:
+	_open_chaos_emeralds_message()
+
+func open_missing_emeralds_message() -> void:
+	_open_missing_emeralds_message()
+
+func resolve_multiplayer_outcome() -> void:
+	_resolve_multiplayer_outcome()
+
+func set_level_complete(complete: bool) -> void:
+	_level_complete = complete
+
+func get_respawn_position() -> Vector2:
+	return Vector2(_respawn_x, _respawn_y)
 
 func get_status_text() -> String:
 	return _localize_status_text(_status_text)
+
+func set_status_text(status_text: String) -> void:
+	_status_text = status_text
+
+func get_game_state() -> int:
+	return _game_state
+
+func set_game_state(game_state: int) -> void:
+	_game_state = game_state
+
+func set_save_reset_pending(pending: bool) -> void:
+	_save_reset_pending = pending
 
 func _localize_status_text(status: String) -> String:
 	return LOCALIZATION_CATALOG.status_text(_language_index, status, get_confirm_label(), get_secondary_label())
@@ -3968,6 +4665,9 @@ func is_multiplayer_run() -> bool:
 
 func is_time_attack_run() -> bool:
 	return _run_from_time_attack
+
+func is_multiplayer_course_select() -> bool:
+	return _is_multiplayer_course_select()
 
 func get_multiplayer_hud_rows() -> Array:
 	return HUD_STATE_PRESENTER.multiplayer_rows(self)
@@ -4179,7 +4879,7 @@ func _get_touch_menu_action_labels() -> Dictionary:
 	if is_intro_screen():
 		return {"confirm": "Skip", "back": "Skip"}
 	if is_game_over_screen():
-		if _game_over_time_over and not _run_from_time_attack:
+		if _game_over_state.time_over and not _run_from_time_attack:
 			return {"confirm": "Restart", "back": "Restart"}
 		return {"confirm": "Title", "back": "Title"}
 	if is_paused():
@@ -4222,7 +4922,7 @@ func _get_touch_title_action_labels() -> Dictionary:
 				return {"confirm": "Back", "back": "Back"}
 			return {"confirm": "OK", "back": "Back"}
 		TITLE_PHASE_MULTIPLAYER_LOBBY:
-			return {"confirm": "Rematch" if _multiplayer_lobby_cursor == 0 else "Title", "back": "Back"}
+			return {"confirm": "Rematch" if _multiplayer_lobby_state.cursor == 0 else "Title", "back": "Back"}
 		TITLE_PHASE_TIME_ATTACK_LOBBY:
 			match _time_attack_lobby_cursor:
 				0:
@@ -4369,14 +5069,11 @@ func _start_course_select_travel(direction: int) -> void:
 		return
 	if is_course_select_busy():
 		return
-	_course_select_from_index = _selected_level_index
-	_course_select_to_index = clampi(_selected_level_index + direction, 0, _unlocked_level_index)
-	if _course_select_to_index == _course_select_from_index:
+	var next_index := _course_select_travel_state.begin(_selected_level_index, direction, _unlocked_level_index)
+	if next_index < 0:
 		return
-	_selected_level_index = _course_select_to_index
-	_course_select_travel_timer = _course_select_travel_duration
-	_course_select_settle_timer = 0.0
-	_course_select_start_timer = 0.0
+	_selected_level_index = next_index
+	_course_select_presentation_state.cancel_start()
 	_title_notice_text = "COURSE SET TO %s" % get_selected_level_text()
 	_status_text = get_title_prompt_text()
 	_save_save_data()
@@ -4610,6 +5307,12 @@ func get_selected_level_text() -> String:
 
 func get_selected_level_index() -> int:
 	return _selected_level_index
+
+func set_selected_level_index(level_index: int) -> void:
+	_selected_level_index = level_index
+
+func get_level_count() -> int:
+	return _level_names.size()
 
 func get_title_phase() -> int:
 	return _title_phase
@@ -4893,29 +5596,29 @@ func _open_multiplayer_outcome(outcome: int, return_phase: int) -> void:
 	open_multiplayer_outcome_screen(outcome, return_phase)
 
 func _resolve_multiplayer_outcome() -> void:
-	_multiplayer_outcome_timer = 0.0
-	if _multiplayer_outcome_type == 0:
+	_multiplayer_lobby_state.outcome_timer = 0.0
+	if _multiplayer_lobby_state.outcome_type == 0:
 		_multiplayer_link_ready = true
 		var linked_notice := "ROOM LINKED: %d SYSTEMS READY" % get_multiplayer_link_count()
-		if _multiplayer_outcome_return_phase == TITLE_PHASE_MULTI_CONNECT and _multiplayer_pak_mode == 0:
+		if _multiplayer_lobby_state.outcome_return_phase == TITLE_PHASE_MULTI_CONNECT and _multiplayer_pak_mode == 0:
 			# SA2 enters character selection immediately after a successful Multi-Pak link.
 			open_character_select(CHARACTER_SELECT_CONTEXT_MULTIPLAYER, 0)
 		else:
-			open_multiplayer_outcome_return_phase(_multiplayer_outcome_return_phase, linked_notice)
+			open_multiplayer_outcome_return_phase(_multiplayer_lobby_state.outcome_return_phase, linked_notice)
 	else:
 		_multiplayer_link_ready = false
 		open_title_screen_at_multiplayer_menu(_multiplayer_pak_mode, "COMMUNICATION ERROR")
 
 func get_multiplayer_outcome_title() -> String:
-	return _language_text("CONNECTION SUCCESS", "VERBINDUNG ERFOLGREICH", "CONNEXION REUSSIE", "CONEXION CORRECTA", "CONNESSIONE RIUSCITA") if _multiplayer_outcome_type == 0 else _language_text("COMMUNICATION ERROR", "KOMMUNIKATIONSFEHLER", "ERREUR DE COMMUNICATION", "ERROR DE COMUNICACION", "ERRORE DI COMUNICAZIONE")
+	return _language_text("CONNECTION SUCCESS", "VERBINDUNG ERFOLGREICH", "CONNEXION REUSSIE", "CONEXION CORRECTA", "CONNESSIONE RIUSCITA") if _multiplayer_lobby_state.outcome_type == 0 else _language_text("COMMUNICATION ERROR", "KOMMUNIKATIONSFEHLER", "ERREUR DE COMMUNICATION", "ERROR DE COMUNICACION", "ERRORE DI COMUNICAZIONE")
 
 func get_multiplayer_outcome_prompt() -> String:
-	if _multiplayer_outcome_type == 0:
+	if _multiplayer_lobby_state.outcome_type == 0:
 		return _language_text("LET'S PLAY WITH %dP", "SPIELEN WIR MIT %dP", "JOUONS A %d", "JUGUEMOS CON %dP", "GIOCHIAMO IN %d") % max(2, get_multiplayer_link_count())
 	return _language_text("LINK COULD NOT BE MAINTAINED", "VERBINDUNG KONNTE NICHT GEHALTEN WERDEN", "LA LIAISON A ECHOUE", "NO SE PUDO MANTENER EL ENLACE", "COLLEGAMENTO INTERROTTO")
 
 func get_multiplayer_outcome_detail() -> String:
-	if _multiplayer_outcome_type == 0:
+	if _multiplayer_lobby_state.outcome_type == 0:
 		return _language_text("SYSTEMS LINKED: %d/4   MODE: %s\n%s CONTINUE   %s SKIP", "SYSTEME VERBUNDEN: %d/4   MODUS: %s\n%s WEITER   %s UEBERSPRINGEN", "SYSTEMES LIES: %d/4   MODE: %s\n%s CONTINUER   %s PASSER", "SISTEMAS ENLAZADOS: %d/4   MODO: %s\n%s CONTINUAR   %s OMITIR", "SISTEMI COLLEGATI: %d/4   MODALITA: %s\n%s CONTINUA   %s SALTA") % [get_multiplayer_link_count(), get_multiplayer_pak_mode_name(), get_confirm_label(), get_secondary_label()]
 	return _language_text("RETURNING TO MULTIPLAYER MODE SELECT\n%s CONTINUE   %s SKIP", "ZUR MULTIPLAYER-MODUSWAHL\n%s WEITER   %s UEBERSPRINGEN", "RETOUR AU CHOIX DU MODE MULTIJOUEUR\n%s CONTINUER   %s PASSER", "VOLVIENDO A SELECCION DE MODO\n%s CONTINUAR   %s OMITIR", "RITORNO ALLA SELEZIONE MODALITA\n%s CONTINUA   %s SALTA") % [get_confirm_label(), get_secondary_label()]
 
@@ -4924,12 +5627,12 @@ func get_multiplayer_outcome_summary_text() -> String:
 	var players_label := _language_text("PLAYERS", "SPIELER", "JOUEURS", "JUGADORES", "GIOCATORI")
 	var next_label := _language_text("NEXT", "NAECHSTER SCHRITT", "SUIVANT", "SIGUIENTE", "PROSSIMO")
 	var mode_label := _language_text("MODE", "MODUS", "MODE", "MODO", "MODALITA")
-	if _multiplayer_outcome_type == 0:
+	if _multiplayer_lobby_state.outcome_type == 0:
 		return "%s\n%s\n\n%s\n%d\n\n%s\n%s" % [status_label, _language_text("LINK OK", "LINK OK", "LIAISON OK", "ENLACE OK", "LINK OK"), players_label, get_multiplayer_link_count(), next_label, _language_text("ROOM READY", "RAUM BEREIT", "SALLE PRETE", "SALA LISTA", "STANZA PRONTA")]
 	return "%s\n%s\n\n%s\n%s\n\n%s\n%s" % [status_label, _language_text("ERROR", "FEHLER", "ERREUR", "ERROR", "ERRORE"), mode_label, get_multiplayer_pak_mode_name(), next_label, _language_text("RESET ROOM", "RAUM ZURUECKSETZEN", "REINITIALISER LA SALLE", "REINICIAR SALA", "RESETTA STANZA")]
 
 func get_multiplayer_outcome_badge_text() -> String:
-	return _language_text("OK", "OK", "OK", "OK", "OK") if _multiplayer_outcome_type == 0 else _language_text("ERR", "FEHLER", "ERR", "ERR", "ERR")
+	return _language_text("OK", "OK", "OK", "OK", "OK") if _multiplayer_lobby_state.outcome_type == 0 else _language_text("ERR", "FEHLER", "ERR", "ERR", "ERR")
 
 func get_multiplayer_outcome_player_rows() -> Array:
 	var rows: Array = []
@@ -4947,7 +5650,7 @@ func get_multiplayer_outcome_player_rows() -> Array:
 	return rows
 
 func get_multiplayer_outcome_chrome_colors() -> Dictionary:
-	if _multiplayer_outcome_type == 0:
+	if _multiplayer_lobby_state.outcome_type == 0:
 		return {
 			"accent": Color(0.96, 0.72, 0.24, 1.0),
 			"panel": Color(0.12, 0.18, 0.28, 0.96),
@@ -5147,49 +5850,29 @@ func _reset_multiplayer_session_state() -> void:
 		var pool_index: int = (i - 1) % remote_name_pool.size()
 		_multiplayer_link_players[i] = str(remote_name_pool[pool_index])
 		_insert_or_promote_multiplayer_record(_multiplayer_link_players[i])
-	_multiplayer_player_characters = [_selected_character_index, 1, 2, 3]
+	_multiplayer_player_characters = [_character_selection_state.selected_index, 1, 2, 3]
 	_multiplayer_player_ranks = [0, 1, 2, 3]
 	_refresh_multiplayer_remote_characters()
 	_refresh_multiplayer_rankings()
 
 func _refresh_multiplayer_remote_characters() -> void:
 	_ensure_multiplayer_session_arrays()
-	var used: Dictionary = {_selected_character_index: true}
-	_multiplayer_player_characters[0] = _selected_character_index
-	for i in range(1, _multiplayer_player_characters.size()):
-		var candidate: int = int(_multiplayer_player_characters[i])
-		if used.has(candidate) or not is_character_unlocked(candidate):
-			candidate = _find_next_multiplayer_character(used)
-		_multiplayer_player_characters[i] = candidate
-		used[candidate] = true
+	_multiplayer_player_characters = MULTIPLAYER_SESSION_POLICY.refresh_remote_characters(
+		_multiplayer_player_characters,
+		_character_selection_state.selected_index,
+		_character_names.size(),
+		func(index: int) -> bool: return is_character_unlocked(index)
+	)
 
 func _find_next_multiplayer_character(used: Dictionary) -> int:
-	for i in range(_character_names.size()):
-		if not is_character_unlocked(i):
-			continue
-		if not used.has(i):
-			return i
-	return 0
+	return MULTIPLAYER_SESSION_POLICY.next_available_character(used, _character_names.size(), func(index: int) -> bool: return is_character_unlocked(index))
 
 func _get_multiplayer_rank_sort_value(player_index: int) -> int:
 	var character_index := clampi(int(_multiplayer_player_characters[player_index]), 0, _character_names.size() - 1)
 	return (_selected_level_index + 1) * 19 + character_index * 7 + player_index * 5 + _multiplayer_pak_mode * 11
 
 func _refresh_multiplayer_rankings() -> void:
-	_multiplayer_player_ranks = [-1, -1, -1, -1]
-	var connected_indices: Array = []
-	for i in range(_multiplayer_link_connected.size()):
-		if bool(_multiplayer_link_connected[i]):
-			connected_indices.append(i)
-	for i in range(connected_indices.size()):
-		for j in range(i + 1, connected_indices.size()):
-			var left_index: int = int(connected_indices[i])
-			var right_index: int = int(connected_indices[j])
-			if _get_multiplayer_rank_sort_value(right_index) > _get_multiplayer_rank_sort_value(left_index):
-				connected_indices[i] = right_index
-				connected_indices[j] = left_index
-	for rank in range(connected_indices.size()):
-		_multiplayer_player_ranks[int(connected_indices[rank])] = rank
+	_multiplayer_player_ranks = MULTIPLAYER_SESSION_POLICY.rankings(_multiplayer_link_connected, _multiplayer_player_characters, _selected_level_index, _multiplayer_pak_mode)
 
 func advance_multiplayer_link_state() -> void:
 	for i in range(1, _multiplayer_link_connected.size()):
@@ -5291,7 +5974,7 @@ func open_course_select(return_phase: int = TITLE_PHASE_TIME_ATTACK_LOBBY) -> vo
 	open_course_select_screen(return_phase)
 
 func _is_multiplayer_course_select() -> bool:
-	return _course_select_return_phase == TITLE_PHASE_SINGLEPAK_RESULTS and _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION
+	return _course_select_presentation_state.return_phase == TITLE_PHASE_SINGLEPAK_RESULTS and _multiplayer_result_mode == MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION
 
 func _continue_multiplayer_after_course_select() -> void:
 	_game_state = GAME_STATE_TITLE
@@ -5322,102 +6005,73 @@ func get_course_select_rows() -> Array:
 	return COURSE_SELECT_PRESENTER.rows(self)
 
 func is_course_select_traveling() -> bool:
-	return _course_select_travel_timer > 0.0
+	return _course_select_travel_state.is_traveling()
 
 func is_course_select_settling() -> bool:
-	return _course_select_settle_timer > 0.0
+	return _course_select_travel_state.is_settling()
 
 func is_course_select_unlocking() -> bool:
-	return _course_select_unlock_timer > 0.0
+	return _course_select_unlock_flow.is_active()
 
 func _start_course_select_unlock_cutscene() -> void:
-	_course_select_unlock_phase = COURSE_UNLOCK_PHASE_PATH
-	_course_select_unlock_phase_duration = float(COURSE_UNLOCK_PATH_FRAMES) / 60.0
-	_course_select_unlock_phase_timer = _course_select_unlock_phase_duration
-	_course_select_unlock_timer = _course_select_unlock_phase_timer
-	_title_notice_text = "NEW COURSE PATH UNLOCKING"
+	_title_notice_text = _course_select_unlock_flow.start(float(COURSE_UNLOCK_PATH_FRAMES) / 60.0)
 	_status_text = get_title_prompt_text()
 
 func _advance_course_select_unlock_cutscene(delta: float) -> void:
-	_course_select_unlock_phase_timer = maxf(0.0, _course_select_unlock_phase_timer - delta)
-	if _course_select_unlock_phase_timer > 0.0:
-		_course_select_unlock_timer = _course_select_unlock_phase_timer
-		return
-	match _course_select_unlock_phase:
-		COURSE_UNLOCK_PHASE_PATH:
-			_course_select_unlock_phase = COURSE_UNLOCK_PHASE_SCROLL_BACK
-			_course_select_unlock_phase_duration = 0.35
-			_course_select_unlock_phase_timer = _course_select_unlock_phase_duration
-			_title_notice_text = "NEW COURSE PATH OPEN"
-		COURSE_UNLOCK_PHASE_SCROLL_BACK:
-			_course_select_unlock_phase = COURSE_UNLOCK_PHASE_SCROLL_NEXT
-			_course_select_unlock_phase_duration = 0.55
-			_course_select_unlock_phase_timer = _course_select_unlock_phase_duration
-			_title_notice_text = "MOVING TO NEW COURSE"
-		COURSE_UNLOCK_PHASE_SCROLL_NEXT:
-			_course_select_unlock_phase = COURSE_UNLOCK_PHASE_PAUSE
-			_course_select_unlock_phase_duration = float(COURSE_UNLOCK_PAUSE_FRAMES) / 60.0
-			_course_select_unlock_phase_timer = _course_select_unlock_phase_duration
-			_title_notice_text = "NEW COURSE READY"
-		COURSE_UNLOCK_PHASE_PAUSE:
-			_course_select_unlock_phase_timer = 0.0
-			_course_select_unlock_timer = 0.0
-			_title_notice_text = "COURSE READY: %s" % get_selected_level_text()
-	if _course_select_unlock_phase != COURSE_UNLOCK_PHASE_PAUSE:
-		_course_select_unlock_timer = _course_select_unlock_phase_timer
+	_title_notice_text = _course_select_unlock_flow.advance(delta, float(COURSE_UNLOCK_PAUSE_FRAMES) / 60.0, get_selected_level_text())
 	_status_text = get_title_prompt_text()
 
 func get_course_select_unlock_phase() -> int:
-	return _course_select_unlock_phase
+	return _course_select_unlock_flow.phase
 
 func get_course_select_unlock_progress() -> float:
-	if _course_select_unlock_phase_duration <= 0.0:
-		return 1.0
-	return clampf(1.0 - (_course_select_unlock_phase_timer / _course_select_unlock_phase_duration), 0.0, 1.0)
+	return _course_select_unlock_flow.progress()
 
 func is_course_select_starting() -> bool:
-	return _course_select_start_timer > 0.0
+	return _course_select_presentation_state.is_starting()
 
 func is_course_select_intro() -> bool:
-	return _course_select_intro_timer > 0.0
+	return _course_select_presentation_state.is_intro()
 
 func get_course_select_intro_progress() -> float:
-	if _course_select_intro_duration <= 0.0:
-		return 1.0
-	return clampf(1.0 - (_course_select_intro_timer / _course_select_intro_duration), 0.0, 1.0)
+	return _course_select_presentation_state.intro_progress()
 
 func is_course_select_busy() -> bool:
 	return is_course_select_unlocking() or is_course_select_traveling() or is_course_select_settling()
 
 func get_course_select_travel_progress() -> float:
-	if _course_select_travel_duration <= 0.0:
-		return 1.0
-	if _course_select_travel_timer <= 0.0:
-		return 1.0
-	return clampf(1.0 - (_course_select_travel_timer / _course_select_travel_duration), 0.0, 1.0)
+	return _course_select_travel_state.travel_progress()
 
 func get_course_select_travel_from_index() -> int:
-	return _course_select_from_index
+	return _course_select_travel_state.from_index
 
 func get_course_select_travel_to_index() -> int:
-	return _course_select_to_index
+	return _course_select_travel_state.to_index
 
 func get_course_select_settle_progress() -> float:
-	if _course_select_settle_duration <= 0.0:
-		return 1.0
-	if _course_select_settle_timer <= 0.0:
-		return 1.0
-	return clampf(1.0 - (_course_select_settle_timer / _course_select_settle_duration), 0.0, 1.0)
+	return _course_select_travel_state.settle_progress()
 
 func get_course_select_start_progress() -> float:
-	if _course_select_start_duration <= 0.0:
-		return 1.0
-	if _course_select_start_timer <= 0.0:
-		return 1.0
-	return clampf(1.0 - (_course_select_start_timer / _course_select_start_duration), 0.0, 1.0)
+	return _course_select_presentation_state.start_progress()
 
 func get_course_select_map_nodes() -> Array:
 	return COURSE_SELECT_PRESENTER.map_nodes(self)
+
+## Presentation snapshot consumed by CourseMapView. Keeping this aggregation at
+## the state boundary lets the reusable view render without knowing CoreBridge.
+func get_course_select_map_view_state() -> Dictionary:
+	return {
+		"nodes": get_course_select_map_nodes(),
+		"unlocking": is_course_select_unlocking(),
+		"unlock_path_reveal": _course_select_unlock_flow.phase == COURSE_UNLOCK_PHASE_PATH,
+		"unlock_progress": get_course_select_unlock_progress(),
+		"traveling": is_course_select_traveling(),
+		"travel_from_index": get_course_select_travel_from_index(),
+		"travel_to_index": get_course_select_travel_to_index(),
+		"travel_progress": get_course_select_travel_progress(),
+		"settling": is_course_select_settling(),
+		"settle_progress": get_course_select_settle_progress(),
+	}
 
 func get_course_select_zone_label() -> String:
 	return COURSE_SELECT_PRESENTER.zone_label(self)
@@ -5546,19 +6200,19 @@ func _advance_singlepak_results_flow() -> void:
 func _resolve_multiplayer_lobby_choice() -> void:
 	if _game_state != GAME_STATE_TITLE or _title_phase != TITLE_PHASE_MULTIPLAYER_LOBBY:
 		return
-	_multiplayer_lobby_waiting = false
-	_multiplayer_lobby_wait_timer = 0.0
+	_multiplayer_lobby_state.waiting = false
+	_multiplayer_lobby_state.wait_timer = 0.0
 	if _multiplayer_link_connected.is_empty() or _multiplayer_player_characters.size() < _multiplayer_link_connected.size():
 		# Keep a damaged link snapshot from reaching character select and crashing.
 		open_title_screen_at_multiplayer_menu(0, "LINK SESSION RESET")
 		return
-	if _multiplayer_lobby_cursor == 0:
+	if _multiplayer_lobby_state.cursor == 0:
 		open_character_select(CHARACTER_SELECT_CONTEXT_MULTIPLAYER, 0)
 		return
 	# The source starts Cheese's 120-frame wave/fade before destroying the
 	# multiplayer lobby task and returning to the title screen.
-	_multiplayer_lobby_waiting = true
-	_multiplayer_lobby_exit_timer = MULTIPLAYER_LOBBY_EXIT_DURATION
+	_multiplayer_lobby_state.waiting = true
+	_multiplayer_lobby_state.begin_exit(MULTIPLAYER_LOBBY_EXIT_DURATION)
 	_title_notice_text = "CLOSING MULTIPLAYER ROOM"
 	_status_text = get_title_prompt_text()
 
@@ -5590,7 +6244,7 @@ func get_multiplayer_lobby_items() -> Array:
 	return MULTIPLAYER_LOBBY_PRESENTER.items(self)
 
 func get_multiplayer_lobby_cursor() -> int:
-	return _multiplayer_lobby_cursor
+	return _multiplayer_lobby_state.cursor
 
 func get_multiplayer_lobby_title() -> String:
 	return MULTIPLAYER_LOBBY_PRESENTER.title(self)
@@ -5623,22 +6277,22 @@ func get_multiplayer_lobby_player_rows() -> Array:
 	return MULTIPLAYER_LOBBY_PRESENTER.player_rows(self)
 
 func get_tiny_chao_session_id() -> String:
-	return _tiny_chao_session_id
+	return _tiny_chao_state.session_id
 
 func get_tiny_chao_play_position() -> Vector2:
-	return Vector2(_tiny_chao_play_x, _tiny_chao_play_y)
+	return Vector2(_tiny_chao_state.play_x, _tiny_chao_state.play_y)
 
 func get_tiny_chao_mood() -> int:
-	return _tiny_chao_mood
+	return _tiny_chao_state.mood
 
 func is_tiny_chao_unlocked() -> bool:
-	return _tiny_chao_unlocked
+	return _tiny_chao_state.unlocked
 
 func _generate_tiny_chao_session_id() -> void:
 	# The original handoff combines two random values with the current frame
 	# count, so repeated launches must not reuse the same session token.
 	var entropy := (randi() ^ (Time.get_ticks_usec() << 8) ^ (Engine.get_process_frames() << 3)) & 0xFFFF
-	_tiny_chao_session_id = "TCG-%04X" % entropy
+	_tiny_chao_state.session_id = "TCG-%04X" % entropy
 
 func get_singlepak_result_rows() -> Array:
 	if _multiplayer_result_snapshot.is_empty():
@@ -5655,62 +6309,55 @@ func get_singlepak_result_rows() -> Array:
 
 func open_character_select(context: int = CHARACTER_SELECT_CONTEXT_GAME_START, initial_selection: int = -1) -> void:
 	_game_state = GAME_STATE_CHARACTER_SELECT
-	var requested_character := _selected_character_index if initial_selection < 0 else initial_selection
-	_selected_character_index = clampi(requested_character, 0, _character_names.size() - 1)
-	if context != CHARACTER_SELECT_CONTEXT_MULTIPLAYER and not is_character_unlocked(_selected_character_index):
-		_selected_character_index = _get_default_character_select_index()
-	_character_select_context = context
-	_character_select_intro_timer = 100.0 / 60.0
+	var requested_character: int = _character_selection_state.selected_index if initial_selection < 0 else initial_selection
+	_character_selection_state.open(requested_character, context, _character_names.size())
+	if not _character_selection_state.is_context(CHARACTER_SELECT_CONTEXT_MULTIPLAYER) and not is_character_unlocked(_character_selection_state.selected_index):
+		_character_selection_state.selected_index = _get_default_character_select_index()
+	_frontend_intro_state.start("character_select", 100.0 / 60.0)
 	_status_text = "CHARACTER SELECT"
 
 func is_character_select() -> bool:
 	return _game_state == GAME_STATE_CHARACTER_SELECT
 
 func is_multiplayer_character_select_screen() -> bool:
-	return _game_state == GAME_STATE_CHARACTER_SELECT and _character_select_context == CHARACTER_SELECT_CONTEXT_MULTIPLAYER
+	return _game_state == GAME_STATE_CHARACTER_SELECT and _character_selection_state.is_context(CHARACTER_SELECT_CONTEXT_MULTIPLAYER)
 
 func is_character_select_input_ready() -> bool:
-	return _game_state == GAME_STATE_CHARACTER_SELECT and _character_select_intro_timer <= 0.0
+	return _game_state == GAME_STATE_CHARACTER_SELECT and _frontend_intro_state.is_ready("character_select")
 
 func get_character_select_intro_progress() -> float:
 	if not is_character_select():
 		return 1.0
-	return clampf(1.0 - (_character_select_intro_timer / (100.0 / 60.0)), 0.0, 1.0)
+	return _frontend_intro_state.progress("character_select", 100.0 / 60.0)
 
 func skip_character_select_intro() -> void:
 	if _game_state != GAME_STATE_CHARACTER_SELECT or is_multiplayer_character_select_screen():
 		return
-	_character_select_intro_timer = 0.0
+	_frontend_intro_state.stop("character_select")
 
 func move_character_selection(direction: int) -> void:
 	if _game_state != GAME_STATE_CHARACTER_SELECT:
 		return
 	var available_indices := get_character_select_available_indices()
-	if available_indices.is_empty():
-		return
-	var current_slot := available_indices.find(_selected_character_index)
-	if current_slot < 0:
-		current_slot = 0
-	current_slot = wrapi(current_slot + direction, 0, available_indices.size())
-	_selected_character_index = int(available_indices[current_slot])
+	_character_selection_state.move(direction, available_indices)
 
 func confirm_character_selection() -> void:
 	if _game_state != GAME_STATE_CHARACTER_SELECT:
 		return
-	if not is_character_select_character_available(_selected_character_index):
+	if not is_character_select_character_available(_character_selection_state.selected_index):
 		_status_text = "CHARACTER LOCKED"
 		return
-	_player_state.variant = _selected_character_index
-	if _character_select_context != CHARACTER_SELECT_CONTEXT_MULTIPLAYER:
+	_player_state.variant = _character_selection_state.selected_index
+	if not _character_selection_state.is_context(CHARACTER_SELECT_CONTEXT_MULTIPLAYER):
 		_sync_active_character_level_progress()
-	if _character_select_context == CHARACTER_SELECT_CONTEXT_TIME_ATTACK_ZONE:
+	if _character_selection_state.is_context(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_ZONE):
 		open_time_attack_level_select_screen(false)
 		return
-	if _character_select_context == CHARACTER_SELECT_CONTEXT_TIME_ATTACK_BOSS:
+	if _character_selection_state.is_context(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_BOSS):
 		open_time_attack_level_select_screen(true)
 		return
-	if _character_select_context == CHARACTER_SELECT_CONTEXT_MULTIPLAYER:
-		_multiplayer_player_characters[0] = _selected_character_index
+	if _character_selection_state.is_context(CHARACTER_SELECT_CONTEXT_MULTIPLAYER):
+		_multiplayer_player_characters[0] = _character_selection_state.selected_index
 		_multiplayer_link_players[0] = _get_multiplayer_host_name()
 		_refresh_multiplayer_remote_characters()
 		_prepare_multiplayer_results_snapshot(MULTIPLAYER_RESULTS_MODE_CHARACTER_SELECTION)
@@ -5722,16 +6369,16 @@ func confirm_character_selection() -> void:
 func cancel_character_selection() -> void:
 	if _game_state != GAME_STATE_CHARACTER_SELECT:
 		return
-	if _character_select_context == CHARACTER_SELECT_CONTEXT_MULTIPLAYER:
+	if _character_selection_state.is_context(CHARACTER_SELECT_CONTEXT_MULTIPLAYER):
 		# The original multiplayer carousel has no local cancel branch.
 		return
-	if _character_select_context == CHARACTER_SELECT_CONTEXT_TIME_ATTACK_ZONE:
+	if _character_selection_state.is_context(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_ZONE):
 		open_title_screen_at_time_attack_menu(0)
 		return
-	elif _character_select_context == CHARACTER_SELECT_CONTEXT_TIME_ATTACK_BOSS:
+	elif _character_selection_state.is_context(CHARACTER_SELECT_CONTEXT_TIME_ATTACK_BOSS):
 		open_title_screen_at_time_attack_menu(1)
 		return
-	elif _character_select_context == CHARACTER_SELECT_CONTEXT_MULTIPLAYER:
+	elif _character_selection_state.is_context(CHARACTER_SELECT_CONTEXT_MULTIPLAYER):
 		open_multiplayer_lobby_screen(0)
 		return
 	else:
@@ -5741,13 +6388,12 @@ func cancel_character_selection() -> void:
 func open_time_attack_lobby(is_boss_mode: bool) -> void:
 	_game_state = GAME_STATE_TITLE
 	_title_phase = TITLE_PHASE_TIME_ATTACK_LOBBY
-	_time_attack_boss_mode = is_boss_mode
-	_time_attack_lobby_cursor = 0
-	_title_notice_text = "%s READY FOR %s" % [_character_names[_selected_character_index], "BOSS TIME ATTACK" if is_boss_mode else "ZONE TIME ATTACK"]
+	_time_attack_session_state.open_lobby(is_boss_mode)
+	_title_notice_text = "%s READY FOR %s" % [_character_names[_character_selection_state.selected_index], "BOSS TIME ATTACK" if is_boss_mode else "ZONE TIME ATTACK"]
 	_status_text = get_title_prompt_text()
 
 func get_character_menu_index() -> int:
-	return _selected_character_index
+	return _character_selection_state.selected_index
 
 func get_character_names() -> Array:
 	return _character_names
@@ -5756,7 +6402,7 @@ func get_selected_character_name() -> String:
 	return CHARACTER_SELECT_PRESENTER.selected_name(self)
 
 func get_selected_character_description() -> String:
-	return CHARACTER_SELECT_PRESENTER.description(self, _selected_character_index)
+	return CHARACTER_SELECT_PRESENTER.description(self, _character_selection_state.selected_index)
 
 func get_character_select_rows() -> Array:
 	return CHARACTER_SELECT_PRESENTER.rows(self)
@@ -5795,7 +6441,7 @@ func is_character_select_character_available(index: int) -> bool:
 		return false
 	# Multi-Pak negotiation exposes the four main characters to every linked
 	# player; Amy still follows the save unlock bit, matching the original.
-	if _character_select_context == CHARACTER_SELECT_CONTEXT_MULTIPLAYER and index < CHARACTER_NAMES_AMY_INDEX():
+	if _character_selection_state.is_context(CHARACTER_SELECT_CONTEXT_MULTIPLAYER) and index < CHARACTER_NAMES_AMY_INDEX():
 		return true
 	return is_character_unlocked(index)
 
@@ -5841,7 +6487,7 @@ func get_pause_chrome_colors() -> Dictionary:
 	return PAUSE_PRESENTER.chrome_colors(self)
 
 func get_pause_menu_index() -> int:
-	return _pause_menu_index
+	return _pause_menu_state.menu_index
 
 func get_pause_menu_rows() -> Array:
 	return PAUSE_PRESENTER.menu_rows(self)
@@ -6464,6 +7110,25 @@ func get_options_item_meta(index: int) -> String:
 			return _language_text("CANCEL EDIT", "BEARBEITUNG ABBRECHEN", "ANNULER MODIFICATION", "CANCELAR EDICION", "ANNULLA MODIFICA")
 	return ""
 
+## Presentation snapshot consumed by TimeRecordsTableView. The table remains a
+## reusable renderer and does not query the global state owner itself.
+func get_time_records_view_state() -> Dictionary:
+	var time_attack_context := is_time_attack_level_select_screen()
+	var rows: Array = get_time_record_rows()
+	var best_labels: Array[String] = []
+	for index in range(rows.size()):
+		best_labels.append(get_time_records_best_label_text(index))
+	return {
+		"time_attack_context": time_attack_context,
+		"summary_text": get_time_records_summary_text(),
+		"character_text": get_time_records_character_text(),
+		"heading_text": get_time_records_course_heading_text(),
+		"subtitle_text": get_time_records_course_subtitle_text(),
+		"badge_text": get_menu_badge_text("TA" if time_attack_context else "RECORD"),
+		"rows": rows,
+		"best_labels": best_labels,
+	}
+
 func get_options_item_status(index: int) -> String:
 	if _save_reset_pending:
 		return _language_text("READY", "BEREIT", "PRET", "LISTO", "PRONTO")
@@ -6751,7 +7416,7 @@ func _get_time_attack_record_key(character_index: int, course_index: int, act_in
 	return TIME_ATTACK_RECORD_SYSTEM.record_key(character_index, course_index, act_index, boss_mode)
 
 func _get_current_time_attack_record_key() -> String:
-	return _get_time_attack_record_key(_selected_character_index, _selected_level_index, 0, _time_attack_boss_mode)
+	return _get_time_attack_record_key(_character_selection_state.selected_index, _selected_level_index, 0, _time_attack_boss_mode)
 
 func _get_time_attack_best_time(record_key: String) -> float:
 	return TIME_ATTACK_RECORD_SYSTEM.best_time(_time_attack_record_tables, _time_attack_best_times, record_key)
@@ -6766,10 +7431,11 @@ func _store_clear_time_attack_result() -> void:
 	if not _run_from_time_attack:
 		return
 	var record_key := _get_current_time_attack_record_key()
-	var result := TIME_ATTACK_RECORD_SYSTEM.store_result(_time_attack_record_tables, _time_attack_best_times, record_key, _clear_time_snapshot)
+	var result := TIME_ATTACK_RECORD_SYSTEM.store_result(_time_attack_record_tables, _time_attack_best_times, record_key, _clear_result_state.time_snapshot)
 	_clear_previous_best_time = float(result.previous_best)
 	_clear_time_attack_record_rank = int(result.rank)
 	_clear_new_best_time = bool(result.new_best)
+	_clear_result_state.set_time_attack_record(_clear_previous_best_time, _clear_time_attack_record_rank, _clear_new_best_time)
 	if bool(result.updated):
 		_save_save_data()
 
@@ -6945,6 +7611,9 @@ func get_language_items() -> Array:
 func _language_text(english: String, german: String, french: String, spanish: String, italian: String) -> String:
 	var display_index := _pending_language_index if is_language_screen() else _language_index
 	return LOCALIZATION_CATALOG.text(display_index, english, german, french, spanish, italian)
+
+func language_text(english: String, german: String, french: String, spanish: String, italian: String) -> String:
+	return _language_text(english, german, french, spanish, italian)
 
 func get_profile_name_text() -> String:
 	var result := ""
@@ -7243,45 +7912,45 @@ func get_clear_time_attack_medal_text() -> String:
 	return CLEAR_RESULTS_PRESENTER.medal_text(self)
 
 func get_clear_time_attack_medal_rank() -> int:
-	return _clear_time_attack_record_rank
+	return _clear_result_state.time_attack_record_rank
 
 func get_clear_counting_text() -> String:
 	return CLEAR_RESULTS_PRESENTER.counting_text(self)
 
 func get_clear_rank_text_value() -> String:
-	return _clear_rank_text
+	return _clear_result_state.rank_text
 
 func get_clear_chrome_colors() -> Dictionary:
 	return CLEAR_RESULTS_PRESENTER.chrome_colors(self)
 
 func get_clear_time_bonus() -> int:
-	if _clear_time_snapshot < 30.0:
+	if _clear_result_state.time_snapshot < 30.0:
 		return 80000
-	if _clear_time_snapshot < 50.0:
+	if _clear_result_state.time_snapshot < 50.0:
 		return 50000
-	if _clear_time_snapshot < 60.0:
+	if _clear_result_state.time_snapshot < 60.0:
 		return 10000
-	if _clear_time_snapshot < 90.0:
+	if _clear_result_state.time_snapshot < 90.0:
 		return 5000
-	if _clear_time_snapshot < 120.0:
+	if _clear_result_state.time_snapshot < 120.0:
 		return 4000
-	if _clear_time_snapshot < 180.0:
+	if _clear_result_state.time_snapshot < 180.0:
 		return 3000
-	if _clear_time_snapshot < 240.0:
+	if _clear_result_state.time_snapshot < 240.0:
 		return 2000
-	if _clear_time_snapshot < 300.0:
+	if _clear_result_state.time_snapshot < 300.0:
 		return 1000
-	if _clear_time_snapshot < 360.0:
+	if _clear_result_state.time_snapshot < 360.0:
 		return 500
 	return 0
 
 func get_clear_ring_bonus() -> int:
-	return _clear_ring_snapshot * 100
+	return _clear_result_state.ring_snapshot * 100
 
 func get_clear_special_ring_bonus() -> int:
-	if _clear_special_ring_snapshot == 7:
+	if _clear_result_state.special_ring_snapshot == 7:
 		return 10000
-	return _clear_special_ring_snapshot * 1000
+	return _clear_result_state.special_ring_snapshot * 1000
 
 func get_clear_rows() -> Array:
 	return CLEAR_RESULTS_PRESENTER.rows(self)
@@ -7308,7 +7977,7 @@ func get_game_over_secondary_word() -> String:
 	return GAME_OVER_PRESENTER.secondary_word(self)
 
 func is_game_over_time_over() -> bool:
-	return _game_over_time_over
+	return _game_over_state.time_over
 
 func get_game_over_badge_text() -> String:
 	return GAME_OVER_PRESENTER.badge_text(self)
@@ -7334,7 +8003,7 @@ func get_game_over_text_flash_alpha() -> float:
 	return GAME_OVER_PRESENTER.text_flash_alpha(self)
 
 func is_game_over_input_ready() -> bool:
-	return _game_state == GAME_STATE_GAME_OVER and _game_over_input_lock_timer <= 0.0
+	return _game_state == GAME_STATE_GAME_OVER and _game_over_state.is_input_ready()
 
 func is_game_over_screen() -> bool:
 	return _game_state == GAME_STATE_GAME_OVER
@@ -7773,9 +8442,7 @@ func restart_level() -> void:
 func toggle_pause(held_input: int = 0) -> void:
 	if _game_state == GAME_STATE_PLAYING:
 		_game_state = GAME_STATE_PAUSED
-		_pause_menu_index = 0
-		_pause_a_hold_lock = bool(held_input & A_BUTTON)
-		_pause_a_previous_held = bool(held_input & A_BUTTON)
+		_pause_menu_state.open(bool(held_input & A_BUTTON))
 		_status_text = _pause_text
 	elif _game_state == GAME_STATE_PAUSED:
 		resume_game()
@@ -7783,31 +8450,24 @@ func toggle_pause(held_input: int = 0) -> void:
 func pause_game() -> void:
 	if _game_state == GAME_STATE_PLAYING:
 		_game_state = GAME_STATE_PAUSED
-		_pause_menu_index = 0
-		_pause_a_hold_lock = false
-		_pause_a_previous_held = false
+		_pause_menu_state.open(false)
 		_status_text = _pause_text
 
 func resume_game() -> void:
 	if _game_state == GAME_STATE_PAUSED:
 		_game_state = GAME_STATE_PLAYING
-		_pause_menu_index = 0
-		_pause_a_hold_lock = false
-		_pause_a_previous_held = false
+		_pause_menu_state.reset()
 		_status_text = "OUTRUN RIVALS" if _run_from_multiplayer else "REACH THE GOAL"
 
 func move_pause_selection(direction: int) -> void:
 	if _game_state != GAME_STATE_PAUSED:
 		return
-	if direction < 0:
-		_pause_menu_index = 0
-	elif direction > 0:
-		_pause_menu_index = 1
+	_pause_menu_state.select(direction)
 
 func confirm_pause_selection() -> void:
 	if _game_state != GAME_STATE_PAUSED:
 		return
-	if _pause_menu_index == 0:
+	if _pause_menu_state.menu_index == 0:
 		resume_game()
 		return
 	if _run_from_time_attack:
@@ -7816,10 +8476,10 @@ func confirm_pause_selection() -> void:
 		open_multiplayer_lobby_screen(0)
 	else:
 		open_title_screen_and_skip_intro()
-	_pause_menu_index = 0
+	_pause_menu_state.menu_index = 0
 
 func is_pause_a_hold_locked() -> bool:
-	return _pause_a_hold_lock
+	return _pause_menu_state.a_hold_lock
 
 func cancel_pause_selection() -> void:
 	if _game_state != GAME_STATE_PAUSED:
@@ -7846,7 +8506,7 @@ func _update_progress_for_clear() -> void:
 	_profile_score = maxi(0, _profile_score + _player_state.rings)
 	var is_final_or_extra_stage := _selected_level_index >= _level_names.size() - 2
 	_special_stage_pending = _clear_from_goal and _clear_special_ring_snapshot >= 7 and not _run_from_time_attack and not _run_from_multiplayer and not is_final_or_extra_stage
-	if not _run_from_time_attack and not _run_from_multiplayer and _selected_character_index == 0:
+	if not _run_from_time_attack and not _run_from_multiplayer and _character_selection_state.selected_index == 0:
 		var unlock_index := _get_story_character_unlock_for_level(_selected_level_index)
 		if unlock_index >= 0 and not _character_unlocked[unlock_index]:
 			_character_unlocked[unlock_index] = true
@@ -7859,11 +8519,11 @@ func _update_progress_for_clear() -> void:
 		_extra_zone_status = maxi(_extra_zone_status, 1)
 	_try_register_completed_character_route()
 	var can_unlock_true_area := _true_area_unlocked or _selected_level_index < _level_names.size() - 2
-	if _selected_character_index != 0 and _selected_level_index >= _level_names.size() - 2:
+	if _character_selection_state.selected_index != 0 and _selected_level_index >= _level_names.size() - 2:
 		can_unlock_true_area = false
 	if _selected_level_index >= _unlocked_level_index and _unlocked_level_index < _level_names.size() - 1 and can_unlock_true_area:
 		_unlocked_level_index = _selected_level_index + 1
-	var active_character := clampi(_selected_character_index, 0, _character_unlocked_level_indices.size() - 1)
+	var active_character := clampi(_character_selection_state.selected_index, 0, _character_unlocked_level_indices.size() - 1)
 	_character_unlocked_level_indices[active_character] = _unlocked_level_index
 	_save_best_score(_selected_level_index, _clear_final_score_snapshot)
 	_save_save_data()
@@ -7877,7 +8537,7 @@ func _get_story_character_unlock_for_level(level_index: int) -> int:
 func _sync_active_character_level_progress() -> void:
 	if _character_unlocked_level_indices.is_empty():
 		return
-	var active_character := clampi(_selected_character_index, 0, _character_unlocked_level_indices.size() - 1)
+	var active_character := clampi(_character_selection_state.selected_index, 0, _character_unlocked_level_indices.size() - 1)
 	_chaos_emerald_mask = _get_selected_chaos_emerald_mask()
 	_unlocked_level_index = clampi(int(_character_unlocked_level_indices[active_character]), 0, _level_names.size() - 1)
 	_selected_level_index = clampi(_selected_level_index, 0, _unlocked_level_index)
@@ -7899,7 +8559,7 @@ func _try_register_completed_character_route() -> void:
 		return
 	if _selected_level_index < _level_names.size() - 2 or get_chaos_emerald_count() < 7:
 		return
-	var character_index := clampi(_selected_character_index, 0, _completed_character_routes.size() - 1)
+	var character_index := clampi(_character_selection_state.selected_index, 0, _completed_character_routes.size() - 1)
 	if bool(_completed_character_routes[character_index]):
 		return
 	_completed_character_routes[character_index] = true
@@ -7909,8 +8569,8 @@ func _try_register_completed_character_route() -> void:
 	_save_save_data()
 
 func _refresh_story_unlocks() -> void:
-	var state := STORY_UNLOCK_SYSTEM.refresh(_completed_character_routes, _character_unlocked, _chaos_emerald_masks, _level_names.size(), _tiny_chao_unlocked, _sound_test_unlocked, _boss_time_attack_unlocked, _true_area_unlocked, _extra_zone_status, _unlocked_level_index)
-	_tiny_chao_unlocked = state.tiny_chao_unlocked
+	var state := STORY_UNLOCK_SYSTEM.refresh(_completed_character_routes, _character_unlocked, _chaos_emerald_masks, _level_names.size(), _tiny_chao_state.unlocked, _sound_test_unlocked, _boss_time_attack_unlocked, _true_area_unlocked, _extra_zone_status, _unlocked_level_index)
+	_tiny_chao_state.unlocked = state.tiny_chao_unlocked
 	_sound_test_unlocked = state.sound_test_unlocked
 	_boss_time_attack_unlocked = state.boss_time_attack_unlocked
 	_true_area_unlocked = state.true_area_unlocked
@@ -7923,10 +8583,10 @@ func get_chaos_emerald_count() -> int:
 func _get_selected_chaos_emerald_mask() -> int:
 	if _chaos_emerald_masks.is_empty():
 		_chaos_emerald_masks = [0, 0, 0, 0, 0]
-	return CHAOS_EMERALD_PROGRESSION_SYSTEM.selected_mask(_chaos_emerald_masks, _selected_character_index)
+	return CHAOS_EMERALD_PROGRESSION_SYSTEM.selected_mask(_chaos_emerald_masks, _character_selection_state.selected_index)
 
 func _set_selected_chaos_emerald_mask(mask: int) -> void:
-	_chaos_emerald_mask = CHAOS_EMERALD_PROGRESSION_SYSTEM.set_selected_mask(_chaos_emerald_masks, _selected_character_index, mask)
+	_chaos_emerald_mask = CHAOS_EMERALD_PROGRESSION_SYSTEM.set_selected_mask(_chaos_emerald_masks, _character_selection_state.selected_index, mask)
 
 func _save_best_score(level_index: int, score: int) -> void:
 	if level_index < 0 or level_index >= _best_scores.size():
@@ -7971,31 +8631,17 @@ func _record_multiplayer_result(name: String, result_key: String, player_id: int
 	MULTIPLAYER_RECORD_SYSTEM.record_result(_multi_record_rows, name, result_key, player_id)
 
 func _commit_multiplayer_course_results() -> void:
-	if _multiplayer_course_results_committed:
+	if _multiplayer_lobby_state.course_results_committed:
 		return
-	_multiplayer_course_results_committed = true
-	var host_rank := int(_multiplayer_player_ranks[0]) if not _multiplayer_player_ranks.is_empty() else -1
-	if host_rank < 0:
+	_multiplayer_lobby_state.course_results_committed = true
+	var outcomes: Dictionary = MULTIPLAYER_SESSION_POLICY.course_result_keys(_multiplayer_player_ranks, _multiplayer_link_connected)
+	var remote_outcomes: Dictionary = outcomes.get("remote", {})
+	if remote_outcomes.is_empty() and int(_multiplayer_player_ranks[0]) < 0:
 		return
-	var best_remote_rank := 999
-	for i in range(1, _multiplayer_link_connected.size()):
-		if not bool(_multiplayer_link_connected[i]):
-			continue
-		var remote_rank := int(_multiplayer_player_ranks[i]) if i < _multiplayer_player_ranks.size() else -1
-		if remote_rank >= 0:
-			best_remote_rank = mini(best_remote_rank, remote_rank)
-		var result_key := "DRAW"
-		if remote_rank > host_rank:
-			result_key = "WIN"
-		elif remote_rank < host_rank:
-			result_key = "LOSS"
-		_record_multiplayer_result(get_multiplayer_link_player_name(i), result_key)
-	var own_result := "DRAW"
-	if host_rank < best_remote_rank:
-		own_result = "WIN"
-	elif host_rank > best_remote_rank and best_remote_rank != 999:
-		own_result = "LOSS"
-	_record_own_multiplayer_result(own_result)
+	for player_index_variant in remote_outcomes:
+		var player_index: int = int(player_index_variant)
+		_record_multiplayer_result(get_multiplayer_link_player_name(player_index), str(remote_outcomes[player_index_variant]))
+	_record_own_multiplayer_result(str(outcomes.get("host", "DRAW")))
 	_save_save_data()
 
 func _sanitize_time_attack_best_times(raw_value: Variant) -> Dictionary:
@@ -8032,7 +8678,7 @@ func load_completed_save_game() -> void:
 	_character_unlocked_level_indices = [true_area_index, final_zone_index, final_zone_index, final_zone_index, final_zone_index]
 	# Completed-save generation starts from Sonic's fully cleared route; do not
 	# inherit a previously selected character and clamp to that route's limit.
-	_selected_character_index = 0
+	_character_selection_state.selected_index = 0
 	_selected_level_index = 0
 	_profile_score = 0
 	_extra_zone_status = 2
@@ -8046,7 +8692,7 @@ func load_completed_save_game() -> void:
 	_chaos_emerald_mask = 127
 	_sound_test_unlocked = true
 	_boss_time_attack_unlocked = true
-	_tiny_chao_unlocked = true
+	_tiny_chao_state.unlocked = true
 	_true_area_unlocked = true
 	_extra_ending_credits_played = true
 	_chaos_emeralds_message_seen = false

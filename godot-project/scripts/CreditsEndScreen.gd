@@ -15,8 +15,10 @@ var _source_card: TextureRect = null
 var _source_cache: Dictionary = {}
 var _source_name := ""
 var _time: float = 0.0
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -25,23 +27,25 @@ func _ready() -> void:
 	if detail_label == null:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
-	_set_screen_visible(CoreBridge.is_credits_end_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_credits_end_screen())
 
 func _process(delta: float) -> void:
-	var active := CoreBridge.is_credits_end_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_credits_end_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	_time += delta
 	var pulse := 0.5 + sin(_time * 2.2) * 0.5
 	if title_label:
-		title_label.text = CoreBridge.get_credits_end_title_text()
+		title_label.text = _bridge.get_credits_end_title_text()
 		title_label.modulate = Color(0.98, 0.98, 1.0, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_credits_end_prompt_text()
+		prompt_label.text = _bridge.get_credits_end_prompt_text()
 		prompt_label.modulate = Color(1.0, 0.86, 0.34, 0.86 + pulse * 0.14)
 	if detail_label:
-		detail_label.text = CoreBridge.get_credits_end_detail_text()
+		detail_label.text = _bridge.get_credits_end_detail_text()
 		detail_label.modulate = Color(0.74, 0.88, 1.0, 0.92)
 	if _shine:
 		_shine.color = Color(0.22, 0.60, 1.0, 0.12 + pulse * 0.10)
@@ -71,7 +75,7 @@ func _ensure_chrome() -> void:
 func _update_source_card() -> void:
 	if _source_card == null:
 		return
-	var source := CoreBridge.get_credits_end_source_tilemap()
+	var source: String = _bridge.get_credits_end_source_tilemap()
 	if source == _source_name:
 		return
 	_source_name = source

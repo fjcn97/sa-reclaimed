@@ -31,9 +31,11 @@ var _garden_stage: ColorRect = null
 var _garden_shadow: ColorRect = null
 var _garden_avatar: ColorRect = null
 var _garden_face: Label = null
+var _bridge: Node = null
 
 func _ready() -> void:
 	set_process(true)
+	_bridge = resolve_state_bridge()
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
 	if prompt_label == null:
@@ -43,28 +45,30 @@ func _ready() -> void:
 	_ensure_chrome()
 	_ensure_option_labels()
 	_ensure_info_labels()
-	_set_screen_visible(CoreBridge.is_tiny_chao_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_tiny_chao_screen())
 
 func _process(_delta: float) -> void:
-	var active: bool = CoreBridge.is_tiny_chao_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_tiny_chao_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	var pulse := 0.5 + (sin(Time.get_ticks_msec() / 220.0) * 0.5)
 	if title_label:
-		title_label.text = CoreBridge.get_tiny_chao_title_text()
+		title_label.text = _bridge.get_tiny_chao_title_text()
 		title_label.position = Vector2(316.0, 76.0)
 		title_label.size = Vector2(648.0, 52.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title_label.modulate = Color(0.14, 0.28, 0.12, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_tiny_chao_prompt_text()
+		prompt_label.text = _bridge.get_tiny_chao_prompt_text()
 		prompt_label.position = Vector2(164.0, 558.0)
 		prompt_label.size = Vector2(952.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		prompt_label.modulate = Color(0.34, 0.62, 0.20, 0.78 + (pulse * 0.18))
 	if detail_label:
-		detail_label.text = "%s\n%s" % [CoreBridge.get_tiny_chao_summary_text(), CoreBridge.get_tiny_chao_detail_text()]
+		detail_label.text = "%s\n%s" % [_bridge.get_tiny_chao_summary_text(), _bridge.get_tiny_chao_detail_text()]
 		detail_label.position = Vector2(148.0, 606.0)
 		detail_label.size = Vector2(984.0, 64.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -153,7 +157,7 @@ func _ensure_info_labels() -> void:
 		_info_labels.append(label)
 
 func _update_option_labels() -> void:
-	var rows: Array = CoreBridge.get_tiny_chao_rows()
+	var rows: Array = _bridge.get_tiny_chao_rows()
 	for i in range(_option_labels.size()):
 		var visible := i < rows.size()
 		_row_cards[i].visible = visible
@@ -187,44 +191,44 @@ func _update_option_labels() -> void:
 			_status_labels[i].modulate = Color(0.28, 0.44, 0.18, 0.96) if not is_selected else Color(0.98, 1.0, 0.90, 1.0)
 
 func _update_info_labels() -> void:
-	var rows: Array = CoreBridge.get_tiny_chao_info_rows()
+	var rows: Array = _bridge.get_tiny_chao_info_rows()
 	for i in range(_info_labels.size()):
 		_info_labels[i].text = str(rows[i]) if i < rows.size() else ""
 		_info_labels[i].modulate = Color(0.36, 0.26, 0.10, 0.98)
 
 func _update_summary() -> void:
 	if _summary_label:
-		_summary_label.text = CoreBridge.get_tiny_chao_summary_text()
+		_summary_label.text = _bridge.get_tiny_chao_summary_text()
 		_summary_label.modulate = Color(0.32, 0.24, 0.10, 0.98)
 	if _status_title_label:
-		_status_title_label.text = CoreBridge.get_tiny_chao_status_title_text()
+		_status_title_label.text = _bridge.get_tiny_chao_status_title_text()
 		_status_title_label.modulate = Color(0.32, 0.24, 0.10, 0.98)
 	if _badge_label:
-		_badge_label.text = CoreBridge.get_tiny_chao_badge_text()
+		_badge_label.text = _bridge.get_tiny_chao_badge_text()
 		_badge_label.modulate = Color(0.22, 0.44, 0.14, 0.98)
 
 func _update_garden_avatar() -> void:
-	var active := CoreBridge.get_title_phase() == CoreBridge.TITLE_PHASE_TINY_CHAO_GARDEN_PLAY
+	var active := _bridge.get_title_phase() == _bridge.TITLE_PHASE_TINY_CHAO_GARDEN_PLAY
 	if _garden_stage:
 		_garden_stage.visible = active
 	if _garden_shadow:
 		_garden_shadow.visible = active
 	if _garden_avatar:
 		_garden_avatar.visible = active
-		var position := CoreBridge.get_tiny_chao_play_position()
+		var position := _bridge.get_tiny_chao_play_position()
 		_garden_avatar.position = Vector2(472.0 + float(position.x) * 300.0, 354.0 + float(position.y) * 82.0)
-		var mood := CoreBridge.get_tiny_chao_mood()
+		var mood := _bridge.get_tiny_chao_mood()
 		_garden_avatar.color = Color(0.30, 0.74, 0.92, 1.0) if mood >= 50 else Color(0.42, 0.58, 0.82, 1.0)
 	if _garden_face:
 		_garden_face.visible = active
-		var mood := CoreBridge.get_tiny_chao_mood()
+		var mood := _bridge.get_tiny_chao_mood()
 		_garden_face.position = _garden_avatar.position + Vector2(4.0, 18.0) if _garden_avatar else Vector2.ZERO
 		_garden_face.text = "^_^" if mood >= 60 else ("-_-" if mood >= 30 else "T_T")
 
 func _update_chrome() -> void:
 	if _accent == null or _hero_glow == null or _header_band == null or _badge_core == null or _status_card == null:
 		return
-	var setup_phase := CoreBridge.get_title_phase() == CoreBridge.TITLE_PHASE_TINY_CHAO_SETUP
+	var setup_phase := _bridge.get_title_phase() == _bridge.TITLE_PHASE_TINY_CHAO_SETUP
 	var accent := Color(0.30, 0.76, 0.40, 1.0) if setup_phase else Color(0.40, 0.86, 0.46, 1.0)
 	var status_color := Color(1.0, 0.94, 0.80, 0.98) if setup_phase else Color(0.99, 0.96, 0.82, 0.98)
 	_accent.color = accent
@@ -265,13 +269,13 @@ func _set_screen_visible(screen_visible: bool) -> void:
 	if _prompt_band:
 		_prompt_band.visible = screen_visible
 	if _garden_stage:
-		_garden_stage.visible = screen_visible and CoreBridge.get_title_phase() == CoreBridge.TITLE_PHASE_TINY_CHAO_GARDEN_PLAY
+		_garden_stage.visible = screen_visible and _bridge != null and _bridge.get_title_phase() == _bridge.TITLE_PHASE_TINY_CHAO_GARDEN_PLAY
 	if _garden_shadow:
-		_garden_shadow.visible = screen_visible and CoreBridge.get_title_phase() == CoreBridge.TITLE_PHASE_TINY_CHAO_GARDEN_PLAY
+		_garden_shadow.visible = screen_visible and _bridge != null and _bridge.get_title_phase() == _bridge.TITLE_PHASE_TINY_CHAO_GARDEN_PLAY
 	if _garden_avatar:
-		_garden_avatar.visible = screen_visible and CoreBridge.get_title_phase() == CoreBridge.TITLE_PHASE_TINY_CHAO_GARDEN_PLAY
+		_garden_avatar.visible = screen_visible and _bridge != null and _bridge.get_title_phase() == _bridge.TITLE_PHASE_TINY_CHAO_GARDEN_PLAY
 	if _garden_face:
-		_garden_face.visible = screen_visible and CoreBridge.get_title_phase() == CoreBridge.TITLE_PHASE_TINY_CHAO_GARDEN_PLAY
+		_garden_face.visible = screen_visible and _bridge != null and _bridge.get_title_phase() == _bridge.TITLE_PHASE_TINY_CHAO_GARDEN_PLAY
 	if _badge_ring:
 		_badge_ring.visible = screen_visible
 	if _badge_core:

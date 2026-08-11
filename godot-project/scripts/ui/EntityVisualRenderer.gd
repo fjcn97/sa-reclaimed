@@ -4,6 +4,8 @@ extends Node2D
 class_name EntityVisualRenderer
 
 const ENTITY_TYPES := preload("res://scripts/core/EntityTypes.gd")
+const ITEM_BOX_RENDERER := preload("res://scripts/ui/EntityItemBoxRenderer.gd")
+const COLLECTIBLE_RENDERER := preload("res://scripts/ui/EntityCollectibleRenderer.gd")
 
 var entity_state = null
 
@@ -22,38 +24,10 @@ func _process(_delta: float) -> void:
 		queue_redraw()
 
 func _item_box_label() -> String:
-	match entity_state.item_kind:
-		CoreBridge.ITEM_BOX_KIND_SHIELD:
-			return "SH"
-		CoreBridge.ITEM_BOX_KIND_MAGNETIC_SHIELD:
-			return "MG"
-		CoreBridge.ITEM_BOX_KIND_INVINCIBILITY:
-			return "INV"
-		CoreBridge.ITEM_BOX_KIND_ONE_UP:
-			return "1UP"
-		CoreBridge.ITEM_BOX_KIND_SPEED_UP:
-			return "SPD"
-		CoreBridge.ITEM_BOX_KIND_RINGS_5:
-			return "+5"
-		CoreBridge.ITEM_BOX_KIND_RINGS_10:
-			return "+10"
-		_:
-			return "+%d" % entity_state.variant
+	return ITEM_BOX_RENDERER.item_label(entity_state)
 
 func _item_box_color() -> Color:
-	match entity_state.item_kind:
-		CoreBridge.ITEM_BOX_KIND_SHIELD:
-			return Color(0.34, 0.82, 1.0)
-		CoreBridge.ITEM_BOX_KIND_MAGNETIC_SHIELD:
-			return Color(0.72, 0.48, 1.0)
-		CoreBridge.ITEM_BOX_KIND_INVINCIBILITY:
-			return Color(1.0, 0.84, 0.24)
-		CoreBridge.ITEM_BOX_KIND_SPEED_UP:
-			return Color(1.0, 0.52, 0.20)
-		CoreBridge.ITEM_BOX_KIND_ONE_UP:
-			return Color(0.38, 1.0, 0.54)
-		_:
-			return Color(1.0, 0.92, 0.48)
+	return ITEM_BOX_RENDERER.item_color(entity_state)
 
 func _draw() -> void:
 	if entity_state == null or not entity_state.active:
@@ -61,11 +35,9 @@ func _draw() -> void:
 
 	match entity_state.type:
 		ENTITY_TYPES.ENTITY_RING, ENTITY_TYPES.ENTITY_SCATTER_RING:
-			draw_circle(Vector2.ZERO, 11.0, Color(1.0, 0.82, 0.18))
-			draw_circle(Vector2.ZERO, 5.0, Color(0.96, 0.92, 0.48))
+			COLLECTIBLE_RENDERER.draw_ring(self)
 		ENTITY_TYPES.ENTITY_SPECIAL_RING:
-			draw_circle(Vector2.ZERO, 14.0, Color(0.24, 0.80, 0.94))
-			draw_circle(Vector2.ZERO, 7.0, Color(0.72, 0.98, 1.0))
+			COLLECTIBLE_RENDERER.draw_special_ring(self)
 		ENTITY_TYPES.ENTITY_WHIRLWIND:
 			for i in range(4):
 				var radius := 18.0 + i * 10.0
@@ -84,17 +56,7 @@ func _draw() -> void:
 				draw_colored_polygon(PackedVector2Array([Vector2(x - 6.0, 8.0), Vector2(x, -10.0), Vector2(x + 6.0, 8.0)]), Color(0.86, 0.90, 0.96, 1.0))
 			draw_rect(Rect2(-26.0, 8.0, 52.0, 6.0), Color(0.26, 0.30, 0.40, 1.0))
 		ENTITY_TYPES.ENTITY_ITEM_BOX:
-			var box_broken: bool = bool(entity_state.activated)
-			draw_rect(Rect2(-16.0, -16.0, 32.0, 32.0), Color(0.30, 0.34, 0.44, 1.0) if box_broken else Color(0.96, 0.72, 0.16, 1.0))
-			draw_rect(Rect2(-11.0, -11.0, 22.0, 22.0), Color(0.10, 0.14, 0.22, 1.0), false, 3.0)
-			var box_text := _item_box_label()
-			if not box_broken:
-				draw_string(ThemeDB.fallback_font, Vector2(-8.0, 7.0), box_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11, Color.WHITE)
-			else:
-				var icon_y: float = -float(entity_state.effect_offset) - 18.0
-				var icon_color := _item_box_color()
-				draw_circle(Vector2(0.0, icon_y), 12.0, icon_color)
-				draw_string(ThemeDB.fallback_font, Vector2(-10.0, icon_y + 5.0), box_text, HORIZONTAL_ALIGNMENT_CENTER, 20.0, 9, Color(0.08, 0.12, 0.20, 1.0))
+			ITEM_BOX_RENDERER.draw(self, entity_state)
 		ENTITY_TYPES.ENTITY_PROPELLER:
 			var active_color := Color(1.0, 0.86, 0.30, 0.92) if entity_state.variant == 1 else Color(0.48, 0.78, 1.0, 0.86)
 			for i in range(4):

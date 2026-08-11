@@ -74,7 +74,7 @@ static func update_hammer_tank(bridge: Object, level: LevelState, player: Player
 			if entity.state_timer <= 0.0:
 				entity.variant = 4
 				entity.state_timer = 0.45
-				bridge.call("_request_screen_shake", 7.0, 0.45, 0.25, false, true, false)
+				bridge.request_screen_shake(7.0, 0.45, 0.25, false, true, false)
 		4:
 			if entity.state_timer <= 0.0:
 				entity.variant = 5
@@ -307,7 +307,7 @@ static func update_generic(bridge: Object, level: LevelState, player: PlayerStat
 				entity.state_timer = 0.90
 
 static func _new_entity(bridge: Object, level: LevelState, entity_type: int, x: float, y: float) -> EntityState:
-	return bridge.call("_add_entity", level, entity_type, x, y) as EntityState
+	return bridge.add_entity(level, entity_type, x, y) as EntityState
 
 static func _spawn_projectile(bridge: Object, level: LevelState, entity_type: int, x: float, y: float, profile: int, velocity_x: float, velocity_y: float, lifetime: float, source: EntityState) -> void:
 	var projectile := _new_entity(bridge, level, entity_type, x, y)

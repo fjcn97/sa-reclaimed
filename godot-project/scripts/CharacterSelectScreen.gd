@@ -39,8 +39,10 @@ var _wheel_node_labels: Array[Label] = []
 var _selected_node_ring: ColorRect = null
 var _wheel_time: float = 0.0
 var _wheel_view := CHARACTER_WHEEL_VIEW.new()
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -55,32 +57,34 @@ func _ready() -> void:
 	_wheel_nodes.assign(wheel_nodes["wheel_nodes"])
 	_wheel_node_labels.assign(wheel_nodes["wheel_node_labels"])
 	_selected_node_ring = wheel_nodes["selected_node_ring"] as ColorRect
-	_set_screen_visible(CoreBridge.is_character_select())
+	_set_screen_visible(_bridge != null and _bridge.is_character_select())
 
 func _process(delta: float) -> void:
-	var active: bool = CoreBridge.is_character_select()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_character_select()
 	_set_screen_visible(active)
 	if not active:
 		return
 	_wheel_time += delta * 2.6
-	var intro_progress := CoreBridge.get_character_select_intro_progress()
-	var intro_amount := 1.0 - intro_progress
-	var side_shift := 82.0 * intro_amount
+	var intro_progress: float = _bridge.get_character_select_intro_progress()
+	var intro_amount: float = 1.0 - intro_progress
+	var side_shift: float = 82.0 * intro_amount
 	var pulse := 0.5 + (sin(Time.get_ticks_msec() / 220.0) * 0.5)
 	if title_label:
-		title_label.text = CoreBridge.get_character_select_title_text()
+		title_label.text = _bridge.get_character_select_title_text()
 		title_label.position = Vector2(248.0, 116.0 - 34.0 * intro_amount)
 		title_label.size = Vector2(612.0, 56.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title_label.modulate = Color(0.98, 0.98, 1.0, 0.30 + intro_progress * 0.70)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_character_select_prompt_text()
+		prompt_label.text = _bridge.get_character_select_prompt_text()
 		prompt_label.position = Vector2(188.0, 548.0)
 		prompt_label.size = Vector2(904.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		prompt_label.modulate = Color(1.0, 0.90, 0.54, (0.30 + intro_progress * 0.44) + (pulse * 0.24))
 	if detail_label:
-		detail_label.text = CoreBridge.get_character_select_detail_text()
+		detail_label.text = _bridge.get_character_select_detail_text()
 		detail_label.position = Vector2(170.0, 664.0)
 		detail_label.size = Vector2(940.0, 32.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -170,10 +174,10 @@ func _ensure_rows() -> void:
 		_status_labels.append(status)
 
 func _update_selected_character() -> void:
-	var selected_name := CoreBridge.get_selected_character_name()
-	var selected_desc := CoreBridge.get_selected_character_description()
+	var selected_name: String = _bridge.get_selected_character_name()
+	var selected_desc: String = _bridge.get_selected_character_description()
 	if _context_label:
-		_context_label.text = CoreBridge.get_character_select_context_label()
+		_context_label.text = _bridge.get_character_select_context_label()
 		_context_label.modulate = Color(0.95, 0.98, 1.0, 1.0)
 	if _selected_name_label:
 		_selected_name_label.text = selected_name
@@ -182,15 +186,15 @@ func _update_selected_character() -> void:
 		_selected_desc_label.text = selected_desc
 		_selected_desc_label.modulate = Color(0.76, 0.88, 1.0, 0.94)
 	if _summary_label:
-		_summary_label.text = CoreBridge.get_character_select_summary_text()
+		_summary_label.text = _bridge.get_character_select_summary_text()
 		_summary_label.modulate = Color(0.88, 0.94, 1.0, 0.96)
 	if _emblem_label:
-		var compact := selected_name.replace(" ", "")
+		var compact: String = selected_name.replace(" ", "")
 		_emblem_label.text = compact.left(2) if compact.length() >= 2 else compact
 		_emblem_label.modulate = Color(1.0, 0.95, 0.74, 0.98)
 
 func _update_rows() -> void:
-	var rows: Array = CoreBridge.get_character_select_rows()
+	var rows: Array = _bridge.get_character_select_rows()
 	for i in range(_row_labels.size()):
 		var visible := i < rows.size()
 		_row_cards[i].visible = visible
@@ -218,11 +222,11 @@ func _update_rows() -> void:
 		_status_labels[i].modulate = Color(0.32, 1.0, 0.56, 1.0) if is_available else Color(0.62, 0.66, 0.76, 0.96)
 
 func _update_wheel() -> void:
-	_wheel_view.update(get_process_delta_time(), _wheel_time)
+	_wheel_view.update(_bridge.get_character_select_rows(), get_process_delta_time(), _wheel_time)
 
 func _update_chrome() -> void:
-	var unlocked := CoreBridge.is_character_unlocked(CoreBridge.get_character_menu_index())
-	var chrome := CoreBridge.get_character_select_chrome_colors()
+	var unlocked: bool = _bridge.is_character_unlocked(_bridge.get_character_menu_index())
+	var chrome: Dictionary = _bridge.get_character_select_chrome_colors()
 	var chip_color := Color(chrome.get("chip", Color(0.22, 0.42, 0.86, 0.96)))
 	var glow_ready := Color(chrome.get("glow_ready", Color(0.32, 0.78, 0.98, 0.28)))
 	var glow_locked := Color(chrome.get("glow_locked", Color(0.22, 0.24, 0.30, 0.24)))

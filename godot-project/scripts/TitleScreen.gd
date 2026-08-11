@@ -33,9 +33,11 @@ var _source_logo_name := ""
 var _source_background: TextureRect = null
 var _source_background_texture: Texture2D = null
 var _wave_lines: Array[ColorRect] = []
+var _bridge: Node = null
 
 func _ready() -> void:
 	set_process(true)
+	_bridge = resolve_state_bridge()
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
 	if prompt_label == null:
@@ -47,24 +49,29 @@ func _ready() -> void:
 	if stage_two_label == null:
 		stage_two_label = get_node_or_null("StageTwoLabel")
 	_ensure_chrome()
-	_set_screen_visible(CoreBridge.is_title_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_title_screen())
 
 func _process(delta: float) -> void:
 	_time += delta
-	var title_mode: bool = CoreBridge.is_press_start_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+		if _bridge == null:
+			_set_screen_visible(false)
+			return
+	var title_mode: bool = _bridge.is_press_start_screen()
 	_set_screen_visible(title_mode)
 	if not title_mode:
 		return
 
 	var pulse := 0.5 + (sin(_time * 2.2) * 0.5)
 	if title_label:
-		title_label.text = CoreBridge.get_press_start_title_text()
+		title_label.text = _bridge.get_press_start_title_text()
 		title_label.modulate = Color(0.14, 0.24, 0.44, 1.0)
 		title_label.position = Vector2(248.0, 104.0)
 		title_label.size = Vector2(784.0, 60.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_press_start_prompt_text()
+		prompt_label.text = _bridge.get_press_start_prompt_text()
 		# title_screen.c shows the press-start sprite for 40 of every 81 frames.
 		prompt_label.visible = fmod(_time, 81.0 / 60.0) < (40.0 / 60.0)
 		prompt_label.modulate = Color(0.18, 0.46, 0.84, 0.72 + (pulse * 0.22))
@@ -72,11 +79,11 @@ func _process(delta: float) -> void:
 		prompt_label.size = Vector2(952.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if subtitle_label:
-		subtitle_label.text = CoreBridge.get_press_start_subtitle_text()
+		subtitle_label.text = _bridge.get_press_start_subtitle_text()
 		subtitle_label.modulate = Color(0.20, 0.38, 0.66, 0.96)
 		subtitle_label.position = Vector2(454.0, 220.0)
 		subtitle_label.size = Vector2(372.0, 30.0)
-	var info_rows := CoreBridge.get_press_start_info_rows()
+	var info_rows: Array = _bridge.get_press_start_info_rows()
 	if stage_one_label:
 		if info_rows.size() > 0 and info_rows[0] is Dictionary:
 			_apply_info_row(stage_one_label, info_rows[0] as Dictionary, Vector2(246.0, 330.0), Color(0.80, 0.90, 1.0, 0.94))
@@ -127,7 +134,7 @@ func _ensure_chrome() -> void:
 	_badge_ring = ensure_rect("BadgeRing", Rect2(920.0, 320.0, 140.0, 140.0), Color(0.92, 0.40, 0.18, 0.20))
 	_badge_core = ensure_rect("BadgeCore", Rect2(955.0, 355.0, 70.0, 70.0), Color(1.0, 1.0, 1.0, 0.96))
 	_badge_label = ensure_label("BadgeLabel", Vector2(930.0, 372.0), Vector2(120.0, 32.0), 18)
-	_badge_label.text = CoreBridge.get_menu_badge_text("START")
+	_badge_label.text = _bridge.get_menu_badge_text("START") if _bridge else ""
 	_badge_label.modulate = Color(0.78, 0.30, 0.12, 0.95)
 	if _wave_lines.size() == 0:
 		for i in range(3):
@@ -163,7 +170,7 @@ func _apply_info_row(label: Label, row: Dictionary, default_position: Vector2, d
 	label.visible = not label.text.is_empty()
 
 func _update_chrome() -> void:
-	var chrome := CoreBridge.get_press_start_chrome_colors()
+	var chrome: Dictionary = _bridge.get_press_start_chrome_colors() if _bridge else {}
 	var header_color := Color(chrome.get("header", Color(1.0, 1.0, 1.0, 0.98)))
 	var panel_color := Color(chrome.get("panel", Color(0.90, 0.95, 1.0, 0.98)))
 	var footer_color := Color(chrome.get("footer", Color(0.96, 0.98, 1.0, 0.99)))
@@ -218,7 +225,7 @@ func _update_wave_lines() -> void:
 func _update_source_logo() -> void:
 	if _source_logo == null:
 		return
-	var source := CoreBridge.get_title_logo_source_tilemap()
+	var source: String = _bridge.get_title_logo_source_tilemap() if _bridge else ""
 	if source == _source_logo_name:
 		return
 	_source_logo_name = source
@@ -226,7 +233,7 @@ func _update_source_logo() -> void:
 		_source_logo_cache[source] = SourceTilemapTextureImpl.compose(source, 26, 1)
 	_source_logo.texture = _source_logo_cache[source] as Texture2D
 	if _source_background != null and _source_background_texture == null:
-		_source_background_texture = SourceTilemapTextureImpl.compose(CoreBridge.get_title_background_source_tilemap(), 32, 2)
+		_source_background_texture = SourceTilemapTextureImpl.compose(_bridge.get_title_background_source_tilemap(), 32, 2)
 		_source_background.texture = _source_background_texture
 
 func _set_screen_visible(screen_visible: bool) -> void:

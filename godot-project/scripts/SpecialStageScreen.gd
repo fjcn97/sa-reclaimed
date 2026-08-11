@@ -25,9 +25,11 @@ var _lane_cards: Array[ColorRect] = []
 var _emerald_slots: Array[ColorRect] = []
 var _emerald_labels: Array[Label] = []
 var _time: float = 0.0
+var _bridge: Node = null
 
 func _ready() -> void:
 	set_process(true)
+	_bridge = resolve_state_bridge()
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
 	if prompt_label == null:
@@ -35,23 +37,25 @@ func _ready() -> void:
 	if detail_label == null:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
-	_set_screen_visible(CoreBridge.is_special_stage_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_special_stage_screen())
 
 func _process(delta: float) -> void:
-	var active := CoreBridge.is_special_stage_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_special_stage_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	_time += delta
 	var pulse := 0.5 + sin(_time * 2.2) * 0.5
 	if title_label:
-		title_label.text = CoreBridge.get_special_stage_title_text()
+		title_label.text = _bridge.get_special_stage_title_text()
 		title_label.modulate = Color(0.96, 0.98, 1.0, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_special_stage_prompt_text()
+		prompt_label.text = _bridge.get_special_stage_prompt_text()
 		prompt_label.modulate = Color(1.0, 0.88, 0.40, 0.82 + pulse * 0.18)
 	if detail_label:
-		detail_label.text = CoreBridge.get_special_stage_detail_text()
+		detail_label.text = _bridge.get_special_stage_detail_text()
 		detail_label.modulate = Color(0.74, 0.88, 1.0, 0.88)
 	if _rule:
 		_rule.color = Color(0.24, 0.78, 0.94, 0.48 + pulse * 0.30)
@@ -74,7 +78,7 @@ func _ensure_chrome() -> void:
 	_pause_card = ensure_rect("PauseCard", Rect2(390.0, 300.0, 500.0, 160.0), Color(0.04, 0.06, 0.12, 0.98))
 	_pause_label = ensure_label("PauseLabel", Vector2(410.0, 338.0), Vector2(460.0, 84.0), 24)
 	_pause_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_pause_label.text = CoreBridge.get_special_stage_pause_text()
+	_pause_label.text = _bridge.get_special_stage_pause_text() if _bridge else ""
 	_source_background = TextureRect.new()
 	_source_background.name = "OriginalSpecialStageBackground"
 	_source_background.position = Vector2(166.0, 144.0)
@@ -103,7 +107,9 @@ func _ensure_chrome() -> void:
 func _update_source_background() -> void:
 	if _source_background == null:
 		return
-	var source := CoreBridge.get_special_stage_source_tilemap()
+	if _bridge == null:
+		return
+	var source := _bridge.get_special_stage_source_tilemap()
 	if source == _source_background_name:
 		return
 	_source_background_name = source
@@ -112,9 +118,11 @@ func _update_source_background() -> void:
 	_source_background.texture = _source_background_cache[source] as Texture2D
 
 func _update_results() -> void:
-	var results := CoreBridge.is_special_stage_results_screen()
-	var running := CoreBridge.is_special_stage_running_screen() and not results
-	var paused := CoreBridge.is_special_stage_paused()
+	if _bridge == null:
+		return
+	var results := _bridge.is_special_stage_results_screen()
+	var running := _bridge.is_special_stage_running_screen() and not results
+	var paused := _bridge.is_special_stage_paused()
 	_ring_card.visible = results
 	_ring_label.visible = results
 	_run_card.visible = running
@@ -122,22 +130,22 @@ func _update_results() -> void:
 	_pause_card.visible = paused
 	_pause_label.visible = paused
 	if paused:
-		_pause_label.text = CoreBridge.get_special_stage_pause_text()
+		_pause_label.text = _bridge.get_special_stage_pause_text()
 	if running:
-		var robo_state: Dictionary = CoreBridge.get_special_stage_guard_state()
-		_run_label.text = CoreBridge.get_special_stage_run_display_text(CoreBridge.get_special_stage_motion_text(), int(float(robo_state.get("progress", 0.0)) * 100.0))
-	var lane_index := CoreBridge.get_special_stage_lane()
-	var robo_state: Dictionary = CoreBridge.get_special_stage_guard_state()
+		var robo_state: Dictionary = _bridge.get_special_stage_guard_state()
+		_run_label.text = _bridge.get_special_stage_run_display_text(_bridge.get_special_stage_motion_text(), int(float(robo_state.get("progress", 0.0)) * 100.0))
+	var lane_index := _bridge.get_special_stage_lane()
+	var robo_state: Dictionary = _bridge.get_special_stage_guard_state()
 	var robo_near := running and bool(robo_state.get("near_player", false))
 	for i in range(_lane_cards.size()):
 		_lane_cards[i].visible = running
 		_lane_cards[i].color = Color(0.92, 0.30, 0.24, 0.98) if robo_near and i == int(robo_state.get("lane", 1)) else (Color(0.28, 0.72, 0.94, 0.98) if i == lane_index else Color(0.12, 0.24, 0.38, 0.98))
 	if results:
-		_ring_label.text = CoreBridge.get_special_stage_result_display_text()
+		_ring_label.text = _bridge.get_special_stage_result_display_text()
 	for i in range(_emerald_slots.size()):
-		var target := results and CoreBridge.is_special_stage_target_reached() and i == CoreBridge.get_special_stage_emerald_index()
+		var target := results and _bridge.is_special_stage_target_reached() and i == _bridge.get_special_stage_emerald_index()
 		_emerald_slots[i].color = Color(0.26, 0.78, 0.50, 0.98) if target else Color(0.12, 0.20, 0.32, 0.98)
-		_emerald_labels[i].text = CoreBridge.get_special_stage_new_label() if target else ""
+		_emerald_labels[i].text = _bridge.get_special_stage_new_label() if target else ""
 		_emerald_labels[i].modulate = Color(0.76, 1.0, 0.82, 1.0) if target else Color(0.48, 0.58, 0.70, 0.92)
 
 func _set_screen_visible(screen_visible: bool) -> void:

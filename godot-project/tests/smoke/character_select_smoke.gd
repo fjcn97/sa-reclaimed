@@ -12,6 +12,8 @@ func _run() -> void:
 	var bridge: Node = get_root().get_node("CoreBridge")
 	var original_unlocks: Array = bridge._character_unlocked.duplicate()
 	var original_variant: int = bridge._player_state.variant
+	var original_language: int = bridge._language_index
+	bridge._language_index = 1
 	bridge._character_unlocked = [true, false, false, false, false]
 	bridge._player_state.variant = 0
 	bridge.open_character_select(bridge.CHARACTER_SELECT_CONTEXT_GAME_START)
@@ -31,7 +33,6 @@ func _run() -> void:
 	_check(rows.size() == 5, "locked roster slots remain visible")
 	_check(str(rows[1].get("status", "")) == "LOCKED", "locked character status")
 	_check(not bool(rows[1].get("available", true)), "locked roster exposes a language-independent availability flag")
-	var original_language: int = bridge._language_index
 	bridge._language_index = 2
 	_check(bridge.get_character_select_summary_text().contains("LAEUFER"), "character summary follows saved language")
 	bridge._language_index = original_language
@@ -45,6 +46,7 @@ func _run() -> void:
 	_check(bridge.get_character_menu_index() == 4, "amy slot remains in carousel")
 	bridge._character_unlocked = original_unlocks
 	bridge._player_state.variant = original_variant
+	bridge._language_index = original_language
 	bridge.open_title_screen_and_skip_intro()
 	print("CHARACTER_SELECT_CHECKS=%d" % checks)
 	quit(1 if failed else 0)

@@ -25,8 +25,10 @@ var _row_cards: Array[ColorRect] = []
 var _row_labels: Array[Label] = []
 var _value_labels: Array[Label] = []
 var _status_labels: Array[Label] = []
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -36,27 +38,29 @@ func _ready() -> void:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
 	_ensure_rows()
-	_set_screen_visible(CoreBridge.is_button_config_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_button_config_screen())
 
 func _process(_delta: float) -> void:
-	var active: bool = CoreBridge.is_button_config_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_button_config_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	var pulse := 0.5 + (sin(Time.get_ticks_msec() / 210.0) * 0.5)
 	if title_label:
-		title_label.text = CoreBridge.get_button_config_title_text()
+		title_label.text = _bridge.get_button_config_title_text()
 		title_label.position = Vector2(312.0, 98.0)
 		title_label.size = Vector2(524.0, 52.0)
 		title_label.modulate = Color(0.99, 0.97, 0.90, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_button_config_prompt_text()
+		prompt_label.text = _bridge.get_button_config_prompt_text()
 		prompt_label.position = Vector2(188.0, 518.0)
 		prompt_label.size = Vector2(904.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		prompt_label.modulate = Color(1.0, 0.92, 0.58, 0.72 + (pulse * 0.28))
 	if detail_label:
-		detail_label.text = CoreBridge.get_button_config_detail_text()
+		detail_label.text = _bridge.get_button_config_detail_text()
 		detail_label.position = Vector2(168.0, 632.0)
 		detail_label.size = Vector2(944.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -116,16 +120,16 @@ func _ensure_rows() -> void:
 
 func _update_summary() -> void:
 	if _summary_label:
-		_summary_label.text = CoreBridge.get_button_config_summary_text()
+		_summary_label.text = _bridge.get_button_config_summary_text()
 		_summary_label.modulate = Color(0.92, 0.95, 1.0, 0.98)
 	if _badge_label == null:
 		_badge_label = ensure_label("BadgeLabel", Vector2(900.0, 152.0), Vector2(126.0, 30.0), 16)
 	if _badge_label:
-		_badge_label.text = CoreBridge.get_button_config_badge_text()
+		_badge_label.text = _bridge.get_button_config_badge_text()
 		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
 
 func _update_chrome() -> void:
-	var colors := CoreBridge.get_button_config_chrome_colors()
+	var colors: Dictionary = _bridge.get_button_config_chrome_colors()
 	var accent := Color(colors.get("accent", Color(0.92, 0.48, 0.20, 1.0)))
 	if _hero_glow:
 		_hero_glow.color = Color(accent.r * 0.42, accent.g * 0.34, accent.b * 0.24, 0.18)
@@ -149,7 +153,7 @@ func _update_chrome() -> void:
 		_focus_plate.color = Color(accent.r * 0.56, accent.g * 0.30, accent.b * 0.14, 0.30)
 
 func _update_rows() -> void:
-	var rows: Array = CoreBridge.get_button_config_rows()
+	var rows: Array = _bridge.get_button_config_rows()
 	# Button Config owns its own three-row cursor. Using the generic Options
 	# index here makes the focus plate jump to an unrelated row after a tap.
 	var selected_index := 0

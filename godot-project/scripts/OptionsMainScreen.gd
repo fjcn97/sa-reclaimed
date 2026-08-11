@@ -24,9 +24,11 @@ var _row_cards: Array[ColorRect] = []
 var _row_labels: Array[Label] = []
 var _value_labels: Array[Label] = []
 var _status_labels: Array[Label] = []
+var _bridge: Node = null
 
 func _ready() -> void:
 	set_process(true)
+	_bridge = resolve_state_bridge()
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
 	if prompt_label == null:
@@ -36,15 +38,15 @@ func _ready() -> void:
 	_ensure_chrome()
 	_ensure_summary_label()
 	_ensure_rows()
-	_set_screen_visible(CoreBridge.is_options_main_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_options_main_screen())
 
 func _process(_delta: float) -> void:
-	var active: bool = CoreBridge.is_options_main_screen()
+	var active: bool = _bridge != null and _bridge.is_options_main_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	if title_label:
-		title_label.text = CoreBridge.get_options_main_title_text()
+		title_label.text = _bridge.get_options_main_title_text()
 		title_label.position = Vector2(344.0, 76.0)
 		title_label.size = Vector2(592.0, 52.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -52,7 +54,7 @@ func _process(_delta: float) -> void:
 	if prompt_label:
 		prompt_label.visible = false
 	if detail_label:
-		detail_label.text = CoreBridge.get_options_main_detail_text()
+		detail_label.text = _bridge.get_options_main_detail_text()
 		detail_label.position = Vector2(148.0, 636.0)
 		detail_label.size = Vector2(984.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -107,17 +109,17 @@ func _ensure_rows() -> void:
 
 func _update_summary() -> void:
 	if _summary_label:
-		_summary_label.text = CoreBridge.get_options_summary_text().replace("   ", "\n")
+		_summary_label.text = _bridge.get_options_summary_text().replace("   ", "\n")
 		_summary_label.modulate = Color(0.14, 0.28, 0.42, 0.98)
 	if _badge_label == null:
 		_badge_label = ensure_label("BadgeLabel", Vector2(900.0, 316.0), Vector2(204.0, 34.0), 22)
 	if _badge_label:
-		_badge_label.text = CoreBridge.get_menu_badge_text("SETUP")
+		_badge_label.text = _bridge.get_menu_badge_text("SETUP")
 		_badge_label.modulate = Color(0.14, 0.28, 0.42, 0.98)
 
 func _update_rows() -> void:
-	var rows: Array = CoreBridge.get_options_main_rows()
-	var selected: int = CoreBridge.get_save_menu_index()
+	var rows: Array = _bridge.get_options_main_rows()
+	var selected: int = _bridge.get_save_menu_index()
 	for i in range(_row_labels.size()):
 		var visible := i < rows.size()
 		_row_cards[i].visible = visible

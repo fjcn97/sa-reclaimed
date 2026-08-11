@@ -10,8 +10,10 @@ var _panel: ColorRect = null
 var _rule: ColorRect = null
 var _seal: ColorRect = null
 var _time: float = 0.0
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -20,23 +22,25 @@ func _ready() -> void:
 	if detail_label == null:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
-	_set_screen_visible(CoreBridge.is_copyright_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_copyright_screen())
 
 func _process(delta: float) -> void:
-	var active := CoreBridge.is_copyright_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_copyright_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	_time += delta
 	var pulse := 0.5 + sin(_time * 2.0) * 0.5
 	if title_label:
-		title_label.text = CoreBridge.get_copyright_title_text()
+		title_label.text = _bridge.get_copyright_title_text()
 		title_label.modulate = Color(0.98, 0.98, 1.0, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_copyright_prompt_text()
+		prompt_label.text = _bridge.get_copyright_prompt_text()
 		prompt_label.modulate = Color(1.0, 0.88, 0.40, 0.86 + pulse * 0.14)
 	if detail_label:
-		detail_label.text = CoreBridge.get_copyright_detail_text()
+		detail_label.text = _bridge.get_copyright_detail_text()
 		detail_label.modulate = Color(0.74, 0.86, 1.0, 0.88)
 	if _rule:
 		_rule.color = Color(0.28, 0.72, 1.0, 0.48 + pulse * 0.28)

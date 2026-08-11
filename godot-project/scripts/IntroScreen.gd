@@ -33,9 +33,11 @@ var _countdown_label: Label = null
 var _source_art_view := IntroSourceArtView.new()
 var _badge_cards: Array[ColorRect] = []
 var _badge_labels: Array[Label] = []
+var _bridge: Node = null
 
 func _ready() -> void:
 	set_process(true)
+	_bridge = resolve_state_bridge()
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
 	if prompt_label == null:
@@ -45,37 +47,42 @@ func _ready() -> void:
 	_ensure_chrome()
 	_source_art_view.setup(self)
 	_ensure_header_labels()
-	_set_screen_visible(CoreBridge.is_intro_screen() or CoreBridge.is_final_intro_screen())
+	_set_screen_visible(_bridge != null and (_bridge.is_intro_screen() or _bridge.is_final_intro_screen()))
 
 func _process(delta: float) -> void:
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	if _bridge == null:
+		_set_screen_visible(false)
+		return
 	_time += delta
-	var intro_mode: bool = CoreBridge.is_intro_screen() or CoreBridge.is_final_intro_screen()
+	var intro_mode: bool = _bridge.is_intro_screen() or _bridge.is_final_intro_screen()
 	_set_screen_visible(intro_mode)
 	if not intro_mode:
 		return
 	if title_label:
-		title_label.text = CoreBridge.get_intro_title_text()
+		title_label.text = _bridge.get_intro_title_text()
 		title_label.modulate = Color(0.98, 0.96, 1.0, 1.0)
 		title_label.position = Vector2(246.0, 264.0)
 		title_label.size = Vector2(430.0, 54.0)
 		title_label.scale = Vector2.ONE * (1.0 + sin(_time * 2.0) * 0.01)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_intro_prompt_text()
-		prompt_label.modulate = Color(1.0, 0.96, 0.74, 1.0 if CoreBridge.is_intro_go_phase() else 0.92)
+		prompt_label.text = _bridge.get_intro_prompt_text()
+		prompt_label.modulate = Color(1.0, 0.96, 0.74, 1.0 if _bridge.is_intro_go_phase() else 0.92)
 		prompt_label.position = Vector2(186.0, 548.0)
 		prompt_label.size = Vector2(908.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if detail_label:
-		detail_label.text = CoreBridge.get_intro_detail_text()
-		detail_label.modulate = Color(0.88, 0.94, 1.0, 1.0 if CoreBridge.is_intro_go_phase() else 0.84)
+		detail_label.text = _bridge.get_intro_detail_text()
+		detail_label.modulate = Color(0.88, 0.94, 1.0, 1.0 if _bridge.is_intro_go_phase() else 0.84)
 		detail_label.position = Vector2(164.0, 664.0)
 		detail_label.size = Vector2(952.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_update_header_labels()
 	_update_countdown_label()
-	_update_stage_intro_timing(CoreBridge.get_intro_stage_frame())
+	_update_stage_intro_timing(_bridge.get_intro_stage_frame())
 	_update_chrome()
-	_source_art_view.update()
+	_source_art_view.update(_bridge.is_final_intro_screen(), _bridge.get_final_intro_source_tilemaps())
 
 func _ensure_chrome() -> void:
 	_backdrop = ensure_rect("BackdropShade", Rect2(0.0, 0.0, 1280.0, 720.0), Color(0.01, 0.02, 0.04, 0.40))
@@ -139,26 +146,26 @@ func _ensure_header_labels() -> void:
 
 func _update_header_labels() -> void:
 	if _zone_label:
-		_zone_label.text = CoreBridge.get_intro_zone_label()
+		_zone_label.text = _bridge.get_intro_zone_label()
 		_zone_label.modulate = Color(0.96, 0.98, 1.0, 1.0)
 	if _act_label:
-		_act_label.text = CoreBridge.get_intro_act_label()
+		_act_label.text = _bridge.get_intro_act_label()
 		_act_label.modulate = Color(0.92, 0.96, 1.0, 1.0)
 	if _character_label:
-		_character_label.text = CoreBridge.get_intro_character_label()
+		_character_label.text = _bridge.get_intro_character_label()
 		_character_label.modulate = Color(0.94, 1.0, 0.96, 1.0)
 	if _wheel_icon_label:
-		_wheel_icon_label.text = CoreBridge.get_intro_stage_icon_text()
+		_wheel_icon_label.text = _bridge.get_intro_stage_icon_text()
 		_wheel_icon_label.modulate = Color(0.96, 0.98, 1.0, 1.0)
 	_update_badge_strip()
 
 func _update_countdown_label() -> void:
 	if _countdown_label == null:
 		return
-	var countdown_text := CoreBridge.get_intro_countdown_text()
+	var countdown_text := _bridge.get_intro_countdown_text()
 	_countdown_label.text = countdown_text
 	_countdown_label.visible = not countdown_text.is_empty()
-	_countdown_label.modulate = Color(1.0, 0.96, 0.78, 1.0) if CoreBridge.is_intro_go_phase() else Color(0.94, 0.97, 1.0, 1.0)
+	_countdown_label.modulate = Color(1.0, 0.96, 0.78, 1.0) if _bridge.is_intro_go_phase() else Color(0.94, 0.97, 1.0, 1.0)
 
 func _update_stage_intro_timing(frame: float) -> void:
 	# stage_intro.c reveals the banner at frame 7, holds it through frame 120,
@@ -180,7 +187,7 @@ func _update_stage_intro_timing(frame: float) -> void:
 		_badge_labels[i].modulate.a = alpha
 
 func _update_badge_strip() -> void:
-	var badges: Array = CoreBridge.get_intro_stage_badges()
+	var badges: Array = _bridge.get_intro_stage_badges()
 	for i in range(_badge_cards.size()):
 		var visible := i < badges.size()
 		_badge_cards[i].visible = visible
@@ -195,8 +202,8 @@ func _update_badge_strip() -> void:
 		_badge_labels[i].modulate = Color(1.0, 1.0, 1.0, 1.0) if unlocked else Color(0.42, 0.46, 0.54, 0.90)
 
 func _update_chrome() -> void:
-	var go_mode := CoreBridge.is_intro_go_phase()
-	var character_accent := CoreBridge.get_intro_character_accent_color()
+	var go_mode := _bridge.is_intro_go_phase()
+	var character_accent := _bridge.get_intro_character_accent_color()
 	var pulse := absf(sin(_time * 0.9))
 	if _hero_glow:
 		_hero_glow.color = Color(character_accent.r * 0.34, character_accent.g * 0.34, character_accent.b * 0.42, 0.18 + pulse * 0.04)
@@ -233,7 +240,7 @@ func _update_chrome() -> void:
 	if _character_chip:
 		_character_chip.color = Color(character_accent.r, character_accent.g, character_accent.b, 0.96) if not go_mode else Color(0.86, 0.60, 0.18, 0.96)
 	if prompt_label:
-		prompt_label.visible = CoreBridge.is_final_intro_screen() or CoreBridge.get_intro_countdown_text().is_empty()
+		prompt_label.visible = _bridge.is_final_intro_screen() or _bridge.get_intro_countdown_text().is_empty()
 
 func _set_screen_visible(screen_visible: bool) -> void:
 	if _backdrop:
@@ -287,8 +294,8 @@ func _set_screen_visible(screen_visible: bool) -> void:
 	if _wheel_icon_label:
 		_wheel_icon_label.visible = screen_visible
 	if _countdown_label:
-		_countdown_label.visible = screen_visible and not CoreBridge.get_intro_countdown_text().is_empty()
-	_source_art_view.set_visible(screen_visible)
+		_countdown_label.visible = screen_visible and _bridge != null and not _bridge.get_intro_countdown_text().is_empty()
+	_source_art_view.set_visible(screen_visible, _bridge != null and _bridge.is_final_intro_screen())
 	for card in _badge_cards:
 		if not screen_visible:
 			card.visible = false

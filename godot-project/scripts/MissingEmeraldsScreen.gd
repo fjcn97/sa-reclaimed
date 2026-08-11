@@ -17,8 +17,10 @@ var _source_card: TextureRect = null
 var _source_card_cache: Dictionary = {}
 var _source_card_name := ""
 var _time: float = 0.0
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -27,23 +29,25 @@ func _ready() -> void:
 	if detail_label == null:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
-	_set_screen_visible(CoreBridge.is_missing_emeralds_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_missing_emeralds_screen())
 
 func _process(delta: float) -> void:
-	var active := CoreBridge.is_missing_emeralds_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_missing_emeralds_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	_time += delta
 	var pulse := 0.5 + sin(_time * 2.4) * 0.5
 	if title_label:
-		title_label.text = CoreBridge.get_missing_emeralds_title_text()
+		title_label.text = _bridge.get_missing_emeralds_title_text()
 		title_label.modulate = Color(1.0, 0.90, 0.46, 0.92 + pulse * 0.08)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_missing_emeralds_prompt_text()
+		prompt_label.text = _bridge.get_missing_emeralds_prompt_text()
 		prompt_label.modulate = Color(0.72, 0.88, 1.0, 0.94)
 	if detail_label:
-		detail_label.text = CoreBridge.get_missing_emeralds_detail_text()
+		detail_label.text = _bridge.get_missing_emeralds_detail_text()
 		detail_label.modulate = Color(1.0, 0.92, 0.66, 0.76 + pulse * 0.20)
 	_update_slots()
 	_update_source_card()
@@ -68,24 +72,24 @@ func _ensure_chrome() -> void:
 		var x := 370.0 + float(i) * 80.0
 		var slot := ensure_rect("EmeraldSlot%d" % i, Rect2(x, 332.0, 48.0, 48.0), Color(0.12, 0.18, 0.30, 1.0))
 		var label := ensure_label("EmeraldLabel%d" % i, Vector2(x, 382.0), Vector2(48.0, 24.0), 11)
-		label.text = CoreBridge.get_missing_emerald_unknown_label()
+		label.text = _bridge.get_missing_emerald_unknown_label()
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_slots.append(slot)
 		_slot_labels.append(label)
 
 func _update_slots() -> void:
-	var collected := CoreBridge.get_missing_emeralds_count()
+	var collected: int = _bridge.get_missing_emeralds_count()
 	for i in range(_slots.size()):
 		var found := i < collected
 		_slots[i].color = Color(0.20, 0.72, 0.48, 0.98) if found else Color(0.16, 0.20, 0.30, 0.98)
-		_slot_labels[i].text = CoreBridge.get_missing_emerald_found_label() if found else CoreBridge.get_missing_emerald_unknown_label()
+		_slot_labels[i].text = _bridge.get_missing_emerald_found_label() if found else _bridge.get_missing_emerald_unknown_label()
 		_slot_labels[i].modulate = Color(0.76, 1.0, 0.84, 1.0) if found else Color(0.52, 0.60, 0.74, 0.94)
 
 func _update_source_card() -> void:
 	if _source_card == null:
 		return
 	var language_names := ["jp", "en", "de", "fr", "es", "it"]
-	var language_index := clampi(int(CoreBridge._language_index), 0, language_names.size() - 1)
+	var language_index := clampi(int(_bridge._language_index), 0, language_names.size() - 1)
 	var source := "collect_all_chaos_emeralds_%s" % language_names[language_index]
 	if source == _source_card_name:
 		return

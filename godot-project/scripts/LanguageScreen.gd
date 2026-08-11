@@ -24,9 +24,11 @@ var _badge_label: Label = null
 var _row_cards: Array[ColorRect] = []
 var _row_labels: Array[Label] = []
 var _status_labels: Array[Label] = []
+var _bridge: Node = null
 
 func _ready() -> void:
 	set_process(true)
+	_bridge = resolve_state_bridge()
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
 	if prompt_label == null:
@@ -35,15 +37,15 @@ func _ready() -> void:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
 	_ensure_rows()
-	_set_screen_visible(CoreBridge.is_language_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_language_screen())
 
 func _process(_delta: float) -> void:
-	var active: bool = CoreBridge.is_language_screen()
+	var active: bool = _bridge != null and _bridge.is_language_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	if title_label:
-		title_label.text = CoreBridge.get_language_title_text()
+		title_label.text = _bridge.get_language_title_text()
 		title_label.position = Vector2(356.0, 76.0)
 		title_label.size = Vector2(568.0, 52.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -51,7 +53,7 @@ func _process(_delta: float) -> void:
 	if prompt_label:
 		prompt_label.visible = false
 	if detail_label:
-		detail_label.text = CoreBridge.get_language_detail_text()
+		detail_label.text = _bridge.get_language_detail_text()
 		detail_label.position = Vector2(148.0, 636.0)
 		detail_label.size = Vector2(984.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -111,7 +113,7 @@ func _update_summary() -> void:
 		_badge_label.visible = false
 
 func _update_chrome() -> void:
-	var colors := CoreBridge.get_language_chrome_colors()
+	var colors: Dictionary = _bridge.get_language_chrome_colors()
 	if _header_plate:
 		_header_plate.color = Color(1.0, 1.0, 1.0, 0.98)
 	if _hero_glow:
@@ -133,7 +135,7 @@ func _update_chrome() -> void:
 		_summary_card.visible = false
 
 func _update_rows() -> void:
-	var rows: Array = CoreBridge.get_language_rows()
+	var rows: Array = _bridge.get_language_rows()
 	for i in range(_row_labels.size()):
 		var visible := i < rows.size()
 		_row_cards[i].visible = visible

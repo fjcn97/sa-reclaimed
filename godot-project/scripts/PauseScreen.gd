@@ -24,9 +24,11 @@ var _badge_label: Label = null
 var _row_cards: Array[ColorRect] = []
 var _row_labels: Array[Label] = []
 var _value_labels: Array[Label] = []
+var _bridge: Node = null
 
 func _ready() -> void:
 	set_process(true)
+	_bridge = resolve_state_bridge()
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
 	if prompt_label == null:
@@ -35,28 +37,33 @@ func _ready() -> void:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
 	_ensure_rows()
-	_set_screen_visible(CoreBridge.is_paused())
+	_set_screen_visible(_bridge != null and _bridge.is_paused())
 
 func _process(_delta: float) -> void:
-	var paused: bool = CoreBridge.is_paused()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+		if _bridge == null:
+			_set_screen_visible(false)
+			return
+	var paused: bool = _bridge.is_paused()
 	_set_screen_visible(paused)
 	if not paused:
 		return
 	var pulse := 0.5 + (sin(Time.get_ticks_msec() / 180.0) * 0.5)
 	if title_label:
-		title_label.text = CoreBridge.get_pause_title_text()
+		title_label.text = _bridge.get_pause_title_text()
 		title_label.position = Vector2(352.0, 116.0)
 		title_label.size = Vector2(576.0, 54.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title_label.modulate = Color(0.98, 0.98, 1.0, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_pause_prompt_text()
+		prompt_label.text = _bridge.get_pause_prompt_text()
 		prompt_label.position = Vector2(216.0, 548.0)
 		prompt_label.size = Vector2(848.0, 30.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		prompt_label.modulate = Color(1.0, 0.90, 0.52, 0.74 + (pulse * 0.24))
 	if detail_label:
-		detail_label.text = CoreBridge.get_pause_detail_text()
+		detail_label.text = _bridge.get_pause_detail_text()
 		detail_label.position = Vector2(164.0, 664.0)
 		detail_label.size = Vector2(952.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -110,8 +117,8 @@ func _ensure_rows() -> void:
 		_value_labels.append(value)
 
 func _update_rows() -> void:
-	var rows: Array = CoreBridge.get_pause_menu_rows()
-	var selected: int = CoreBridge.get_pause_menu_index()
+	var rows: Array = _bridge.get_pause_menu_rows()
+	var selected: int = _bridge.get_pause_menu_index()
 	for i in range(_row_labels.size()):
 		var visible := i < rows.size()
 		_row_cards[i].visible = visible
@@ -134,14 +141,14 @@ func _update_rows() -> void:
 
 func _update_summary() -> void:
 	if _summary_label:
-		_summary_label.text = CoreBridge.get_pause_summary_text()
+		_summary_label.text = _bridge.get_pause_summary_text()
 		_summary_label.modulate = Color(0.90, 0.96, 1.0, 0.96)
 	if _badge_label:
-		_badge_label.text = CoreBridge.get_pause_badge_text()
+		_badge_label.text = _bridge.get_pause_badge_text()
 		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
 
 func _update_chrome() -> void:
-	var colors := CoreBridge.get_pause_chrome_colors()
+	var colors: Dictionary = _bridge.get_pause_chrome_colors() if _bridge else {}
 	var accent := Color(colors.get("accent", Color(0.98, 0.76, 0.20, 0.98)))
 	var card := Color(colors.get("card", Color(0.10, 0.13, 0.22, 0.98)))
 	if _accent:

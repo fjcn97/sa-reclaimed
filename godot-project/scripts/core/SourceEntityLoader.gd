@@ -7,6 +7,8 @@ const ENTITY_TYPES := preload("res://scripts/core/EntityTypes.gd")
 const SOURCE_ENTITY_CATALOG := preload("res://scripts/core/SourceEntityCatalog.gd")
 const SOURCE_ENEMY_CONFIGURATOR := preload("res://scripts/core/SourceEnemyConfigurator.gd")
 const SOURCE_TERRAIN_LOADER := preload("res://scripts/core/SourceTerrainLoader.gd")
+const COORDINATE_MAPPER := preload("res://scripts/core/SourceEntityCoordinateMapper.gd")
+const SOURCE_PLATFORM_APPLICATOR := preload("res://scripts/core/SourcePlatformApplicator.gd")
 
 const DASH_RING_UP := 0
 const DASH_RING_RIGHT := 2
@@ -39,26 +41,7 @@ func apply(level: LevelState, source_manifest: Dictionary, player_state: PlayerS
 	var goal_added := false
 	for row in source_entities.get("interactables", []):
 		var kind := str(row.get("kind", ""))
-		if kind == "PLATFORM_CRUMBLING":
-			_add_source_crumbling_platform(level, row, source_width, source_height)
-			continue
-		if kind == "PLATFORM_SQUARE":
-			_add_source_square_platform(level, row, source_width, source_height)
-			continue
-		if kind == "COMMON_THIN_PLATFORM":
-			_add_source_thin_platform(level, row, source_width, source_height)
-			continue
-		if kind == "PLATFORM_A":
-			_add_source_platform_a(level, row, source_width, source_height)
-			continue
-		if kind == "PLATFORM_B":
-			_add_source_platform_b(level, row, source_width, source_height)
-			continue
-		if kind.begins_with("ARROW_PLATFORM"):
-			_add_source_arrow_platform(level, row, kind, source_width, source_height)
-			continue
-		if kind == "SPEEDING_PLATFORM":
-			_add_source_speeding_platform(level, row, source_width, source_height)
+		if SOURCE_PLATFORM_APPLICATOR.apply(_source_manifest, level, row, kind, source_width, source_height):
 			continue
 		var entity_type := _source_interactable_type(kind)
 		if entity_type < 0:
@@ -431,41 +414,6 @@ func _add_source_launcher(entity: EntityState, row: Dictionary, kind: String, so
 	entity.launcher_gravity_up = gravity_up
 	entity.launcher_scale = scale
 
-func _add_source_platform_a(level: LevelState, row: Dictionary, source_width: float, source_height: float) -> void:
-	var fields: Array = row.get("fields", [])
-	if fields.size() <= 8:
-		return
-	var scale := _source_runtime_scale(source_width, source_height, level)
-	var source_position := _source_runtime_position(level, float(row.get("world_x", 0)), float(row.get("world_y", 0)), source_width, source_height)
-	var horizontal := _to_int_field(fields[7]) > _to_int_field(fields[8])
-	var amplitude_source := _to_int_field(fields[7]) if horizontal else _to_int_field(fields[8])
-	var direction_field := _to_int_field(fields[5]) if horizontal else _to_int_field(fields[6])
-	var phase := PI if direction_field < 0 else 0.0
-	var amplitude := absf(float(amplitude_source)) * 8.0 * scale
-	PLATFORM_BUILDER.add_moving_platform(level, source_position.x - 24.0, source_position.y + 12.0, 48.0, 12.0, 0 if horizontal else 1, amplitude, 4.0 * TAU / 256.0 * 60.0, phase)
-
-func _add_source_platform_b(level: LevelState, row: Dictionary, source_width: float, source_height: float) -> void:
-	var source_position := _source_runtime_position(level, float(row.get("world_x", 0)), float(row.get("world_y", 0)), source_width, source_height)
-	PLATFORM_BUILDER.add_platform(level, source_position.x - 24.0, source_position.y + 12.0, 48.0, 12.0)
-
-func _add_source_speeding_platform(level: LevelState, row: Dictionary, source_width: float, source_height: float) -> void:
-	var base_x := float(row.get("world_x", 0))
-	var base_y := float(row.get("world_y", 0))
-	var start := _source_runtime_position(level, base_x + 32.0, base_y + 18.0, source_width, source_height)
-	var first_target := _source_runtime_position(level, base_x + 590.0, base_y + 576.0, source_width, source_height)
-	var final_target := _source_runtime_position(level, base_x + 814.0, base_y + 576.0, source_width, source_height)
-	PLATFORM_BUILDER.add_platform(level, start.x - 27.0, start.y, 54.0, 12.0)
-	var platform: PlatformState = level.platforms.back()
-	platform.speeding_mode = true
-	platform.speeding_base_x = start.x - 27.0
-	platform.speeding_base_y = start.y
-	platform.speeding_target_x = first_target.x
-	platform.speeding_target_y = first_target.y
-	platform.speeding_first_x = first_target.x
-	platform.speeding_first_y = first_target.y
-	platform.speeding_final_x = final_target.x
-	platform.speeding_final_y = final_target.y
-
 func _add_source_entity(level: LevelState, entity_type: int, row: Dictionary, source_width: float, source_height: float) -> EntityState:
 	var runtime_position := _source_runtime_position(level, float(row.get("world_x", 0)), float(row.get("world_y", 0)), source_width, source_height)
 	var runtime_x: float = runtime_position.x
@@ -490,87 +438,17 @@ func _configure_source_lap_trigger(entity: EntityState, row: Dictionary, source_
 	entity.lap_previous_checkpoint_time = _checkpoint_time
 
 
-func _add_source_crumbling_platform(level: LevelState, row: Dictionary, source_width: float, source_height: float) -> void:
-	var fields: Array = row.get("fields", [])
-	if fields.size() <= 8:
-		return
-	var scale := _source_runtime_scale(source_width, source_height, level)
-	var source_x := float(row.get("world_x", 0)) + float(_to_int_field(fields[5])) * 8.0
-	var source_y := float(row.get("world_y", 0)) + float(_to_int_field(fields[6])) * 8.0
-	var position := _source_runtime_position(level, source_x, source_y, source_width, source_height)
-	var width := maxf(32.0, float(_to_int_field(fields[7])) * 8.0 * scale)
-	var thickness := maxf(8.0, float(_to_int_field(fields[8])) * 8.0 * scale)
-	# platform_crumbling.c transitions after its counter passes 30 frames.
-	PLATFORM_BUILDER.add_crumbling_platform(level, position.x, position.y + thickness, width, thickness, 31.0 / 60.0)
-
-func _add_source_square_platform(level: LevelState, row: Dictionary, source_width: float, source_height: float) -> void:
-	var fields: Array = row.get("fields", [])
-	if fields.size() <= 8:
-		return
-	var scale := _source_runtime_scale(source_width, source_height, level)
-	var source_x := float(row.get("world_x", 0)) + float(_to_int_field(fields[5])) * 8.0
-	var source_y := float(row.get("world_y", 0)) + float(_to_int_field(fields[6])) * 8.0
-	var position := _source_runtime_position(level, source_x, source_y, source_width, source_height)
-	var horizontal_extent := maxi(0, _to_int_field(fields[7]))
-	var vertical_extent := maxi(0, _to_int_field(fields[8]))
-	var axis := 0 if horizontal_extent > vertical_extent else 1
-	var amplitude := maxf(16.0, float(maxi(horizontal_extent, vertical_extent)) * 8.0 * scale)
-	var phase := PI if _to_int_field(fields[5]) < 0 or _to_int_field(fields[6]) < 0 else 0.0
-	PLATFORM_BUILDER.add_moving_platform(level, position.x, position.y + 16.0, 32.0, 16.0, axis, amplitude, 3.75, phase)
-
-func _add_source_thin_platform(level: LevelState, row: Dictionary, source_width: float, source_height: float) -> void:
-	var position := _source_runtime_position(level, float(row.get("world_x", 0)), float(row.get("world_y", 0)), source_width, source_height)
-	PLATFORM_BUILDER.add_platform(level, position.x, position.y + 8.0, 32.0, 8.0)
-
-func _add_source_arrow_platform(level: LevelState, row: Dictionary, kind: String, source_width: float, source_height: float) -> void:
-	var fields: Array = row.get("fields", [])
-	if fields.size() <= 8:
-		return
-	var scale := _source_runtime_scale(source_width, source_height, level)
-	var base_x := float(row.get("world_x", 0))
-	var base_y := float(row.get("world_y", 0))
-	var source_width_offset := float(_to_int_field(fields[5])) * 8.0 + 24.0
-	var source_height_offset := float(_to_int_field(fields[6])) * 8.0 + 24.0
-	var source_target_x := float(_to_int_field(fields[7])) * 8.0 + source_width_offset - 24.0
-	var source_target_y := float(_to_int_field(fields[8])) * 8.0 + source_height_offset - 24.0
-	var current_offset := Vector2(source_width_offset, source_height_offset)
-	var target_offset := Vector2(source_target_x, source_target_y)
-	if kind.ends_with("RIGHT"):
-		current_offset.x = source_width_offset
-		target_offset.x = source_target_x
-	elif kind.ends_with("LEFT"):
-		current_offset.x = source_target_x
-		target_offset.x = source_width_offset
-	else:
-		current_offset.y = source_target_y
-		target_offset.y = source_height_offset
-	var position := _source_runtime_position(level, base_x + current_offset.x, base_y + current_offset.y, source_width, source_height)
-	var target := _source_runtime_position(level, base_x + target_offset.x, base_y + target_offset.y, source_width, source_height)
-	PLATFORM_BUILDER.add_platform(level, position.x, position.y + 12.0, 32.0, 12.0)
-	var platform: PlatformState = level.platforms.back()
-	platform.arrow_mode = true
-	platform.arrow_target_x = target.x
-	platform.arrow_target_y = target.y
-	platform.arrow_speed = 7.5 * 60.0 * scale
-
 func _source_runtime_position(level: LevelState, source_x: float, source_y: float, source_width: float, source_height: float) -> Vector2:
-	var terrain: Dictionary = _source_manifest.get("terrain", {})
-	var source_spawn_x := float(terrain.get("spawn_x", 96))
-	var source_spawn_y := float(terrain.get("spawn_y", 655))
-	var scale := _source_runtime_scale(source_width, source_height, level)
-	return Vector2(
-		clampf(180.0 + (source_x - source_spawn_x) * scale, 120.0, level.max_x - 120.0),
-		clampf(level.spawn_y + (source_y - source_spawn_y) * scale, 48.0, level.max_y - 24.0)
-	)
+	return COORDINATE_MAPPER.runtime_position(_source_manifest, level, source_x, source_y, source_width, source_height)
 
 func _source_runtime_scale(source_width: float, source_height: float, level: LevelState) -> float:
-	return clampf(minf((level.max_x - 360.0) / source_width, (level.max_y - 120.0) / source_height), 0.06, 0.14)
+	return COORDINATE_MAPPER.runtime_scale(source_width, source_height, level)
 
 func _source_entity_extent(value: Variant, source_width: float, source_height: float, level: LevelState) -> float:
-	return maxf(32.0, float(_to_int_field(value)) * 8.0 * _source_runtime_scale(source_width, source_height, level))
+	return COORDINATE_MAPPER.entity_extent(value, source_width, source_height, level)
 
 func _to_int_field(value: Variant) -> int:
-	return int(str(value).strip_edges())
+	return COORDINATE_MAPPER.to_int_field(value)
 
 func _apply_source_terrain(level: LevelState, source_width: float, source_height: float) -> void:
 	SOURCE_TERRAIN_LOADER.apply(level, _source_manifest.get("terrain", {}), source_width, source_height)

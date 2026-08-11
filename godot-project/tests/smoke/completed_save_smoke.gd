@@ -23,7 +23,7 @@ func _run() -> void:
 	_check(bridge._completed_character_routes == [true, true, true, true, true], "all routes completed")
 	_check(bridge._chaos_emerald_masks == [127, 127, 127, 127, 127], "all emeralds granted per character")
 	_check(bridge._sound_test_unlocked and bridge._boss_time_attack_unlocked, "extra modes unlocked")
-	_check(bridge._tiny_chao_unlocked and bridge._extra_ending_credits_played, "chao and credits unlocked")
+	_check(bridge._tiny_chao_state.unlocked and bridge._extra_ending_credits_played, "chao and credits unlocked")
 	_check(bridge.get_chaos_emerald_count() == 7, "selected character has seven emeralds")
 	_check(FileAccess.file_exists(smoke_path), "completed save persisted")
 	DirAccess.remove_absolute(smoke_path)

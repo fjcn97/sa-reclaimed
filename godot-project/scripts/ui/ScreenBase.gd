@@ -12,6 +12,12 @@ const VIEWPORT_RECT := Rect2(0.0, 0.0, 1280.0, 720.0)
 const UI_NODE_FACTORY := preload("res://scripts/ui/UiNodeFactory.gd")
 
 var screen_time: float = 0.0
+@export var state_bridge_path: NodePath = NodePath("/root/CoreBridge")
+
+## Screens resolve their state owner through this boundary so tests and future
+## scene composition can provide a bridge without changing the screen script.
+func resolve_state_bridge() -> Node:
+	return get_node_or_null(state_bridge_path)
 
 func _process(delta: float) -> void:
 	screen_time += delta

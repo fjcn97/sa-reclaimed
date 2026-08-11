@@ -15,7 +15,7 @@ func _run() -> void:
 	var record_key: String = bridge._get_current_time_attack_record_key()
 	bridge._time_attack_record_tables = {record_key: [10.0, 20.0, 30.0]}
 	bridge._time_attack_best_times = {record_key: 10.0}
-	bridge._clear_time_snapshot = 15.0
+	bridge._clear_result_state.time_snapshot = 15.0
 	bridge._language_index = 2
 	_check(bridge.get_time_attack_results_title_text() == "TIME ATTACK ERGEBNIS", "result title follows localization")
 	_check(bridge.get_time_attack_results_time_text() == "0'15\"00", "result time uses public bridge API")

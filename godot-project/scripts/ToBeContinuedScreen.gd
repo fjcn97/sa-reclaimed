@@ -9,8 +9,10 @@ var _glow: ColorRect = null
 var _stripe: ColorRect = null
 var _shadow: ColorRect = null
 var _pulse_time: float = 0.0
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -19,29 +21,31 @@ func _ready() -> void:
 	if detail_label == null:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
-	_set_screen_visible(CoreBridge.is_to_be_continued_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_to_be_continued_screen())
 
 func _process(delta: float) -> void:
-	var active := CoreBridge.is_to_be_continued_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_to_be_continued_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	_pulse_time += delta * 2.0
 	var sway := sin(_pulse_time) * 24.0
 	if title_label:
-		title_label.text = CoreBridge.get_to_be_continued_title_text()
+		title_label.text = _bridge.get_to_be_continued_title_text()
 		title_label.position = Vector2(170.0 + sway, 280.0)
 		title_label.size = Vector2(940.0, 80.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title_label.modulate = Color(0.98, 0.98, 1.0, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_to_be_continued_prompt_text()
+		prompt_label.text = _bridge.get_to_be_continued_prompt_text()
 		prompt_label.position = Vector2(238.0, 400.0)
 		prompt_label.size = Vector2(804.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		prompt_label.modulate = Color(1.0, 0.92, 0.64, 0.78 + absf(sin(_pulse_time * 1.2)) * 0.18)
 	if detail_label:
-		detail_label.text = CoreBridge.get_to_be_continued_detail_text()
+		detail_label.text = _bridge.get_to_be_continued_detail_text()
 		detail_label.position = Vector2(220.0, 612.0)
 		detail_label.size = Vector2(840.0, 30.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

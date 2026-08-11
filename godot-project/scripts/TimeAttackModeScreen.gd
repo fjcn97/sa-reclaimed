@@ -26,8 +26,10 @@ var _option_labels: Array[Label] = []
 var _meta_labels: Array[Label] = []
 var _status_labels: Array[Label] = []
 var _anim_time: float = 0.0
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -37,32 +39,34 @@ func _ready() -> void:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
 	_ensure_option_labels()
-	_set_screen_visible(CoreBridge.is_time_attack_mode_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_time_attack_mode_screen())
 
 func _process(delta: float) -> void:
-	var active: bool = CoreBridge.is_time_attack_mode_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_time_attack_mode_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	_anim_time += delta * 2.8
-	var intro_progress := CoreBridge.get_time_attack_mode_intro_progress()
+	var intro_progress: float = _bridge.get_time_attack_mode_intro_progress()
 	var intro_amount := 1.0 - intro_progress
 	var title_shift := -44.0 * intro_amount
 	var side_shift := 72.0 * intro_amount
 	if title_label:
-		title_label.text = CoreBridge.get_time_attack_mode_title_text()
+		title_label.text = _bridge.get_time_attack_mode_title_text()
 		title_label.position = Vector2(332.0 + title_shift, 76.0)
 		title_label.size = Vector2(604.0, 52.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title_label.modulate = Color(0.26, 0.20, 0.10, 0.35 + intro_progress * 0.65)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_time_attack_mode_prompt_text()
+		prompt_label.text = _bridge.get_time_attack_mode_prompt_text()
 		prompt_label.position = Vector2(164.0, 558.0)
 		prompt_label.size = Vector2(952.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		prompt_label.modulate = Color(0.88, 0.42, 0.16, (0.30 + intro_progress * 0.46) + absf(sin(_anim_time * 0.9)) * 0.18)
 	if detail_label:
-		detail_label.text = CoreBridge.get_time_attack_mode_detail_text()
+		detail_label.text = _bridge.get_time_attack_mode_detail_text()
 		detail_label.position = Vector2(148.0, 606.0)
 		detail_label.size = Vector2(984.0, 64.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -137,7 +141,7 @@ func _ensure_option_labels() -> void:
 		_status_labels.append(status)
 
 func _update_option_labels() -> void:
-	var rows: Array = CoreBridge.get_time_attack_mode_rows()
+	var rows: Array = _bridge.get_time_attack_mode_rows()
 	for i in range(_option_labels.size()):
 		var visible := i < rows.size()
 		_option_cards[i].visible = visible
@@ -167,16 +171,16 @@ func _update_option_labels() -> void:
 
 func _update_summary() -> void:
 	if _summary_label:
-		_summary_label.text = CoreBridge.get_time_attack_mode_summary_text()
+		_summary_label.text = _bridge.get_time_attack_mode_summary_text()
 		_summary_label.modulate = Color(0.34, 0.24, 0.12, 0.98)
 	if _emblem_label:
-		_emblem_label.text = CoreBridge.get_menu_badge_text("TA")
+		_emblem_label.text = _bridge.get_menu_badge_text("TA")
 		_emblem_label.modulate = Color(0.78, 0.32, 0.14, 0.98)
 	if _info_card:
 		_info_card.color = Color(1.0, 0.90, 0.78, 0.98)
 
 func _update_chrome() -> void:
-	var rows: Array = CoreBridge.get_time_attack_mode_rows()
+	var rows: Array = _bridge.get_time_attack_mode_rows()
 	var selected_index := 0
 	for i in range(rows.size()):
 		if bool((rows[i] as Dictionary).get("selected", false)):
@@ -214,7 +218,7 @@ func _update_chrome() -> void:
 func _get_selected_card_color(locked: bool) -> Color:
 	if locked:
 		return Color(0.56, 0.52, 0.54, 0.98)
-	return Color(0.90, 0.40, 0.16, 0.98) if CoreBridge.get_title_menu_index() == 1 else Color(0.24, 0.54, 0.96, 0.98)
+	return Color(0.90, 0.40, 0.16, 0.98) if _bridge.get_title_menu_index() == 1 else Color(0.24, 0.54, 0.96, 0.98)
 
 func _get_idle_card_color(locked: bool) -> Color:
 	if locked:

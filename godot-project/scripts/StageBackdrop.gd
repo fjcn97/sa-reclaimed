@@ -11,13 +11,21 @@ var _source_bg_texture: Texture2D = null
 var _source_bg_level_id := -1
 const BACKGROUND_PROFILE := preload("res://scripts/SourceBackgroundProfile.gd")
 
+@export var state_bridge_path: NodePath = NodePath("/root/CoreBridge")
+var _bridge: Node = null
+
 func _ready() -> void:
 	set_process(true)
+	_bridge = get_node_or_null(state_bridge_path)
 	queue_redraw()
 
 func _process(delta: float) -> void:
 	_time += delta
-	var manifest: Dictionary = CoreBridge.get_source_map_manifest()
+	if _bridge == null:
+		_bridge = get_node_or_null(state_bridge_path)
+		if _bridge == null:
+			return
+	var manifest: Dictionary = _bridge.get_source_map_manifest()
 	var level_id := int(manifest.get("level_id", -1)) if not manifest.is_empty() else -1
 	if level_id != _source_bg_level_id:
 		_source_bg_level_id = level_id
@@ -25,7 +33,9 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	var profile := CoreBridge.get_stage_backdrop_profile()
+	if _bridge == null:
+		return
+	var profile: Dictionary = _bridge.get_stage_backdrop_profile()
 	var sky: Color = profile.get("sky", Color(0.06, 0.11, 0.22))
 	var sky_mid: Color = profile.get("sky_mid", Color(0.10, 0.21, 0.39))
 	var sky_high: Color = profile.get("sky_high", Color(0.16, 0.36, 0.62))
@@ -51,7 +61,7 @@ func _draw() -> void:
 	draw_rect(Rect2(-2000.0, 452.0, 6000.0, 12.0), grass)
 	draw_rect(Rect2(-2000.0, 540.0, 6000.0, 1200.0), Color(0.08, 0.07, 0.08))
 
-	for platform in CoreBridge.get_platforms():
+	for platform in _bridge.get_platforms():
 		if not platform.active:
 			continue
 		var platform_width: float = platform.x2 - platform.x1

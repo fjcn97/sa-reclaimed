@@ -1,8 +1,11 @@
 extends Control
 
 var _time: float = 0.0
+@export var state_bridge_path: NodePath = NodePath("/root/CoreBridge")
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = get_node_or_null(state_bridge_path)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process(true)
 	queue_redraw()
@@ -12,8 +15,10 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	var playing := CoreBridge.is_sound_test_playing()
-	var tempo := CoreBridge.get_sound_test_tempo()
+	if _bridge == null:
+		_bridge = get_node_or_null(state_bridge_path)
+	var playing: bool = _bridge != null and _bridge.is_sound_test_playing()
+	var tempo: float = _bridge.get_sound_test_tempo() if _bridge != null else 0.0
 	var beat := sin(_time * (tempo * 0.46 if playing else 2.6))
 	var bob := beat * (5.0 if playing else 1.5)
 	var dance := beat * (12.0 if playing else 2.0)

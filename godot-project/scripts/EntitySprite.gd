@@ -7,13 +7,17 @@ const ENTITY_TYPES := preload("res://scripts/core/EntityTypes.gd")
 const TEXTURE_FACTORY := preload("res://scripts/ui/EntitySpriteTextureFactory.gd")
 var _texture_factory := TEXTURE_FACTORY.new()
 
+@export var state_bridge_path: NodePath = NodePath("/root/CoreBridge")
+
 var entity_state = null
 var _body: Sprite2D = null
 var _overlay: Sprite2D = null
 var _fallback: StageEntity = null
 var _pulse_time: float = 0.0
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = get_node_or_null(state_bridge_path)
 	_body = get_node_or_null("Body")
 	_overlay = get_node_or_null("Overlay")
 	if _body == null:
@@ -35,6 +39,8 @@ func bind_state(state) -> void:
 	_apply_visuals()
 
 func _process(delta: float) -> void:
+	if _bridge == null:
+		_bridge = get_node_or_null(state_bridge_path)
 	if entity_state == null:
 		visible = false
 		return
@@ -54,7 +60,11 @@ func _apply_visuals() -> void:
 	if entity_state == null or _body == null or _overlay == null:
 		return
 
-	var profile := CoreBridge.get_entity_visual_profile(entity_state.type, bool(entity_state.activated))
+	if _bridge == null:
+		_bridge = get_node_or_null(state_bridge_path)
+		if _bridge == null:
+			return
+	var profile: Dictionary = _bridge.get_entity_visual_profile(entity_state.type, bool(entity_state.activated))
 	var use_fallback := false
 	if _fallback:
 		_fallback.visible = false
@@ -258,21 +268,21 @@ func _animate(delta: float) -> void:
 			_body.rotation = sin(_pulse_time * 2.0) * 0.03
 		ENTITY_TYPES.ENTITY_CHECKPOINT:
 			_overlay.rotation = sin(_pulse_time * 6.0) * 0.08
-			var profile := CoreBridge.get_entity_visual_profile(entity_state.type, bool(entity_state.activated))
+			var profile: Dictionary = _bridge.get_entity_visual_profile(entity_state.type, bool(entity_state.activated)) if _bridge != null else {}
 			var offset: Vector2 = profile.get("overlay_offset", Vector2(16.0, -20.0))
 			_overlay.position.x = offset.x + sin(_pulse_time * 6.0) * 2.0
 			_overlay.position.y = offset.y
 			_overlay.modulate = profile.get("overlay_color", Color.WHITE)
 		ENTITY_TYPES.ENTITY_GOAL:
 			_overlay.rotation = sin(_pulse_time * 6.0) * 0.12
-			var profile := CoreBridge.get_entity_visual_profile(entity_state.type, false)
+			var profile: Dictionary = _bridge.get_entity_visual_profile(entity_state.type, false) if _bridge != null else {}
 			var offset: Vector2 = profile.get("overlay_offset", Vector2(18.0, -28.0))
 			_overlay.position.x = offset.x + sin(_pulse_time * 5.5) * 2.5
 			_overlay.position.y = offset.y
 			_body.rotation = sin(_pulse_time * 2.8) * 0.04
 		ENTITY_TYPES.ENTITY_GOAL_LEVER:
 			_overlay.rotation = sin(_pulse_time * 6.0) * 0.12
-			var lever_profile := CoreBridge.get_entity_visual_profile(entity_state.type, bool(entity_state.activated))
+			var lever_profile: Dictionary = _bridge.get_entity_visual_profile(entity_state.type, bool(entity_state.activated)) if _bridge != null else {}
 			var lever_offset: Vector2 = lever_profile.get("overlay_offset", Vector2(18.0, -28.0))
 			_overlay.position = lever_offset
 			_body.rotation = sin(_pulse_time * 2.8) * 0.04

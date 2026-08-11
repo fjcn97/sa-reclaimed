@@ -2,6 +2,8 @@
 extends RefCounted
 class_name EntitySpriteTextureFactory
 
+const ITEM_BOX_KINDS := preload("res://scripts/core/ItemBoxKinds.gd")
+
 func make_ring_texture() -> Texture2D:
 	var image := Image.create(32, 32, false, Image.FORMAT_RGBA8)
 	image.fill(Color(0, 0, 0, 0))
@@ -365,24 +367,24 @@ func make_item_box_icon_texture() -> Texture2D:
 
 func item_box_icon_texture(item_kind: int) -> Texture2D:
 	match item_kind:
-		CoreBridge.ITEM_BOX_KIND_SHIELD, CoreBridge.ITEM_BOX_KIND_MAGNETIC_SHIELD:
+		ITEM_BOX_KINDS.SHIELD, ITEM_BOX_KINDS.MAGNETIC_SHIELD:
 			return make_shield_icon_texture()
-		CoreBridge.ITEM_BOX_KIND_INVINCIBILITY:
+		ITEM_BOX_KINDS.INVINCIBILITY:
 			return make_invincibility_icon_texture()
-		CoreBridge.ITEM_BOX_KIND_SPEED_UP:
+		ITEM_BOX_KINDS.SPEED_UP:
 			return make_speed_icon_texture()
-		CoreBridge.ITEM_BOX_KIND_ONE_UP:
+		ITEM_BOX_KINDS.ONE_UP:
 			return make_one_up_icon_texture()
 		_:
 			return make_item_box_icon_texture()
 
 func item_box_icon_color(item_kind: int) -> Color:
 	match item_kind:
-		CoreBridge.ITEM_BOX_KIND_MAGNETIC_SHIELD:
+		ITEM_BOX_KINDS.MAGNETIC_SHIELD:
 			return Color(0.72, 0.48, 1.0, 1.0)
-		CoreBridge.ITEM_BOX_KIND_SPEED_UP:
+		ITEM_BOX_KINDS.SPEED_UP:
 			return Color(1.0, 0.78, 0.24, 1.0)
-		CoreBridge.ITEM_BOX_KIND_ONE_UP:
+		ITEM_BOX_KINDS.ONE_UP:
 			return Color(0.52, 1.0, 0.62, 1.0)
 		_:
 			return Color.WHITE
@@ -472,4 +474,3 @@ func make_solid_texture(width: int, height: int, color: Color) -> Texture2D:
 	var image := Image.create(width, height, false, Image.FORMAT_RGBA8)
 	image.fill(color)
 	return ImageTexture.create_from_image(image)
-

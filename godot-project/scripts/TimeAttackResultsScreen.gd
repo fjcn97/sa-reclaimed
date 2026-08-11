@@ -13,18 +13,22 @@ var _time: Label
 var _medal: Label
 var _record: Label
 var _prompt: Label
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	layer = 97
 	_build_screen()
 	_set_visible(false)
 
 func _process(_delta: float) -> void:
-	var active := CoreBridge.is_time_attack_clear_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_time_attack_clear_screen()
 	_set_visible(active)
 	if not active:
 		return
-	var progress := CoreBridge.get_time_attack_results_progress()
+	var progress: float = _bridge.get_time_attack_results_progress()
 	var eased := 1.0 - pow(1.0 - progress, 3.0)
 	var slide := (1.0 - eased) * 180.0
 	_title.position = Vector2(220.0 + slide, 108.0)
@@ -33,12 +37,12 @@ func _process(_delta: float) -> void:
 	_medal.position = Vector2(694.0 - slide, 264.0)
 	_record.position = Vector2(694.0 - slide, 420.0)
 	_prompt.position = Vector2(220.0, 586.0)
-	_title.text = CoreBridge.get_time_attack_results_title_text()
-	_stage.text = CoreBridge.get_clear_stage_label()
-	_time.text = CoreBridge.get_time_attack_results_time_text()
-	_medal.text = CoreBridge.get_time_attack_results_medal_text()
-	_record.text = CoreBridge.get_time_attack_results_record_text()
-	_prompt.text = CoreBridge.get_time_attack_results_prompt_text()
+	_title.text = _bridge.get_time_attack_results_title_text()
+	_stage.text = _bridge.get_clear_stage_label()
+	_time.text = _bridge.get_time_attack_results_time_text()
+	_medal.text = _bridge.get_time_attack_results_medal_text()
+	_record.text = _bridge.get_time_attack_results_record_text()
+	_prompt.text = _bridge.get_time_attack_results_prompt_text()
 	var alpha := 0.40 + eased * 0.60
 	_title.modulate.a = alpha
 	_stage.modulate.a = alpha

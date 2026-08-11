@@ -25,9 +25,11 @@ var _option_labels: Array[Label] = []
 var _meta_labels: Array[Label] = []
 var _status_labels: Array[Label] = []
 var _pulse_time: float = 0.0
+var _bridge: Node = null
 
 func _ready() -> void:
 	set_process(true)
+	_bridge = resolve_state_bridge()
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
 	if prompt_label == null:
@@ -36,17 +38,22 @@ func _ready() -> void:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
 	_ensure_option_rows()
-	_set_screen_visible(CoreBridge.is_play_mode_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_play_mode_screen())
 
 func _process(delta: float) -> void:
-	var screen_visible := CoreBridge.is_play_mode_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+		if _bridge == null:
+			_set_screen_visible(false)
+			return
+	var screen_visible: bool = _bridge.is_play_mode_screen()
 	_set_screen_visible(screen_visible)
 	if not screen_visible:
 		return
 
 	_pulse_time += delta * 2.4
 	if title_label:
-		title_label.text = CoreBridge.get_play_mode_title_text()
+		title_label.text = _bridge.get_play_mode_title_text()
 		title_label.position = Vector2(338.0, 76.0)
 		title_label.size = Vector2(604.0, 52.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -54,7 +61,7 @@ func _process(delta: float) -> void:
 	if prompt_label:
 		prompt_label.visible = false
 	if detail_label:
-		detail_label.text = CoreBridge.get_play_mode_detail_text()
+		detail_label.text = _bridge.get_play_mode_detail_text()
 		detail_label.position = Vector2(148.0, 636.0)
 		detail_label.size = Vector2(984.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -111,7 +118,7 @@ func _ensure_option_rows() -> void:
 		_status_labels.append(status)
 
 func _update_option_rows() -> void:
-	var rows: Array = CoreBridge.get_play_mode_rows()
+	var rows: Array = _bridge.get_play_mode_rows()
 	for i in range(_option_cards.size()):
 		var visible := i < rows.size()
 		_option_cards[i].visible = visible
@@ -138,13 +145,13 @@ func _update_option_rows() -> void:
 
 func _update_summary() -> void:
 	if _summary_label:
-		_summary_label.text = CoreBridge.get_play_mode_summary_text()
+		_summary_label.text = _bridge.get_play_mode_summary_text()
 		_summary_label.modulate = Color(0.14, 0.22, 0.38, 0.98)
 	if _badge_label:
 		_badge_label.visible = false
 
 func _update_chrome() -> void:
-	var chrome := CoreBridge.get_play_mode_chrome_colors()
+	var chrome: Dictionary = _bridge.get_play_mode_chrome_colors() if _bridge else {}
 	var accent: Color = Color(chrome.get("accent", _accent.color))
 	var panel_color: Color = Color(chrome.get("panel", _panel.color))
 	var glow_alpha := 0.20 + absf(sin(_pulse_time * 0.6)) * 0.08

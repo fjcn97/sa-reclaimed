@@ -8,6 +8,8 @@ func _init() -> void:
 
 func _run() -> void:
 	var bridge: Node = get_root().get_node("CoreBridge")
+	var original_language: int = bridge._language_index
+	bridge._language_index = 1
 	bridge._selected_level_index = 1
 	bridge._unlocked_level_index = 2
 	bridge._character_unlock_pending = 1
@@ -36,6 +38,7 @@ func _run() -> void:
 	for _frame in range(301):
 		bridge.advance_ui_timers(1.0 / 60.0)
 	_check(not bridge.is_character_unlock_screen(), "final message resolves after source duration")
+	bridge._language_index = original_language
 
 	print("CHARACTER_UNLOCK_CHECKS=%d" % checks)
 	quit(1 if failed else 0)

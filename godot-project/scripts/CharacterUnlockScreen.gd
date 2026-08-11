@@ -19,8 +19,10 @@ var _dialogue_cache: Dictionary = {}
 var _slide_name := ""
 var _dialogue_name := ""
 var _time: float = 0.0
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -29,23 +31,25 @@ func _ready() -> void:
 	if detail_label == null:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
-	_set_screen_visible(CoreBridge.is_character_unlock_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_character_unlock_screen())
 
 func _process(delta: float) -> void:
-	var active := CoreBridge.is_character_unlock_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_character_unlock_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	_time += delta
 	var pulse := 0.5 + sin(_time * 2.4) * 0.5
 	if title_label:
-		title_label.text = CoreBridge.get_character_unlock_title_text()
+		title_label.text = _bridge.get_character_unlock_title_text()
 		title_label.modulate = Color(0.96, 0.98, 1.0, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_character_unlock_prompt_text()
+		prompt_label.text = _bridge.get_character_unlock_prompt_text()
 		prompt_label.modulate = Color(1.0, 0.82, 0.28, 0.86 + pulse * 0.14)
 	if detail_label:
-		detail_label.text = CoreBridge.get_character_unlock_detail_text()
+		detail_label.text = _bridge.get_character_unlock_detail_text()
 		detail_label.modulate = Color(0.74, 0.88, 1.0, 0.92)
 	if _portrait:
 		_portrait.color = Color(0.24, 0.66, 1.0, 0.20 + pulse * 0.16)
@@ -84,8 +88,8 @@ func _create_source_texture(node_name: String, position: Vector2, size: Vector2,
 func _update_source_cards() -> void:
 	if _slide_texture == null or _dialogue_texture == null:
 		return
-	var slide_name := CoreBridge.get_character_unlock_source_slide_tilemap()
-	var dialogue_name := CoreBridge.get_character_unlock_source_dialogue_tilemap()
+	var slide_name: String = _bridge.get_character_unlock_source_slide_tilemap()
+	var dialogue_name: String = _bridge.get_character_unlock_source_dialogue_tilemap()
 	if slide_name != _slide_name:
 		_slide_name = slide_name
 		if not _source_cache.has(slide_name) and not slide_name.is_empty():

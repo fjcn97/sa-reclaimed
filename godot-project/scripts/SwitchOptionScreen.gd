@@ -25,9 +25,11 @@ var _badge_label: Label = null
 var _row_cards: Array[ColorRect] = []
 var _row_labels: Array[Label] = []
 var _status_labels: Array[Label] = []
+var _bridge: Node = null
 
 func _ready() -> void:
 	set_process(true)
+	_bridge = resolve_state_bridge()
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
 	if prompt_label == null:
@@ -199,67 +201,67 @@ func _update_rows() -> void:
 
 func _is_active() -> bool:
 	if screen_id == "difficulty":
-		return CoreBridge.is_difficulty_screen()
+		return _bridge != null and _bridge.is_difficulty_screen()
 	if screen_id == "time_limit":
-		return CoreBridge.is_time_limit_screen()
+		return _bridge != null and _bridge.is_time_limit_screen()
 	if screen_id == "delete_confirm":
-		return CoreBridge.is_delete_confirm_screen()
+		return _bridge != null and _bridge.is_delete_confirm_screen()
 	if screen_id == "delete_final":
-		return CoreBridge.is_delete_final_confirm_screen()
+		return _bridge != null and _bridge.is_delete_final_confirm_screen()
 	return false
 
 func _get_title_text() -> String:
 	if screen_id == "difficulty":
-		return CoreBridge.get_difficulty_title_text()
+		return _bridge.get_difficulty_title_text()
 	if screen_id == "time_limit":
-		return CoreBridge.get_time_limit_title_text()
+		return _bridge.get_time_limit_title_text()
 	if screen_id == "delete_confirm" or screen_id == "delete_final":
-		return CoreBridge.get_delete_confirm_title_text()
+		return _bridge.get_delete_confirm_title_text()
 	return ""
 
 func _get_prompt_text() -> String:
 	if screen_id == "difficulty":
-		return CoreBridge.get_difficulty_prompt_text()
+		return _bridge.get_difficulty_prompt_text()
 	if screen_id == "time_limit":
-		return CoreBridge.get_time_limit_prompt_text()
+		return _bridge.get_time_limit_prompt_text()
 	if screen_id == "delete_confirm" or screen_id == "delete_final":
-		return CoreBridge.get_delete_confirm_prompt_text()
+		return _bridge.get_delete_confirm_prompt_text()
 	return ""
 
 func _get_summary_text() -> String:
 	if screen_id == "difficulty":
-		return CoreBridge.get_difficulty_summary_text()
+		return _bridge.get_difficulty_summary_text()
 	if screen_id == "time_limit":
-		return CoreBridge.get_time_limit_summary_text()
+		return _bridge.get_time_limit_summary_text()
 	if screen_id == "delete_confirm" or screen_id == "delete_final":
-		return CoreBridge.get_delete_confirm_summary_text()
+		return _bridge.get_delete_confirm_summary_text()
 	return ""
 
 func _get_detail_text() -> String:
 	if screen_id == "difficulty":
-		return CoreBridge.get_difficulty_detail_text()
+		return _bridge.get_difficulty_detail_text()
 	if screen_id == "time_limit":
-		return CoreBridge.get_time_limit_detail_text()
+		return _bridge.get_time_limit_detail_text()
 	if screen_id == "delete_confirm" or screen_id == "delete_final":
-		return CoreBridge.get_delete_confirm_detail_text()
+		return _bridge.get_delete_confirm_detail_text()
 	return ""
 
 func _get_rows() -> Array:
 	if screen_id == "difficulty":
-		return CoreBridge.get_difficulty_rows()
+		return _bridge.get_difficulty_rows()
 	if screen_id == "time_limit":
-		return CoreBridge.get_time_limit_rows()
+		return _bridge.get_time_limit_rows()
 	if screen_id == "delete_confirm" or screen_id == "delete_final":
-		return CoreBridge.get_delete_confirm_rows()
+		return _bridge.get_delete_confirm_rows()
 	return []
 
 func _get_chrome_colors() -> Dictionary:
 	if screen_id == "difficulty":
-		return CoreBridge.get_difficulty_chrome_colors()
+		return _bridge.get_difficulty_chrome_colors()
 	if screen_id == "time_limit":
-		return CoreBridge.get_time_limit_chrome_colors()
+		return _bridge.get_time_limit_chrome_colors()
 	if screen_id == "delete_confirm" or screen_id == "delete_final":
-		return CoreBridge.get_delete_confirm_chrome_colors()
+		return _bridge.get_delete_confirm_chrome_colors()
 	return {}
 
 func _get_accent_color() -> Color:
@@ -286,7 +288,7 @@ func _is_delete_final_screen() -> bool:
 	return screen_id == "delete_final"
 
 func _get_badge_text() -> String:
-	return CoreBridge.get_switch_option_badge_text(screen_id)
+	return _bridge.get_switch_option_badge_text(screen_id)
 
 func _get_badge_text_color() -> Color:
 	if _is_delete_screen():

@@ -23,15 +23,15 @@ func _create_texture(screen: Node, node_name: String, layer_index: int) -> Textu
 	screen.add_child(node)
 	return node
 
-func update() -> void:
-	var final_mode := CoreBridge.is_final_intro_screen()
+## The screen provides final-intro state and source paths. This helper only
+## builds and caches textures for the supplied presentation data.
+func update(final_mode: bool, sources: Array) -> void:
 	if background:
 		background.visible = final_mode
 	if clouds:
 		clouds.visible = final_mode
 	if not final_mode:
 		return
-	var sources: Array = CoreBridge.get_final_intro_source_tilemaps()
 	if sources.size() < 2:
 		return
 	for source in sources:
@@ -42,8 +42,8 @@ func update() -> void:
 	if clouds:
 		clouds.texture = source_cache[sources[1]] as Texture2D
 
-func set_visible(screen_visible: bool) -> void:
+func set_visible(screen_visible: bool, final_mode: bool) -> void:
 	if background:
-		background.visible = screen_visible and CoreBridge.is_final_intro_screen()
+		background.visible = screen_visible and final_mode
 	if clouds:
-		clouds.visible = screen_visible and CoreBridge.is_final_intro_screen()
+		clouds.visible = screen_visible and final_mode

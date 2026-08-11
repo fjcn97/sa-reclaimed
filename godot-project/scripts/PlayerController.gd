@@ -18,6 +18,7 @@ const MENU_INPUT_REPEATER := preload("res://scripts/core/MenuInputRepeater.gd")
 const MENU_INPUT_ROUTER := preload("res://scripts/core/MenuInputRouter.gd")
 
 @export var player_path: NodePath = NodePath("../Player")
+@export var state_bridge_path: NodePath = NodePath("/root/CoreBridge")
 
 var _held_input: int = 0
 var _frame_input: int = 0
@@ -28,36 +29,43 @@ var _joypad_axis_input: int = 0
 var _touch_held_input: int = 0
 var _touch_frame_input: int = 0
 var _player: Node2D = null
+var _bridge: Node = null
 var _menu_repeater := MENU_INPUT_REPEATER.new()
 var _menu_router := MENU_INPUT_ROUTER.new()
 
 func _ready() -> void:
 	set_physics_process(true)
 	set_process_input(true)
+	_bridge = get_node_or_null(state_bridge_path)
 	_player = get_node_or_null(player_path)
-	if _player:
-		_player.global_position = Vector2(CoreBridge.get_player_state().world_x, CoreBridge.get_player_state().world_y)
+	if _player and _bridge:
+		var state = _bridge.get_player_state()
+		_player.global_position = Vector2(state.world_x, state.world_y)
 
 func _physics_process(delta: float) -> void:
+	if _bridge == null:
+		_bridge = get_node_or_null(state_bridge_path)
+		if _bridge == null:
+			return
 	_sample_input()
-	CoreBridge.advance_ui_timers(delta, get_held_input(), get_frame_input())
-	if not CoreBridge.is_gameplay_active():
+	_bridge.advance_ui_timers(delta, get_held_input(), get_frame_input())
+	if not _bridge.is_gameplay_active():
 		_handle_menu_input(_get_menu_frame_input(delta))
 		_frame_input = 0
 		_fallback_frame_input = 0
 		_touch_frame_input = 0
 		return
-	var gameplay_held := CoreBridge.translate_gameplay_input(get_held_input())
-	var gameplay_frame := CoreBridge.translate_gameplay_input(get_frame_input())
-	if CoreBridge.is_demo_mode():
-		gameplay_held = CoreBridge.get_demo_held_input()
-		gameplay_frame = CoreBridge.get_demo_frame_input()
-	CoreBridge.physics_tick(gameplay_held, gameplay_frame, delta)
+	var gameplay_held: int = _bridge.translate_gameplay_input(get_held_input())
+	var gameplay_frame: int = _bridge.translate_gameplay_input(get_frame_input())
+	if _bridge.is_demo_mode():
+		gameplay_held = _bridge.get_demo_held_input()
+		gameplay_frame = _bridge.get_demo_frame_input()
+	_bridge.physics_tick(gameplay_held, gameplay_frame, delta)
 	_frame_input = 0
 	_fallback_frame_input = 0
 	_touch_frame_input = 0
 
-	var state = CoreBridge.get_player_state()
+	var state = _bridge.get_player_state()
 	if _player:
 		_player.global_position = Vector2(state.world_x, state.world_y)
 	emit_signal("player_state_updated", state)
@@ -68,7 +76,7 @@ func _sample_input() -> void:
 	# polled InputMap/physical-key state into that path: a quick key tap can be
 	# observed once as an event and again as a polled transition, which causes
 	# cursor flashes or an extra menu step. Gameplay retains the full sampler.
-	var new_held: int = device_held if not CoreBridge.is_gameplay_active() else InputBindings.sample_action_input(device_held)
+	var new_held: int = device_held if _bridge == null or not _bridge.is_gameplay_active() else InputBindings.sample_action_input(device_held)
 
 	_frame_input = (new_held & ~_prev_input) | _fallback_frame_input | _touch_frame_input
 	_held_input = new_held
@@ -92,9 +100,11 @@ func _input(event: InputEvent) -> void:
 func _handle_key_event(event: InputEventKey) -> bool:
 	# The Options overview uses Escape for back. Do not turn X into a menu
 	# action there; Name Entry still handles X as a printable character below.
-	if (CoreBridge.is_options_main_screen() or CoreBridge.is_player_data_screen() or CoreBridge.is_language_screen() or CoreBridge.is_delete_confirm_screen() or CoreBridge.is_delete_final_confirm_screen()) and event.keycode == KEY_X:
+	if _bridge == null:
+		return false
+	if (_bridge.is_options_main_screen() or _bridge.is_player_data_screen() or _bridge.is_language_screen() or _bridge.is_delete_confirm_screen() or _bridge.is_delete_final_confirm_screen()) and event.keycode == KEY_X:
 		return true
-	if IMMEDIATE_MENU_KEY_ROUTER.handle(CoreBridge, event):
+	if IMMEDIATE_MENU_KEY_ROUTER.handle(_bridge, event):
 		return true
 	var bit := INPUT_DEVICE_SAMPLER.key_event_bit(event)
 	if bit == 0:
@@ -127,10 +137,10 @@ func _handle_joypad_motion(event: InputEventJoypadMotion) -> void:
 	_joypad_axis_input = INPUT_DEVICE_SAMPLER.joypad_axis_bits(
 		event,
 		_joypad_axis_input,
-		CoreBridge.DPAD_LEFT,
-		CoreBridge.DPAD_RIGHT,
-		CoreBridge.DPAD_UP,
-		CoreBridge.DPAD_DOWN
+		_bridge.DPAD_LEFT,
+		_bridge.DPAD_RIGHT,
+		_bridge.DPAD_UP,
+		_bridge.DPAD_DOWN
 	)
 
 # Compatibility entry points retained for existing smoke tests and tooling.
@@ -146,10 +156,11 @@ func _poll_physical_keys() -> int:
 	return InputBindings.sample_physical_keys()
 
 func _handle_menu_input(frame_input: int) -> void:
-	_menu_router.handle(CoreBridge, frame_input)
+	if _bridge:
+		_menu_router.handle(_bridge, frame_input)
 
 func _get_menu_frame_input(delta: float) -> int:
-	return _menu_repeater.sample(delta, _held_input, _frame_input, CoreBridge.is_name_entry_screen())
+	return _menu_repeater.sample(delta, _held_input, _frame_input, _bridge != null and _bridge.is_name_entry_screen())
 
 func get_held_input() -> int:
 	return _held_input

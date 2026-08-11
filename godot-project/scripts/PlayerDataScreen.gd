@@ -29,8 +29,10 @@ var _row_cards: Array[ColorRect] = []
 var _row_labels: Array[Label] = []
 var _value_labels: Array[Label] = []
 var _status_labels: Array[Label] = []
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -41,15 +43,17 @@ func _ready() -> void:
 	_ensure_chrome()
 	_ensure_header_labels()
 	_ensure_rows()
-	_set_screen_visible(CoreBridge.is_player_data_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_player_data_screen())
 
 func _process(_delta: float) -> void:
-	var active: bool = CoreBridge.is_player_data_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_player_data_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	if title_label:
-		title_label.text = CoreBridge.get_player_data_title_text()
+		title_label.text = _bridge.get_player_data_title_text()
 		title_label.position = Vector2(334.0, 76.0)
 		title_label.size = Vector2(604.0, 52.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -57,7 +61,7 @@ func _process(_delta: float) -> void:
 	if prompt_label:
 		prompt_label.visible = false
 	if detail_label:
-		detail_label.text = CoreBridge.get_player_data_detail_text()
+		detail_label.text = _bridge.get_player_data_detail_text()
 		detail_label.position = Vector2(148.0, 636.0)
 		detail_label.size = Vector2(984.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -126,8 +130,9 @@ func _update_header() -> void:
 	if _slot_label:
 		_slot_label.visible = false
 	if _summary_label:
-		var summary_lines := CoreBridge.get_player_data_summary_text().split("\n")
-		_summary_label.text = "%s\n%s" % [summary_lines[0], summary_lines[2]] if summary_lines.size() >= 3 else CoreBridge.get_player_data_summary_text()
+		var summary_text: String = _bridge.get_player_data_summary_text()
+		var summary_lines := summary_text.split("\n")
+		_summary_label.text = "%s\n%s" % [summary_lines[0], summary_lines[2]] if summary_lines.size() >= 3 else summary_text
 		_summary_label.modulate = Color(0.18, 0.30, 0.24, 0.98)
 	if _badge_label == null:
 		_badge_label = ensure_label("BadgeLabel", Vector2(902.0, 316.0), Vector2(200.0, 34.0), 22)
@@ -156,7 +161,7 @@ func _update_chrome() -> void:
 		_summary_card.visible = false
 
 func _update_rows() -> void:
-	var rows: Array = CoreBridge.get_player_data_rows()
+	var rows: Array = _bridge.get_player_data_rows()
 	for i in range(_row_labels.size()):
 		var visible := i < rows.size()
 		_row_cards[i].visible = visible

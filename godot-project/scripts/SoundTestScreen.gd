@@ -36,6 +36,7 @@ var _gradient_bands: Array[ColorRect] = []
 var _gradient_time: float = 0.0
 var _track_audio_player: AudioStreamPlayer = null
 var _track_audio_key := ""
+var _bridge: Node = null
 
 const SOURCE_BG_PALETTE: Array[Color] = [
 	Color(0.02, 0.03, 0.08, 0.96),
@@ -50,6 +51,7 @@ const SOURCE_BG_PALETTE: Array[Color] = [
 
 func _ready() -> void:
 	set_process(true)
+	_bridge = resolve_state_bridge()
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
 	if prompt_label == null:
@@ -63,10 +65,10 @@ func _ready() -> void:
 	_track_audio_player = AudioStreamPlayer.new()
 	_track_audio_player.name = "SoundTestPreviewPlayer"
 	add_child(_track_audio_player)
-	_set_screen_visible(CoreBridge.is_sound_test_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_sound_test_screen())
 
 func _process(_delta: float) -> void:
-	var active: bool = CoreBridge.is_sound_test_screen()
+	var active: bool = _bridge != null and _bridge.is_sound_test_screen()
 	_set_screen_visible(active)
 	if not active:
 		_stop_track_preview()
@@ -75,18 +77,18 @@ func _process(_delta: float) -> void:
 	_gradient_time += _delta
 	var pulse := 0.5 + (sin(Time.get_ticks_msec() / 210.0) * 0.5)
 	if title_label:
-		title_label.text = CoreBridge.get_sound_test_title_text()
+		title_label.text = _bridge.get_sound_test_title_text()
 		title_label.position = Vector2(248.0, 116.0)
 		title_label.size = Vector2(628.0, 56.0)
 		title_label.modulate = Color(0.92, 0.97, 1.0, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_sound_test_prompt_text()
+		prompt_label.text = _bridge.get_sound_test_prompt_text()
 		prompt_label.position = Vector2(182.0, 550.0)
 		prompt_label.size = Vector2(916.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		prompt_label.modulate = Color(1.0, 0.90, 0.52, 0.74 + (pulse * 0.26))
 	if detail_label:
-		detail_label.text = "%s   |   %s" % [CoreBridge.get_sound_test_status_text(), CoreBridge.get_sound_test_detail_text()]
+		detail_label.text = "%s   |   %s" % [_bridge.get_sound_test_status_text(), _bridge.get_sound_test_detail_text()]
 		detail_label.position = Vector2(164.0, 664.0)
 		detail_label.size = Vector2(952.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -99,16 +101,16 @@ func _process(_delta: float) -> void:
 	_update_gradient_bands()
 
 func _sync_track_preview() -> void:
-	var playing := CoreBridge.is_sound_test_playing()
+	var playing: bool = _bridge.is_sound_test_playing()
 	if not playing:
 		_stop_track_preview()
 		return
-	var track_key := "%d:%s" % [CoreBridge.get_sound_test_track_number(), CoreBridge.get_sound_test_track_name()]
+	var track_key := "%d:%s" % [_bridge.get_sound_test_track_number(), _bridge.get_sound_test_track_name()]
 	if _track_audio_player == null:
 		return
 	if track_key != _track_audio_key or _track_audio_player.stream == null:
 		_track_audio_key = track_key
-		_track_audio_player.stream = SoundTestPreviewGenerator.make_preview(CoreBridge.get_sound_test_track_number(), CoreBridge.get_sound_test_tempo())
+		_track_audio_player.stream = SoundTestPreviewGenerator.make_preview(_bridge.get_sound_test_track_number(), _bridge.get_sound_test_tempo())
 		_track_audio_player.play()
 	elif not _track_audio_player.playing:
 		_track_audio_player.play()
@@ -187,7 +189,7 @@ func _ensure_labels() -> void:
 	_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	if _badge_label == null:
 		_badge_label = ensure_label("BadgeLabel", Vector2(886.0, 160.0), Vector2(124.0, 38.0), 18)
-	_badge_label.text = CoreBridge.get_menu_badge_text("AUDIO")
+	_badge_label.text = _bridge.get_menu_badge_text("AUDIO")
 	_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
 
 func _ensure_rows() -> void:
@@ -217,17 +219,17 @@ func _ensure_mascot() -> void:
 
 func _update_header() -> void:
 	if _track_number_label:
-		_track_number_label.text = CoreBridge.get_sound_test_track_number_text()
+		_track_number_label.text = _bridge.get_sound_test_track_number_text()
 	if _track_name_label:
-		_track_name_label.text = CoreBridge.get_sound_test_track_name()
+		_track_name_label.text = _bridge.get_sound_test_track_name()
 	if _status_label:
-		_status_label.text = CoreBridge.get_sound_test_status_text()
+		_status_label.text = _bridge.get_sound_test_status_text()
 		_status_label.visible = true
 	if _summary_label:
-		_summary_label.text = CoreBridge.get_sound_test_summary_text().replace("\n", "   ")
+		_summary_label.text = _bridge.get_sound_test_summary_text().replace("\n", "   ")
 
 func _update_chrome() -> void:
-	var colors := CoreBridge.get_sound_test_chrome_colors()
+	var colors: Dictionary = _bridge.get_sound_test_chrome_colors()
 	if _accent:
 		_accent.color = colors.get("accent", Color(0.18, 0.78, 0.98, 1.0))
 	if _hero_glow:
@@ -250,7 +252,7 @@ func _update_chrome() -> void:
 		_badge_core.color = Color(badge.r * 0.30, badge.g * 0.26, badge.b * 0.30, 0.96)
 
 func _update_rows() -> void:
-	var rows: Array = CoreBridge.get_sound_test_rows()
+	var rows: Array = _bridge.get_sound_test_rows()
 	for i in range(_row_labels.size()):
 		var visible := i < rows.size()
 		_row_cards[i].visible = visible
@@ -274,7 +276,7 @@ func _update_rows() -> void:
 func _update_name_ticker() -> void:
 	if _ticker_label == null:
 		return
-	var ticker_text := "   %02d  %s   " % [CoreBridge.get_sound_test_track_number(), CoreBridge.get_sound_test_track_name()]
+	var ticker_text := "   %02d  %s   " % [_bridge.get_sound_test_track_number(), _bridge.get_sound_test_track_name()]
 	_ticker_label.text = ticker_text.repeat(3)
 	var cycle_width := 1320.0
 	var offset := fmod(float(Time.get_ticks_msec()) * 0.18, cycle_width)
@@ -283,10 +285,10 @@ func _update_name_ticker() -> void:
 func _update_speaker_animation() -> void:
 	if _speaker_glow == null:
 		return
-	var chrome := CoreBridge.get_sound_test_chrome_colors()
+	var chrome: Dictionary = _bridge.get_sound_test_chrome_colors()
 	var glow_base: Color = chrome.get("glow", Color(0.28, 0.88, 0.98, 0.34))
 	var pulse := 0.32 + 0.18 * sin(float(Time.get_ticks_msec()) * 0.008)
-	if CoreBridge.is_sound_test_playing():
+	if _bridge.is_sound_test_playing():
 		pulse += 0.26
 	_speaker_glow.color = Color(glow_base.r, glow_base.g, glow_base.b, clamp(pulse, 0.20, 0.72))
 

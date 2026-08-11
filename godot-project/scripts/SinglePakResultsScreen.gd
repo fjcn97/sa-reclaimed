@@ -26,8 +26,10 @@ var _stat_labels: Array[Label] = []
 var _option_cards: Array[ColorRect] = []
 var _option_labels: Array[Label] = []
 var _pulse_time: float = 0.0
+var _bridge: Node = null
 
 func _ready() -> void:
+	_bridge = resolve_state_bridge()
 	set_process(true)
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
@@ -38,29 +40,31 @@ func _ready() -> void:
 	_ensure_chrome()
 	_ensure_rows()
 	_ensure_options()
-	_set_screen_visible(CoreBridge.is_singlepak_results_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_singlepak_results_screen())
 
 func _process(delta: float) -> void:
-	var active := CoreBridge.is_singlepak_results_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var active: bool = _bridge != null and _bridge.is_singlepak_results_screen()
 	_set_screen_visible(active)
 	if not active:
 		return
 	_pulse_time += delta * 3.0
 	var pulse := 0.5 + (sin(_pulse_time * 1.1) * 0.5)
 	if title_label:
-		title_label.text = CoreBridge.get_multiplayer_results_title()
+		title_label.text = _bridge.get_multiplayer_results_title()
 		title_label.position = Vector2(248.0, 116.0)
 		title_label.size = Vector2(620.0, 54.0)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title_label.modulate = Color(0.98, 0.98, 1.0, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_multiplayer_results_prompt()
+		prompt_label.text = _bridge.get_multiplayer_results_prompt()
 		prompt_label.position = Vector2(186.0, 548.0)
 		prompt_label.size = Vector2(908.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		prompt_label.modulate = Color(1.0, 0.86, 0.38, 0.76 + pulse * 0.20)
 	if detail_label:
-		detail_label.text = CoreBridge.get_multiplayer_results_detail()
+		detail_label.text = _bridge.get_multiplayer_results_detail()
 		detail_label.position = Vector2(164.0, 664.0)
 		detail_label.size = Vector2(952.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -138,8 +142,8 @@ func _ensure_summary_label() -> void:
 
 func _update_rows() -> void:
 	_ensure_summary_label()
-	var rows: Array = CoreBridge.get_singlepak_result_rows()
-	var selection_mode := CoreBridge.is_multiplayer_character_selection_results()
+	var rows: Array = _bridge.get_singlepak_result_rows()
+	var selection_mode: bool = _bridge.is_multiplayer_character_selection_results()
 	for i in range(_row_labels.size()):
 		var visible := i < rows.size()
 		_row_cards[i].visible = visible
@@ -164,7 +168,7 @@ func _update_rows() -> void:
 		_stat_labels[i].modulate = Color(1.0, 0.84, 0.40, 1.0) if is_winner else Color(0.82, 0.88, 0.98, 0.96)
 
 func _update_options() -> void:
-	var rows: Array = CoreBridge.get_multiplayer_result_option_rows()
+	var rows: Array = _bridge.get_multiplayer_result_option_rows()
 	for i in range(_option_labels.size()):
 		var visible := i < rows.size()
 		_option_cards[i].visible = visible
@@ -176,7 +180,7 @@ func _update_options() -> void:
 		var lift := 0.0
 		_option_cards[i].position.y = 620.0 + lift
 		_option_labels[i].position.y = 620.0 + lift
-		_option_cards[i].color = Color(0.42, 0.20, 0.18, 0.98) if is_selected and CoreBridge.is_multiplayer_character_selection_results() else (Color(0.20, 0.30, 0.48, 0.98) if is_selected else Color(0.16, 0.12, 0.16, 0.96))
+		_option_cards[i].color = Color(0.42, 0.20, 0.18, 0.98) if is_selected and _bridge.is_multiplayer_character_selection_results() else (Color(0.20, 0.30, 0.48, 0.98) if is_selected else Color(0.16, 0.12, 0.16, 0.96))
 		_option_labels[i].text = str(row.get("label", ""))
 		_option_labels[i].modulate = Color(1.0, 0.88, 0.42, 1.0) if is_selected else Color(0.78, 0.84, 0.94, 0.92)
 	if _prompt_band:
@@ -185,13 +189,13 @@ func _update_options() -> void:
 func _update_summary() -> void:
 	_ensure_summary_label()
 	if _summary_label:
-		_summary_label.text = CoreBridge.get_multiplayer_results_summary_text()
+		_summary_label.text = _bridge.get_multiplayer_results_summary_text()
 	if _badge_label:
-		_badge_label.text = CoreBridge.get_multiplayer_results_badge_text()
+		_badge_label.text = _bridge.get_multiplayer_results_badge_text()
 		_badge_label.modulate = Color(0.18, 0.18, 0.24, 0.98)
 
 func _update_chrome() -> void:
-	var chrome := CoreBridge.get_multiplayer_results_chrome_colors()
+	var chrome: Dictionary = _bridge.get_multiplayer_results_chrome_colors()
 	if _accent:
 		_accent.color = Color(chrome.get("accent", _accent.color))
 	if _hero_glow:

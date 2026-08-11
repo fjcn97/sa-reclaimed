@@ -57,7 +57,17 @@ $preflightText = $preflightRun.Output
 $preflightLogText = if (Test-Path -LiteralPath $preflightLog) { Get-Content -LiteralPath $preflightLog -Raw } else { "" }
 $preflightNormalized = [regex]::Replace(($preflightText + "`n" + $preflightLogText), "`e\[[0-9;]*m", "")
 $preflightFailed = $preflightNormalized -match "SCRIPT ERROR|Parse Error|Failed to load"
-if ($preflightFailed -or $preflightRun.TimedOut -or $preflightRun.ExitCode -ne 0) {
+if (-not $preflightFailed -and -not $preflightRun.TimedOut -and $preflightRun.ExitCode -ne 0) {
+    # Godot can return a transient non-zero status on the first global-class
+    # scan after new scripts are registered, even when the editor log is clean.
+    # Retry once so genuine parse/load failures remain fatal.
+    $preflightRun = Invoke-GodotProcess @("--headless", "--path", $projectPath, "--editor", "--quit", "--log-file", $preflightLog) "editor_preflight_retry" 60
+    $preflightText = $preflightRun.Output
+    $preflightLogText = if (Test-Path -LiteralPath $preflightLog) { Get-Content -LiteralPath $preflightLog -Raw } else { "" }
+    $preflightNormalized = [regex]::Replace(($preflightText + "`n" + $preflightLogText), "`e\[[0-9;]*m", "")
+    $preflightFailed = $preflightNormalized -match "SCRIPT ERROR|Parse Error|Failed to load"
+}
+if ($preflightFailed -or $preflightRun.TimedOut) {
     Write-Output "FAIL editor_preflight RUNTIME_ERROR"
     exit 1
 }

@@ -19,9 +19,11 @@ var _badge_core: ColorRect = null
 var _badge_label: Label = null
 var _over_label: Label = null
 var _status_label: Label = null
+var _bridge: Node = null
 
 func _ready() -> void:
 	set_process(true)
+	_bridge = resolve_state_bridge()
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
 	if prompt_label == null:
@@ -33,32 +35,37 @@ func _ready() -> void:
 	_set_screen_visible(false)
 
 func _process(_delta: float) -> void:
-	var screen_visible := CoreBridge.is_game_over_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+		if _bridge == null:
+			_set_screen_visible(false)
+			return
+	var screen_visible: bool = _bridge.is_game_over_screen()
 	_set_screen_visible(screen_visible)
 	if not screen_visible:
 		return
-	var slide_offset := CoreBridge.get_game_over_slide_offset()
-	var flash_alpha := CoreBridge.get_game_over_text_flash_alpha()
+	var slide_offset: float = _bridge.get_game_over_slide_offset()
+	var flash_alpha: float = _bridge.get_game_over_text_flash_alpha()
 	if title_label:
-		title_label.text = CoreBridge.get_game_over_primary_word()
+		title_label.text = _bridge.get_game_over_primary_word()
 		title_label.position = Vector2(258.0 + slide_offset, 220.0)
 		title_label.size = Vector2(324.0, 54.0)
 		title_label.modulate = Color(1.0, 0.92, 0.82, flash_alpha)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_game_over_secondary_word()
+		prompt_label.text = _bridge.get_game_over_secondary_word()
 		prompt_label.position = Vector2(636.0 + slide_offset, 220.0)
 		prompt_label.size = Vector2(384.0, 54.0)
 		prompt_label.modulate = Color(1.0, 0.52, 0.24, flash_alpha)
 	if _over_label:
-		_over_label.text = CoreBridge.get_game_over_prompt_text()
+		_over_label.text = _bridge.get_game_over_prompt_text()
 		_over_label.position = Vector2(256.0, 382.0)
-		_over_label.modulate = Color(0.98, 0.96, 0.90, 1.0 if CoreBridge.is_game_over_input_ready() else 0.72)
+		_over_label.modulate = Color(0.98, 0.96, 0.90, 1.0 if _bridge.is_game_over_input_ready() else 0.72)
 	if _status_label:
-		_status_label.text = CoreBridge.get_game_over_status_text()
+		_status_label.text = _bridge.get_game_over_status_text()
 		_status_label.position = Vector2(256.0, 426.0)
 		_status_label.modulate = Color(1.0, 0.74, 0.34, 0.96)
 	if detail_label:
-		detail_label.text = CoreBridge.get_game_over_detail_text()
+		detail_label.text = _bridge.get_game_over_detail_text()
 		detail_label.position = Vector2(164.0, 664.0)
 		detail_label.size = Vector2(952.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -100,7 +107,7 @@ func _ensure_labels() -> void:
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 func _update_chrome() -> void:
-	var time_over := CoreBridge.is_game_over_time_over()
+	var time_over: bool = _bridge != null and _bridge.is_game_over_time_over()
 	if _panel:
 		_panel.color = Color(0.10, 0.06, 0.02, 0.96) if time_over else Color(0.12, 0.03, 0.03, 0.96)
 	if _hero_glow:
@@ -124,7 +131,7 @@ func _update_chrome() -> void:
 	if _badge_core:
 		_badge_core.color = Color(0.28, 0.20, 0.08, 0.96) if time_over else Color(0.26, 0.10, 0.08, 0.96)
 	if _badge_label:
-		_badge_label.text = CoreBridge.get_game_over_badge_text()
+		_badge_label.text = _bridge.get_game_over_badge_text() if _bridge else ""
 		_badge_label.modulate = Color(1.0, 0.95, 0.76, 0.96)
 
 func _set_screen_visible(screen_visible: bool) -> void:

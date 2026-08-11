@@ -24,9 +24,11 @@ var _badge_label: Label = null
 var _row_cards: Array[ColorRect] = []
 var _option_labels: Array[Label] = []
 var _meta_labels: Array[Label] = []
+var _bridge: Node = null
 
 func _ready() -> void:
 	set_process(true)
+	_bridge = resolve_state_bridge()
 	if title_label == null:
 		title_label = get_node_or_null("TitleLabel")
 	if prompt_label == null:
@@ -35,27 +37,29 @@ func _ready() -> void:
 		detail_label = get_node_or_null("DetailLabel")
 	_ensure_chrome()
 	_ensure_option_labels()
-	_set_screen_visible(CoreBridge.is_save_overlay_screen())
+	_set_screen_visible(_bridge != null and _bridge.is_save_overlay_screen())
 
 func _process(_delta: float) -> void:
-	var save_mode: bool = CoreBridge.is_save_overlay_screen()
+	if _bridge == null:
+		_bridge = resolve_state_bridge()
+	var save_mode: bool = _bridge != null and _bridge.is_save_overlay_screen()
 	_set_screen_visible(save_mode)
 	if not save_mode:
 		return
 	var pulse := 0.5 + (sin(Time.get_ticks_msec() / 210.0) * 0.5)
 	if title_label:
-		title_label.text = CoreBridge.get_options_screen_title()
+		title_label.text = _bridge.get_options_screen_title()
 		title_label.position = Vector2(248.0, 116.0)
 		title_label.size = Vector2(628.0, 56.0)
 		title_label.modulate = Color(0.98, 0.98, 1.0, 1.0)
 	if prompt_label:
-		prompt_label.text = CoreBridge.get_options_screen_subtitle()
+		prompt_label.text = _bridge.get_options_screen_subtitle()
 		prompt_label.position = Vector2(180.0, 550.0)
 		prompt_label.size = Vector2(920.0, 34.0)
 		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		prompt_label.modulate = Color(1.0, 0.90, 0.52, 0.74 + (pulse * 0.24))
 	if detail_label:
-		detail_label.text = CoreBridge.get_save_detail_text()
+		detail_label.text = _bridge.get_save_detail_text()
 		detail_label.position = Vector2(164.0, 664.0)
 		detail_label.size = Vector2(952.0, 34.0)
 		detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -112,9 +116,9 @@ func _ensure_option_labels() -> void:
 		_meta_labels.append(meta_label)
 
 func _update_option_labels() -> void:
-	var items: Array = CoreBridge.get_options_active_items()
-	var selected_index: int = CoreBridge.get_save_menu_index()
-	if CoreBridge.is_save_reset_pending():
+	var items: Array = _bridge.get_options_active_items()
+	var selected_index: int = _bridge.get_save_menu_index()
+	if _bridge.is_save_reset_pending():
 		selected_index = 0
 	for i in range(_option_labels.size()):
 		var visible := i < items.size()
@@ -130,8 +134,8 @@ func _update_option_labels() -> void:
 		_option_labels[i].position.y = top - 3.0 + lift
 		_meta_labels[i].position.y = top - 3.0 + lift
 		var item_text := str(items[i])
-		var item_visual := CoreBridge.get_options_item_visual(i)
-		var meta_text := "%s   %s" % [CoreBridge.get_options_item_meta(i), CoreBridge.get_options_item_status(i)]
+		var item_visual := _bridge.get_options_item_visual(i)
+		var meta_text := "%s   %s" % [_bridge.get_options_item_meta(i), _bridge.get_options_item_status(i)]
 		_row_cards[i].color = _get_row_card_color(selected, item_visual)
 		_option_labels[i].text = item_text
 		_option_labels[i].modulate = Color(1.0, 0.98, 0.84, 1.0) if selected else Color(0.92, 0.96, 1.0, 0.94)
@@ -140,19 +144,19 @@ func _update_option_labels() -> void:
 
 func _update_summary() -> void:
 	if _summary_label:
-		_summary_label.text = CoreBridge.get_options_summary_text().replace("   ", "\n")
+		_summary_label.text = _bridge.get_options_summary_text().replace("   ", "\n")
 		_summary_label.modulate = Color(0.90, 0.96, 1.0, 0.98)
 	if _badge_label:
-		_badge_label.text = CoreBridge.get_options_badge_text()
+		_badge_label.text = _bridge.get_options_badge_text()
 		_badge_label.modulate = Color(1.0, 0.95, 0.74, 0.95)
 
 func _update_chrome() -> void:
 	var accent := Color(0.23, 0.74, 0.95, 0.96)
 	var summary := Color(0.10, 0.16, 0.28, 0.94)
-	if CoreBridge.is_save_reset_pending():
+	if _bridge.is_save_reset_pending():
 		accent = Color(0.94, 0.35, 0.22, 0.96)
 		summary = Color(0.28, 0.10, 0.08, 0.94)
-	elif CoreBridge.is_player_data_menu():
+	elif _bridge.is_player_data_menu():
 		accent = Color(0.22, 0.86, 0.58, 0.96)
 		summary = Color(0.08, 0.18, 0.16, 0.94)
 	if _accent:
@@ -173,7 +177,7 @@ func _update_chrome() -> void:
 		_summary_card.color = summary
 
 func _get_row_card_color(selected: bool, item_visual: String) -> Color:
-	if CoreBridge.is_save_reset_pending():
+	if _bridge.is_save_reset_pending():
 		return Color(0.46, 0.18, 0.12, 0.98) if selected else Color(0.26, 0.12, 0.10, 0.96)
 	if selected:
 		return Color(0.20, 0.40, 0.66, 0.98)
@@ -182,7 +186,7 @@ func _get_row_card_color(selected: bool, item_visual: String) -> Color:
 	return Color(0.10, 0.16, 0.29, 0.96)
 
 func _get_meta_color(item_visual: String) -> Color:
-	if CoreBridge.is_save_reset_pending():
+	if _bridge.is_save_reset_pending():
 		return Color(1.0, 0.84, 0.78, 0.96)
 	if item_visual == "erase":
 		return Color(0.98, 0.78, 0.78, 0.94)
